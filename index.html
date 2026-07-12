@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <script>
+      // Polyfill to prevent SecurityError when localStorage or sessionStorage are blocked in sandboxed iframes
+      (function() {
+        try {
+          var test = window.localStorage;
+        } catch (e) {
+          function createMockStorage() {
+            var store = {};
+            return {
+              getItem: function(key) { return store.hasOwnProperty(key) ? store[key] : null; },
+              setItem: function(key, value) { store[key] = String(value); },
+              removeItem: function(key) { delete store[key]; },
+              clear: function() { store = {}; },
+              key: function(index) { return Object.keys(store)[index] || null; },
+              get length() { return Object.keys(store).length; }
+            };
+          }
+          try {
+            Object.defineProperty(window, 'localStorage', { value: createMockStorage(), configurable: true });
+          } catch(err) {}
+        }
+        try {
+          var test2 = window.sessionStorage;
+        } catch (e) {
+          function createMockStorage() {
+            var store = {};
+            return {
+              getItem: function(key) { return store.hasOwnProperty(key) ? store[key] : null; },
+              setItem: function(key, value) { store[key] = String(value); },
+              removeItem: function(key) { delete store[key]; },
+              clear: function() { store = {}; },
+              key: function(index) { return Object.keys(store)[index] || null; },
+              get length() { return Object.keys(store).length; }
+            };
+          }
+          try {
+            Object.defineProperty(window, 'sessionStorage', { value: createMockStorage(), configurable: true });
+          } catch(err) {}
+        }
+      })();
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <title>megaAnime - Tu Portal de Anime de Alta Calidad</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

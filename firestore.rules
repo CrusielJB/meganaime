@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email.lower() == 'baezcabrera.j.r@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 100
+        && data.email is string && data.email.size() <= 256
+        && data.favorites is list && data.favorites.size() <= 500
+        && (!('history' in data) || (data.history is list && data.history.size() <= 500))
+        && (!('isAdmin' in data) || data.isAdmin is bool)
+        && (!('lastActive' in data) || data.lastActive is timestamp || data.lastActive is string);
+    }
+
+    function isValidPageView(data) {
+      return data.keys().hasAll(['animeId', 'timestamp'])
+        && data.animeId is string && data.animeId.size() <= 128
+        && data.timestamp == request.time
+        && (!('animeTitle' in data) || (data.animeTitle is string && data.animeTitle.size() <= 256))
+        && (!('genres' in data) || (data.genres is list && data.genres.size() <= 20))
+        && (!('userId' in data) || (data.userId is string && data.userId.size() <= 128));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().id == userId
+        && (!('isAdmin' in incoming()) || incoming().isAdmin == false || isAdmin());
+      
+      allow update: if (isOwner(userId) || isAdmin())
+        && isValidUser(incoming())
+        && incoming().id == existing().id
+        && incoming().email == existing().email // Email is immutable
+        && (!('isAdmin' in incoming()) || (isAdmin() || incoming().isAdmin == existing().get('isAdmin', false))); // Only admin can grant admin
+      
+      allow delete: if false; // Users cannot delete their profiles directly via client SDK
+    }
+
+    match /page_views/{viewId} {
+      allow read: if isAdmin();
+      allow create: if isValidPageView(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

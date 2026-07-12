@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with saved favorites and watch history",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique user ID matching Firebase Auth UID"
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's chosen display name"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's registered email address"
+        },
+        "favorites": {
+          "type": "array",
+          "description": "List of favorite anime IDs/slugs"
+        },
+        "history": {
+          "type": "array",
+          "description": "Watch history items"
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Is the user an admin"
+        },
+        "lastActive": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last time the user was active"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "username", "email", "favorites"]
+    },
+    "PageView": {
+      "title": "PageView",
+      "description": "Tracks an anime view event for analytics",
+      "type": "object",
+      "properties": {
+        "animeId": {
+          "type": "string"
+        },
+        "animeTitle": {
+          "type": "string"
+        },
+        "genres": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "userId": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["animeId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Store individual user account details and lists of favorites"
+    },
+    "/page_views/{viewId}": {
+      "schema": "PageView",
+      "description": "Store individual view events for stats"
+    }
+  }
+}

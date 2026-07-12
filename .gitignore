@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Local Node distributions
+node-v20.11.0-darwin-x64/
+node-v22.11.0-darwin-x64/
+
+# Large local files
+screenshot.png
