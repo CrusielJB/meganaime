@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import path from "path";
-import { createServer as createViteServer } from "vite";
+import fs from "fs";
 import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
@@ -17,7 +17,7 @@ const USERS_DB: Record<string, { username: string; email: string; favorites: str
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Initialize background Cron Job (8:00 AM Eastern Time every day)
   cron.schedule("0 8 * * *", async () => {
@@ -982,14 +982,19 @@ async function startServer() {
     }
   });
 
-  // Vite middleware setup for Development
-  if (process.env.NODE_ENV !== "production") {
+  // Configure middleware (Vite Dev Server vs Static Production bundle)
+  const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));
+
+  if (!isProduction) {
+    console.log("Starting server in DEVELOPMENT mode (booting Vite Dev Server)...");
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("Starting server in PRODUCTION mode (serving compiled dist bundle)...");
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { setHeaders: (res, path) => { if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
     app.get("*", (req, res) => {
