@@ -100,7 +100,7 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx166240-PBV7zukIHW7V.png",
     bannerUrl: "https://images4.alphacoders.com/134/1340915.jpeg",
     genres: ["Acción", "Ciencia Ficción", "Shounen", "Mecha"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 8.7,
     type: "Anime",
     episodesCount: 12,
@@ -254,7 +254,7 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx150672-WqmmwZ4nMzAy.png",
     bannerUrl: "https://images2.alphacoders.com/136/1364741.png",
     genres: ["Drama", "Misterio", "Sobrenatural", "Comedia"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 9.0,
     type: "Anime",
     episodesCount: 13,
@@ -271,7 +271,7 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx163134-yieRFbvUOH9a.jpg",
     bannerUrl: "https://images3.alphacoders.com/134/1340638.jpeg",
     genres: ["Acción", "Ciencia Ficción", "Shounen", "Escolar"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 8.6,
     type: "Anime",
     episodesCount: 21,
@@ -667,11 +667,11 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx185875-XMvDVlIUZODx.jpg",
     bannerUrl: "https://images.alphacoders.com/134/1341100.png",
     genres: ["Acción", "Fantasía", "Aventura", "Seinen"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 9.2,
     type: "Anime",
-    episodesCount: 12,
-    year: 2026,
+    episodesCount: 13,
+    year: 2025,
     episodes: [],
     external_id: "185875",
     title_english: "Solo Leveling Season 2",
@@ -684,10 +684,10 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx127230-DdP4vAdssLoz.png",
     bannerUrl: "https://images2.alphacoders.com/129/1290457.jpg",
     genres: ["Acción", "Terror", "Sobrenatural", "Comedia", "Seinen"],
-    status: "En emisión",
+    status: "Próximamente",
     rating: 8.9,
     type: "Anime",
-    episodesCount: 12,
+    episodesCount: 0,
     year: 2026,
     episodes: [],
     external_id: "175084",
@@ -701,10 +701,10 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx113415-LHBAeoZDIsnF.jpg",
     bannerUrl: "https://images7.alphacoders.com/132/1325602.jpeg",
     genres: ["Acción", "Sobrenatural", "Fantasía", "Shounen"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 9.3,
     type: "Anime",
-    episodesCount: 16,
+    episodesCount: 12,
     year: 2026,
     episodes: [],
     external_id: "166822",
@@ -718,11 +718,11 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21087-B5DHjqZ3kW4b.jpg",
     bannerUrl: "https://images6.alphacoders.com/105/1052605.png",
     genres: ["Acción", "Comedia", "Parodia", "Sci-Fi"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 9.0,
     type: "Anime",
     episodesCount: 12,
-    year: 2026,
+    year: 2025,
     episodes: [],
     external_id: "170851",
     title_english: "One Punch Man Season 3",
@@ -735,11 +735,11 @@ export const MOCK_ANIMES: Anime[] = [
     coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101922-WBsBl0ClmgYL.jpg",
     bannerUrl: "https://images3.alphacoders.com/135/1355026.png",
     genres: ["Acción", "Fantasía", "Sobrenatural", "Shounen"],
-    status: "En emisión",
+    status: "Finalizado",
     rating: 9.5,
     type: "Anime",
-    episodesCount: 12,
-    year: 2026,
+    episodesCount: 1,
+    year: 2025,
     episodes: [],
     external_id: "173273",
     title_english: "Demon Slayer: Infinity Castle Arc",
@@ -1058,30 +1058,42 @@ export function getAiringBaseCount(id: string, totalCount: number = 12): number 
   return minEpisodes + (Math.abs(hash) % (maxEpisodes - minEpisodes + 1));
 }
 
-// Helper to calculate available episode count for airing animes based on the current date
-// and the daily update cycle at 8:00 AM.
+// Helper to calculate available episode count for airing animes based on their real weekly premiere schedules
 export function getAvailableEpisodesCountForAiring(anime: Anime): number {
-  // If it's a legacy long running anime like One Piece, keep its full count
-  if (anime.id === "one-piece" || anime.id.includes("reincarnated-as-a-slime") || anime.episodesCount > 50) {
-    return anime.episodesCount;
+  // 1. One Piece: currently fixed at 1115 aired episodes as of mid-July 2026
+  if (anime.id === "one-piece") {
+    return 1115;
   }
-  
-  // Base count of available episodes is deterministic per anime
-  const baseCount = getAiringBaseCount(anime.id, anime.episodesCount);
-  
-  // Since the update is daily at 8:00 AM Eastern Time, calculate how many days have passed since July 2nd, 2026 08:00:00 Eastern Time
-  const now = new Date();
-  const startOffsetDate = new Date("2026-07-02T08:00:00-04:00"); // Eastern Time offset (EDT)
-  
-  const diffMs = now.getTime() - startOffsetDate.getTime();
-  if (diffMs <= 0) {
-    return baseCount;
+
+  // 2. Mushoku Tensei Season 3: Premiered July 4, 2026 (double premiere), weekly on Saturdays
+  if (anime.id === "mushoku-tensei-3") {
+    const start = new Date("2026-07-04T08:00:00-04:00");
+    const diff = Date.now() - start.getTime();
+    if (diff < 0) return 2;
+    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    return Math.min(2 + weeks, 24);
   }
-  
-  // Diff in days (each day at 8:00 AM adds 1 episode)
-  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-  
-  return Math.min(baseCount + diffDays, anime.episodesCount);
+
+  // 3. Youjo Senki Season 2: Premiered July 8, 2026, weekly on Wednesdays
+  if (anime.id === "youjo-senki-2") {
+    const start = new Date("2026-07-08T08:00:00-04:00");
+    const diff = Date.now() - start.getTime();
+    if (diff < 0) return 1;
+    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    return Math.min(1 + weeks, 12);
+  }
+
+  // 4. That Time I Got Reincarnated as a Slime Season 4: Premiered April 3, 2026, weekly on Fridays
+  if (anime.id === "that-time-i-got-reincarnated-as-a-slime-4") {
+    const start = new Date("2026-04-03T08:00:00-04:00");
+    const diff = Date.now() - start.getTime();
+    if (diff < 0) return 1;
+    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
+    return Math.min(1 + weeks, 24);
+  }
+
+  // Fallback to configured count directly to avoid dynamic multiplication
+  return anime.episodesCount;
 }
 
 // Dynamically generate episodes for all mock animes so they are fully populated and interactive
