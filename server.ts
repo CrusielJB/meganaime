@@ -19,6 +19,35 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
+  // --- CUSTOM ADMIN DATABASE IMPLEMENTATION ---
+  const customDbPath = path.join(process.cwd(), "src/utils/customAnimes.json");
+
+  function readCustomDb(): any[] {
+    try {
+      if (fs.existsSync(customDbPath)) {
+        const raw = fs.readFileSync(customDbPath, "utf8");
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.error("Error reading customDb:", e);
+    }
+    return [];
+  }
+
+  function writeCustomDb(data: any[]) {
+    try {
+      const parentDir = path.dirname(customDbPath);
+      if (!fs.existsSync(parentDir)) {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+      fs.writeFileSync(customDbPath, JSON.stringify(data, null, 2), "utf8");
+    } catch (e) {
+      console.error("Error writing customDb:", e);
+    }
+  }
+
+  let GLOBAL_CUSTOM_ANIMES = readCustomDb();
+
   // Initialize background Cron Job (8:00 AM Eastern Time every day)
   cron.schedule("0 8 * * *", async () => {
     console.log("CRON JOB TRIGGERED: Starting automatic data refresh at 8:00 AM Eastern Time...");
@@ -45,6 +74,38 @@ async function startServer() {
 
     try {
       const data = await scrapeHome(page);
+      
+      // Inject custom animes and their episodes
+      if (data && data.success) {
+        GLOBAL_CUSTOM_ANIMES = readCustomDb();
+        if (GLOBAL_CUSTOM_ANIMES.length > 0) {
+          // Put custom animes in seasonal list
+          data.seasonal = [...GLOBAL_CUSTOM_ANIMES, ...(data.seasonal || [])];
+          
+          // Generate recent episodes for home section
+          const customEps: any[] = [];
+          GLOBAL_CUSTOM_ANIMES.forEach(anime => {
+            const count = anime.episodesCount || 0;
+            if (count > 0) {
+              const lastEpNum = count;
+              customEps.push({
+                id: `${anime.id}-${lastEpNum}`,
+                title: `${anime.title} - Episodio ${lastEpNum}`,
+                number: lastEpNum,
+                animeId: anime.id,
+                animeTitle: anime.title,
+                coverUrl: anime.coverUrl,
+                videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                videoServers: [
+                  { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
+                ]
+              });
+            }
+          });
+          data.episodes = [...customEps, ...(data.episodes || [])];
+        }
+      }
+
       apiCache.set(cacheKey, data, 1800); // 30 mins
       res.json(data);
     } catch (error: any) {
@@ -65,10 +126,22 @@ async function startServer() {
       let data;
       if (q) {
         data = await scrapeSearch(q, page);
+        
+        // Match in custom DB
+        GLOBAL_CUSTOM_ANIMES = readCustomDb();
+        const lowercaseQ = q.toLowerCase();
+        const matchedCustom = GLOBAL_CUSTOM_ANIMES.filter(a => 
+          a.title.toLowerCase().includes(lowercaseQ) || 
+          a.synopsis.toLowerCase().includes(lowercaseQ) ||
+          a.genres.some(g => g.toLowerCase().includes(lowercaseQ))
+        );
+        data = [...matchedCustom, ...data];
       } else {
         // "Todos" filter - fetch releasing (airing) for pages 1-4, then popular completed shows for page 5+
         if (page <= 4) {
           data = await AnimeApiAggregator.getAiring(page);
+          GLOBAL_CUSTOM_ANIMES = readCustomDb();
+          data = [...GLOBAL_CUSTOM_ANIMES, ...data];
         } else {
           data = await AnimeApiAggregator.getFinished(page - 4);
         }
@@ -115,6 +188,31 @@ async function startServer() {
     if (cachedData) return res.json(cachedData);
 
     try {
+      // Check custom DB first
+      GLOBAL_CUSTOM_ANIMES = readCustomDb();
+      const custom = GLOBAL_CUSTOM_ANIMES.find(a => a.id === id);
+      if (custom) {
+        // If custom anime episodes are not populated, generate them dynamically
+        const episodes = [];
+        for (let i = 1; i <= custom.episodesCount; i++) {
+          episodes.push({
+            id: `${custom.id}-${i}`,
+            title: `${custom.title} - Episodio ${i}`,
+            number: i,
+            animeId: custom.id,
+            animeTitle: custom.title,
+            coverUrl: custom.coverUrl,
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoServers: [
+              { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
+            ]
+          });
+        }
+        const fullAnime = { ...custom, episodes };
+        apiCache.set(cacheKey, fullAnime, 7200);
+        return res.json(fullAnime);
+      }
+
       const data = await scrapeAnime(id);
       apiCache.set(cacheKey, data, 7200); // 2 hours
       res.json(data);
@@ -132,6 +230,35 @@ async function startServer() {
     if (cached) return res.json(cached);
 
     try {
+      // Check custom DB first
+      GLOBAL_CUSTOM_ANIMES = readCustomDb();
+      let foundCustomEp: any = null;
+      for (const anime of GLOBAL_CUSTOM_ANIMES) {
+        // If episode ID matches custom anime ID pattern
+        if (id.startsWith(anime.id + "-")) {
+          const parts = id.split("-");
+          const epNum = parseInt(parts[parts.length - 1], 10);
+          foundCustomEp = {
+            id,
+            title: `${anime.title} - Episodio ${epNum}`,
+            number: epNum,
+            animeId: anime.id,
+            animeTitle: anime.title,
+            coverUrl: anime.coverUrl,
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoServers: [
+              { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
+            ]
+          };
+          break;
+        }
+      }
+
+      if (foundCustomEp) {
+        apiCache.set(cacheKey, foundCustomEp, 86400);
+        return res.json(foundCustomEp);
+      }
+
       const freshData = await scrapeEpisode(id);
       const hasRealServers = freshData && freshData.videoServers && freshData.videoServers.length > 2;
       
@@ -979,6 +1106,191 @@ async function startServer() {
     } catch (err: any) {
       console.error(`Cover recovery failed for "${title || animeId}":`, err.message);
       return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- ADMIN ACTIONS ENDPOINTS ---
+
+  // 1. Get all custom animes
+  app.get("/api/admin/animes", (req, res) => {
+    GLOBAL_CUSTOM_ANIMES = readCustomDb();
+    res.json(GLOBAL_CUSTOM_ANIMES);
+  });
+
+  // 2. Save/Update custom anime
+  app.post("/api/admin/animes/save", (req, res) => {
+    try {
+      const anime = req.body;
+      if (!anime || !anime.id) {
+        return res.status(400).json({ error: "Invalid anime object" });
+      }
+
+      GLOBAL_CUSTOM_ANIMES = readCustomDb();
+      const index = GLOBAL_CUSTOM_ANIMES.findIndex(a => a.id === anime.id);
+      if (index !== -1) {
+        GLOBAL_CUSTOM_ANIMES[index] = { ...GLOBAL_CUSTOM_ANIMES[index], ...anime };
+      } else {
+        GLOBAL_CUSTOM_ANIMES.push(anime);
+      }
+
+      writeCustomDb(GLOBAL_CUSTOM_ANIMES);
+      apiCache.flushAll(); // Flush cache so it updates on home screen
+      res.json({ success: true, anime });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // 3. Delete custom anime
+  app.post("/api/admin/animes/delete", (req, res) => {
+    try {
+      const { id } = req.body;
+      if (!id) {
+        return res.status(400).json({ error: "Missing anime ID" });
+      }
+
+      GLOBAL_CUSTOM_ANIMES = readCustomDb();
+      GLOBAL_CUSTOM_ANIMES = GLOBAL_CUSTOM_ANIMES.filter(a => a.id !== id);
+      writeCustomDb(GLOBAL_CUSTOM_ANIMES);
+      apiCache.flushAll();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // 4. Scrape URL and add/update anime in the database
+  app.post("/api/admin/animes/scrape-url", async (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ error: "Missing URL parameter" });
+      }
+
+      const lowercaseUrl = url.toLowerCase();
+      const isAnimeFLV = lowercaseUrl.includes("animeflv.net");
+      const isMonosChinos = lowercaseUrl.includes("monoschinos2.com") || lowercaseUrl.includes("monoschinos");
+
+      if (!isAnimeFLV && !isMonosChinos) {
+        return res.status(400).json({ error: "Only AnimeFLV and MonosChinos URLs are supported." });
+      }
+
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+      });
+      const html = await response.text();
+
+      let title = "Scraped Anime";
+      let synopsis = "";
+      let coverUrl = "";
+      const genres: string[] = [];
+      let status = "En emisión";
+      let episodesCount = 12;
+
+      if (isAnimeFLV) {
+        // Parse Title
+        const titleMatch = html.match(/<h1 class="Title font-weight-bold">([^<]+)<\/h1>/i) || html.match(/<h1 class="Title">([^<]+)<\/h1>/i);
+        if (titleMatch) title = titleMatch[1].trim();
+
+        // Parse Synopsis
+        const synMatch = html.match(/<div class="Description">[^]*?<p>([^<]+)<\/p>/i);
+        if (synMatch) synopsis = synMatch[1].trim();
+
+        // Parse Cover
+        const coverMatch = html.match(/<div class="thumb">[^]*?<img src="([^"]+)"/i);
+        if (coverMatch) {
+          coverUrl = coverMatch[1];
+          if (!coverUrl.startsWith("http")) {
+            coverUrl = "https://animeflv.net" + coverUrl;
+          }
+        }
+
+        // Parse Genres
+        const genreRegex = /<a href="\/genre\/[^"]+">([^<]+)<\/a>/gi;
+        let gMatch;
+        while ((gMatch = genreRegex.exec(html)) !== null) {
+          if (!genres.includes(gMatch[1])) genres.push(gMatch[1]);
+        }
+
+        // Parse Episodes list script to count episodes
+        const epsMatch = html.match(/var episodes = \[\s*\[(\d+)/i);
+        if (epsMatch) {
+          episodesCount = parseInt(epsMatch[1], 10);
+        } else {
+          // Alternative episode regex match
+          const epArrayMatch = html.match(/var episodes = \[([^\]]+)\]/i);
+          if (epArrayMatch) {
+            const matches = epArrayMatch[1].match(/\[(\d+),/g);
+            if (matches) episodesCount = matches.length;
+          }
+        }
+      } else if (isMonosChinos) {
+        // Parse Title
+        const titleMatch = html.match(/<h1 class="title-nit[^>]*>([^<]+)<\/h1>/i);
+        if (titleMatch) title = titleMatch[1].trim();
+
+        // Parse Synopsis
+        const synMatch = html.match(/<p class="text-justify[^>]*>([^<]+)<\/p>/i);
+        if (synMatch) synopsis = synMatch[1].trim();
+
+        // Parse Cover
+        const coverMatch = html.match(/<div class="chapter-pic">[^]*?<img[^>]+src="([^"]+)"/i);
+        if (coverMatch) coverUrl = coverMatch[1];
+
+        // Parse Genres
+        const genreRegex = /<a class="btn btn-outline-primary[^>]*>([^<]+)<\/a>/gi;
+        let gMatch;
+        while ((gMatch = genreRegex.exec(html)) !== null) {
+          if (!genres.includes(gMatch[1])) genres.push(gMatch[1]);
+        }
+
+        // Parse Episodes
+        const epRegex = /class="episode-item"[^>]*>Episode\s*(\d+)/gi;
+        let maxEp = 0;
+        let epM;
+        while ((epM = epRegex.exec(html)) !== null) {
+          const num = parseInt(epM[1], 10);
+          if (num > maxEp) maxEp = num;
+        }
+        episodesCount = maxEp || 12;
+      }
+
+      // Format ID (slugify)
+      const id = title.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const newAnime = {
+        id,
+        title,
+        synopsis,
+        coverUrl,
+        genres: genres.length > 0 ? genres : ["Acción"],
+        status,
+        rating: 8.5,
+        type: "Anime",
+        episodesCount,
+        year: new Date().getFullYear(),
+        episodes: []
+      };
+
+      GLOBAL_CUSTOM_ANIMES = readCustomDb();
+      const index = GLOBAL_CUSTOM_ANIMES.findIndex(a => a.id === newAnime.id);
+      if (index !== -1) {
+        GLOBAL_CUSTOM_ANIMES[index] = { ...GLOBAL_CUSTOM_ANIMES[index], ...newAnime };
+      } else {
+        GLOBAL_CUSTOM_ANIMES.push(newAnime);
+      }
+
+      writeCustomDb(GLOBAL_CUSTOM_ANIMES);
+      apiCache.flushAll();
+
+      res.json({ success: true, anime: newAnime });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 

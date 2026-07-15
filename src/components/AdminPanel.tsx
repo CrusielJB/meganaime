@@ -184,20 +184,62 @@ export default function AdminPanel() {
       }
     }
 
+    async function loadCatalog() {
+      try {
+        const res = await fetch('/api/admin/animes');
+        if (res.ok) {
+          const customAnimes = await res.json();
+          const customMap = new Map(customAnimes.map((a: any) => [a.id, a]));
+          
+          // Merge custom with MOCK_ANIMES
+          const merged = MOCK_ANIMES.map(a => {
+            if (customMap.has(a.id)) {
+              return customMap.get(a.id);
+            }
+            return {
+              id: a.id,
+              title: a.title,
+              synopsis: a.synopsis || '',
+              coverUrl: a.coverUrl || '',
+              genres: a.genres || [],
+              status: a.status || 'Publicado',
+              rating: a.rating || 8.0,
+              type: a.type || 'Anime',
+              episodesCount: a.episodesCount || 12,
+              year: a.year || 2026
+            };
+          });
+
+          // Append any completely new custom animes
+          customAnimes.forEach((a: any) => {
+            if (!MOCK_ANIMES.some(m => m.id === a.id)) {
+              merged.push(a);
+            }
+          });
+
+          setAnimes(merged);
+        } else {
+          // Fallback to static mock if backend fails
+          setAnimes(MOCK_ANIMES.map(a => ({
+            id: a.id,
+            title: a.title,
+            synopsis: a.synopsis || '',
+            coverUrl: a.coverUrl || '',
+            genres: a.genres || [],
+            status: a.status || 'Publicado',
+            rating: a.rating || 8.0,
+            type: a.type || 'Anime',
+            episodesCount: a.episodesCount || 12,
+            year: a.year || 2026
+          })));
+        }
+      } catch (e) {
+        console.error("Error fetching custom database, using local fallback:", e);
+      }
+    }
+
     loadStats();
-    // Copy initial MOCK_ANIMES to local state
-    setAnimes(MOCK_ANIMES.map(a => ({
-      id: a.id,
-      title: a.title,
-      synopsis: a.synopsis || '',
-      coverUrl: a.coverUrl || '',
-      genres: a.genres || [],
-      status: a.status || 'Publicado',
-      rating: a.rating || 8.0,
-      type: a.type || 'Anime',
-      episodesCount: a.episodesCount || 12,
-      year: a.year || 2026
-    })));
+    loadCatalog();
 
     const interval = setInterval(loadStats, 60000);
     return () => clearInterval(interval);
@@ -275,13 +317,91 @@ export default function AdminPanel() {
     document.body.removeChild(link);
   };
 
-  // Save changes to local state for anime edits
-  const handleSaveAnimeEdits = (e: React.FormEvent) => {
+  // Scrape state
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scraping, setScraping] = useState(false);
+
+  // Save changes to backend server!
+  const handleSaveAnimeEdits = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedAnime) {
-      setAnimes(animes.map(a => a.id === selectedAnime.id ? selectedAnime : a));
-      setSelectedAnime(null);
-      alert('¡Contenido guardado con éxito localmente!');
+      try {
+        const res = await fetch('/api/admin/animes/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(selectedAnime)
+        });
+        if (res.ok) {
+          setAnimes(animes.map(a => a.id === selectedAnime.id ? selectedAnime : a));
+          setSelectedAnime(null);
+          alert('¡Contenido guardado con éxito en el servidor!');
+        } else {
+          alert('Error al guardar el contenido en el servidor.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de red al guardar el contenido.');
+      }
+    }
+  };
+
+  // Delete content from catalog
+  const handleDeleteAnime = async (animeId: string) => {
+    if (confirm('¿Estás seguro de que deseas eliminar este anime del catálogo?')) {
+      try {
+        const res = await fetch('/api/admin/animes/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: animeId })
+        });
+        if (res.ok) {
+          setAnimes(animes.filter(a => a.id !== animeId));
+          alert('Anime eliminado con éxito de la base de datos.');
+        } else {
+          alert('Error al intentar eliminar del servidor.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de red al eliminar el contenido.');
+      }
+    }
+  };
+
+  // Scrape anime metadata and episodes from a URL
+  const handleScrapeUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scrapeUrl.trim()) return;
+
+    setScraping(true);
+    try {
+      const res = await fetch('/api/admin/animes/scrape-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl.trim() })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.anime) {
+          const exists = animes.some(a => a.id === data.anime.id);
+          if (exists) {
+            setAnimes(animes.map(a => a.id === data.anime.id ? data.anime : a));
+          } else {
+            setAnimes([data.anime, ...animes]);
+          }
+          setScrapeUrl('');
+          alert(`¡Contenido '${data.anime.title}' importado con éxito con ${data.anime.episodesCount} episodios!`);
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo procesar la respuesta del scraper.'));
+        }
+      } else {
+        const errData = await res.json();
+        alert('Error al raspar la URL: ' + (errData.error || 'Error del servidor.'));
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Error de red al intentar raspar la URL.');
+    } finally {
+      setScraping(false);
     }
   };
 
@@ -526,6 +646,43 @@ export default function AdminPanel() {
               </div>
             </div>
 
+            {/* URL scraping input form */}
+            <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col space-y-1">
+                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Palette className="h-4 w-4 text-rose-500" />
+                  Importador de Contenido (Scraper URL)
+                </span>
+                <span className="text-[10px] text-neutral-500">Pega un enlace de AnimeFLV o MonosChinos para escanear y agregar automáticamente el anime y sus episodios.</span>
+              </div>
+              
+              <form onSubmit={handleScrapeUrl} className="flex gap-3">
+                <input
+                  type="url"
+                  placeholder="https://animeflv.net/anime/... o https://monoschinos2.com/anime/..."
+                  value={scrapeUrl}
+                  onChange={(e) => setScrapeUrl(e.target.value)}
+                  className="flex-grow bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition-colors"
+                  required
+                  disabled={scraping}
+                />
+                <button
+                  type="submit"
+                  disabled={scraping}
+                  className="bg-rose-600 hover:bg-rose-700 disabled:bg-rose-800 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-lg shadow-rose-500/20"
+                >
+                  {scraping ? (
+                    <>
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-2 border-white/20 border-t-white" />
+                      <span>Raspando...</span>
+                    </>
+                  ) : (
+                    <span>Escanear e Importar</span>
+                  )}
+                </button>
+              </form>
+            </div>
+
             {/* Split layout: Table vs Category Manager */}
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
               
@@ -578,10 +735,17 @@ export default function AdminPanel() {
                           <td className="py-2.5 px-4 text-center">
                             <button
                               onClick={() => setSelectedAnime(anime)}
-                              className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                              className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex mr-1"
                               title="Editar contenido"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAnime(anime.id)}
+                              className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                              title="Eliminar contenido"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </td>
                         </tr>
