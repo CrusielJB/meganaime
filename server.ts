@@ -21,6 +21,7 @@ async function startServer() {
 
   // --- CUSTOM ADMIN DATABASE IMPLEMENTATION ---
   const customDbPath = path.join(process.cwd(), "src/utils/customAnimes.json");
+  const customMangasDbPath = path.join(process.cwd(), "src/utils/customMangas.json");
 
   function readCustomDb(): any[] {
     try {
@@ -46,7 +47,32 @@ async function startServer() {
     }
   }
 
+  function readCustomMangasDb(): any[] {
+    try {
+      if (fs.existsSync(customMangasDbPath)) {
+        const raw = fs.readFileSync(customMangasDbPath, "utf8");
+        return JSON.parse(raw);
+      }
+    } catch (e) {
+      console.error("Error reading customMangasDb:", e);
+    }
+    return [];
+  }
+
+  function writeCustomMangasDb(data: any[]) {
+    try {
+      const parentDir = path.dirname(customMangasDbPath);
+      if (!fs.existsSync(parentDir)) {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+      fs.writeFileSync(customMangasDbPath, JSON.stringify(data, null, 2), "utf8");
+    } catch (e) {
+      console.error("Error writing customMangasDb:", e);
+    }
+  }
+
   let GLOBAL_CUSTOM_ANIMES = readCustomDb();
+  let GLOBAL_CUSTOM_MANGAS = readCustomMangasDb();
 
   // Initialize background Cron Job (8:00 AM Eastern Time every day)
   cron.schedule("0 8 * * *", async () => {
@@ -1117,6 +1143,12 @@ async function startServer() {
     res.json(GLOBAL_CUSTOM_ANIMES);
   });
 
+  // 1b. Get all custom mangas
+  app.get("/api/admin/mangas", (req, res) => {
+    GLOBAL_CUSTOM_MANGAS = readCustomMangasDb();
+    res.json(GLOBAL_CUSTOM_MANGAS);
+  });
+
   // 2. Save/Update custom anime
   app.post("/api/admin/animes/save", (req, res) => {
     try {
@@ -1141,6 +1173,29 @@ async function startServer() {
     }
   });
 
+  // 2b. Save/Update custom manga
+  app.post("/api/admin/mangas/save", (req, res) => {
+    try {
+      const manga = req.body;
+      if (!manga || !manga.id) {
+        return res.status(400).json({ error: "Invalid manga object" });
+      }
+
+      GLOBAL_CUSTOM_MANGAS = readCustomMangasDb();
+      const index = GLOBAL_CUSTOM_MANGAS.findIndex(m => m.id === manga.id);
+      if (index !== -1) {
+        GLOBAL_CUSTOM_MANGAS[index] = { ...GLOBAL_CUSTOM_MANGAS[index], ...manga };
+      } else {
+        GLOBAL_CUSTOM_MANGAS.push(manga);
+      }
+
+      writeCustomMangasDb(GLOBAL_CUSTOM_MANGAS);
+      res.json({ success: true, manga });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // 3. Delete custom anime
   app.post("/api/admin/animes/delete", (req, res) => {
     try {
@@ -1153,6 +1208,23 @@ async function startServer() {
       GLOBAL_CUSTOM_ANIMES = GLOBAL_CUSTOM_ANIMES.filter(a => a.id !== id);
       writeCustomDb(GLOBAL_CUSTOM_ANIMES);
       apiCache.flushAll();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // 3b. Delete custom manga
+  app.post("/api/admin/mangas/delete", (req, res) => {
+    try {
+      const { id } = req.body;
+      if (!id) {
+        return res.status(400).json({ error: "Missing manga ID" });
+      }
+
+      GLOBAL_CUSTOM_MANGAS = readCustomMangasDb();
+      GLOBAL_CUSTOM_MANGAS = GLOBAL_CUSTOM_MANGAS.filter(m => m.id !== id);
+      writeCustomMangasDb(GLOBAL_CUSTOM_MANGAS);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });

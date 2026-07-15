@@ -30,6 +30,7 @@ import {
   Check
 } from 'lucide-react';
 import { MOCK_ANIMES } from '../utils/animeDb';
+import { MOCK_MANGAS } from '../utils/mangaDb';
 
 // Main interface for local anime edits
 interface LocalAnime {
@@ -41,7 +42,8 @@ interface LocalAnime {
   status: string;
   rating: number;
   type: string;
-  episodesCount: number;
+  episodesCount?: number;
+  chaptersCount?: number;
   year: number;
 }
 
@@ -71,6 +73,10 @@ export default function AdminPanel() {
 
   // Local administrative states
   const [animes, setAnimes] = useState<LocalAnime[]>([]);
+  const [mangas, setMangas] = useState<any[]>([]);
+  const [catalogFilter, setCatalogFilter] = useState<'anime' | 'movie' | 'manga'>('anime');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAnime, setSelectedAnime] = useState<LocalAnime | null>(null);
   
@@ -235,6 +241,57 @@ export default function AdminPanel() {
         }
       } catch (e) {
         console.error("Error fetching custom database, using local fallback:", e);
+        setAnimes(MOCK_ANIMES.map(a => ({
+          id: a.id,
+          title: a.title,
+          synopsis: a.synopsis || '',
+          coverUrl: a.coverUrl || '',
+          genres: a.genres || [],
+          status: a.status || 'Publicado',
+          rating: a.rating || 8.0,
+          type: a.type || 'Anime',
+          episodesCount: a.episodesCount || 12,
+          year: a.year || 2026
+        })));
+      }
+
+      // Load custom mangas
+      try {
+        const res = await fetch('/api/admin/mangas');
+        if (res.ok) {
+          const customMangas = await res.json();
+          const customMap = new Map(customMangas.map((m: any) => [m.id, m]));
+          
+          const merged = MOCK_MANGAS.map(m => {
+            if (customMap.has(m.id)) {
+              return customMap.get(m.id);
+            }
+            return {
+              id: m.id,
+              title: m.title,
+              synopsis: m.synopsis || '',
+              coverUrl: m.coverUrl || '',
+              genres: m.genres || [],
+              status: m.status || 'En emisión',
+              rating: m.rating || 8.0,
+              chaptersCount: m.chaptersCount || 0,
+              year: m.year || 2026
+            };
+          });
+
+          customMangas.forEach((m: any) => {
+            if (!MOCK_MANGAS.some(mock => mock.id === m.id)) {
+              merged.push(m);
+            }
+          });
+
+          setMangas(merged);
+        } else {
+          setMangas(MOCK_MANGAS);
+        }
+      } catch (e) {
+        console.error("Error fetching custom mangas database:", e);
+        setMangas(MOCK_MANGAS);
       }
     }
 
@@ -245,11 +302,32 @@ export default function AdminPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  // Filter animes for contents table
-  const filteredAnimes = animes.filter(anime => 
-    anime.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    anime.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Reset page when filtering or searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [catalogFilter, searchQuery]);
+
+  // General Filter items depending on tab selection (Anime, Película, Manga)
+  const getFilteredItems = () => {
+    let dataset: any[] = [];
+    if (catalogFilter === 'anime') {
+      dataset = animes.filter(a => a.type !== 'Película');
+    } else if (catalogFilter === 'movie') {
+      dataset = animes.filter(a => a.type === 'Película');
+    } else if (catalogFilter === 'manga') {
+      dataset = mangas;
+    }
+
+    return dataset.filter(item => 
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.genres && item.genres.some((g: string) => g.toLowerCase().includes(searchQuery.toLowerCase())))
+    );
+  };
+
+  const filteredItems = getFilteredItems();
+  const totalItems = filteredItems.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Filter CRM Users
   const filteredUsers = users.filter(user =>
@@ -325,14 +403,20 @@ export default function AdminPanel() {
   const handleSaveAnimeEdits = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedAnime) {
+      const isManga = catalogFilter === 'manga';
+      const endpoint = isManga ? '/api/admin/mangas/save' : '/api/admin/animes/save';
       try {
-        const res = await fetch('/api/admin/animes/save', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(selectedAnime)
         });
         if (res.ok) {
-          setAnimes(animes.map(a => a.id === selectedAnime.id ? selectedAnime : a));
+          if (isManga) {
+            setMangas(mangas.map(m => m.id === selectedAnime.id ? selectedAnime : m));
+          } else {
+            setAnimes(animes.map(a => a.id === selectedAnime.id ? selectedAnime : a));
+          }
           setSelectedAnime(null);
           alert('¡Contenido guardado con éxito en el servidor!');
         } else {
@@ -347,16 +431,25 @@ export default function AdminPanel() {
 
   // Delete content from catalog
   const handleDeleteAnime = async (animeId: string) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este anime del catálogo?')) {
+    const isManga = catalogFilter === 'manga';
+    const msg = isManga 
+      ? '¿Estás seguro de que deseas eliminar este manga del catálogo?' 
+      : '¿Estás seguro de que deseas eliminar este anime del catálogo?';
+    if (confirm(msg)) {
+      const endpoint = isManga ? '/api/admin/mangas/delete' : '/api/admin/animes/delete';
       try {
-        const res = await fetch('/api/admin/animes/delete', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: animeId })
         });
         if (res.ok) {
-          setAnimes(animes.filter(a => a.id !== animeId));
-          alert('Anime eliminado con éxito de la base de datos.');
+          if (isManga) {
+            setMangas(mangas.filter(m => m.id !== animeId));
+          } else {
+            setAnimes(animes.filter(a => a.id !== animeId));
+          }
+          alert('Contenido eliminado con éxito de la base de datos.');
         } else {
           alert('Error al intentar eliminar del servidor.');
         }
@@ -646,8 +739,43 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* URL scraping input form */}
-            <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 space-y-4">
+            {/* Catalog sub-filters selection tabs */}
+            <div className="flex border-b border-white/5 pb-2 gap-6 text-xs font-bold uppercase tracking-wider">
+              <button
+                onClick={() => setCatalogFilter('anime')}
+                className={`pb-2 border-b-2 transition-all cursor-pointer ${
+                  catalogFilter === 'anime' 
+                    ? 'border-rose-500 text-rose-400 font-extrabold' 
+                    : 'border-transparent text-neutral-400 hover:text-white'
+                }`}
+              >
+                Animes
+              </button>
+              <button
+                onClick={() => setCatalogFilter('movie')}
+                className={`pb-2 border-b-2 transition-all cursor-pointer ${
+                  catalogFilter === 'movie' 
+                    ? 'border-rose-500 text-rose-400 font-extrabold' 
+                    : 'border-transparent text-neutral-400 hover:text-white'
+                }`}
+              >
+                Películas
+              </button>
+              <button
+                onClick={() => setCatalogFilter('manga')}
+                className={`pb-2 border-b-2 transition-all cursor-pointer ${
+                  catalogFilter === 'manga' 
+                    ? 'border-rose-500 text-rose-400 font-extrabold' 
+                    : 'border-transparent text-neutral-400 hover:text-white'
+                }`}
+              >
+                Mangas
+              </button>
+            </div>
+
+            {/* URL scraping input form (only for Anime and Movie tabs) */}
+            {catalogFilter !== 'manga' && (
+              <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 space-y-4">
               <div className="flex flex-col space-y-1">
                 <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                   <Palette className="h-4 w-4 text-rose-500" />
@@ -682,6 +810,7 @@ export default function AdminPanel() {
                 </button>
               </form>
             </div>
+            )}
 
             {/* Split layout: Table vs Category Manager */}
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -700,48 +829,50 @@ export default function AdminPanel() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-neutral-300">
-                      {filteredAnimes.map(anime => (
-                        <tr key={anime.id} className="hover:bg-white/5 transition-colors">
+                      {paginatedItems.map(item => (
+                        <tr key={item.id} className="hover:bg-white/5 transition-colors">
                           <td className="py-2.5 px-4">
                             <img 
-                              src={anime.coverUrl} 
-                              alt={anime.title} 
+                              src={item.coverUrl} 
+                              alt={item.title} 
                               className="h-11 w-8 object-cover rounded-md shadow-md"
                               onError={(e) => { (e.target as any).src = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=100"; }}
                             />
                           </td>
                           <td className="py-2.5 px-4">
                             <div className="flex flex-col">
-                              <span className="font-bold text-white max-w-[200px] truncate">{anime.title}</span>
-                              <span className="text-[10px] text-neutral-500 mt-0.5">{anime.type} ({anime.year})</span>
+                              <span className="font-bold text-white max-w-[200px] truncate">{item.title}</span>
+                              <span className="text-[10px] text-neutral-500 mt-0.5">
+                                {catalogFilter === 'manga' ? 'Manga' : (item.type || 'Anime')} ({item.year})
+                              </span>
                             </div>
                           </td>
                           <td className="py-2.5 px-4">
                             <span className="text-[10px] bg-white/5 px-2.5 py-1 rounded-md text-neutral-300 font-medium">
-                              {anime.genres[0] || 'N/A'}
+                              {item.genres[0] || 'N/A'}
                             </span>
                           </td>
                           <td className="py-2.5 px-4">
                             <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                              anime.status === 'En emisión' 
+                              item.status === 'En emisión' 
                                 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' 
-                                : anime.status === 'Próximamente'
+                                : item.status === 'Próximamente'
                                   ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                                   : 'bg-green-500/10 text-green-400 border border-green-500/20'
                             }`}>
-                              {anime.status}
+                              {item.status}
                             </span>
                           </td>
                           <td className="py-2.5 px-4 text-center">
                             <button
-                              onClick={() => setSelectedAnime(anime)}
+                              onClick={() => setSelectedAnime(item)}
                               className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex mr-1"
                               title="Editar contenido"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDeleteAnime(anime.id)}
+                              onClick={() => handleDeleteAnime(item.id)}
                               className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
                               title="Eliminar contenido"
                             >
@@ -753,6 +884,56 @@ export default function AdminPanel() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-black/20 border-t border-white/5 gap-4 text-xs text-neutral-400">
+                    <div>
+                      Mostrando <span className="text-white font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> a{' '}
+                      <span className="text-white font-semibold">{Math.min(currentPage * itemsPerPage, totalItems)}</span> de{' '}
+                      <span className="text-white font-semibold">{totalItems}</span> registros
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                      >
+                        Anterior
+                      </button>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => {
+                        if (totalPages > 6 && p !== 1 && p !== totalPages && Math.abs(p - currentPage) > 1) {
+                          if (p === 2 || p === totalPages - 1) {
+                            return <span key={p} className="px-1 text-[10px] text-neutral-600">...</span>;
+                          }
+                          return null;
+                        }
+                        return (
+                          <button
+                            key={p}
+                            onClick={() => setCurrentPage(p)}
+                            className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                              currentPage === p
+                                ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20'
+                                : 'bg-white/5 border border-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Categories Management box */}
@@ -815,7 +996,9 @@ export default function AdminPanel() {
 
                   <form onSubmit={handleSaveAnimeEdits} className="space-y-4 text-xs">
                     <div className="flex flex-col space-y-1">
-                      <label className="text-neutral-400 font-semibold">Título del Anime:</label>
+                      <label className="text-neutral-400 font-semibold">
+                        {catalogFilter === 'manga' ? 'Título del Manga:' : 'Título del Video:'}
+                      </label>
                       <input 
                         type="text" 
                         value={selectedAnime.title} 
@@ -860,6 +1043,40 @@ export default function AdminPanel() {
                           className="bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-rose-500"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col space-y-1">
+                        <label className="text-neutral-400 font-semibold">Año:</label>
+                        <input 
+                          type="number" 
+                          value={selectedAnime.year} 
+                          onChange={(e) => setSelectedAnime({ ...selectedAnime, year: parseInt(e.target.value) || 2026 })}
+                          className="bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-rose-500"
+                        />
+                      </div>
+
+                      {catalogFilter === 'manga' ? (
+                        <div className="flex flex-col space-y-1">
+                          <label className="text-neutral-400 font-semibold">Capítulos:</label>
+                          <input 
+                            type="number" 
+                            value={selectedAnime.chaptersCount || 0} 
+                            onChange={(e) => setSelectedAnime({ ...selectedAnime, chaptersCount: parseInt(e.target.value) || 0 })}
+                            className="bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col space-y-1">
+                          <label className="text-neutral-400 font-semibold">Episodios:</label>
+                          <input 
+                            type="number" 
+                            value={selectedAnime.episodesCount || 0} 
+                            onChange={(e) => setSelectedAnime({ ...selectedAnime, episodesCount: parseInt(e.target.value) || 0 })}
+                            className="bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-rose-500"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col space-y-1">
