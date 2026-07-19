@@ -139,6 +139,8 @@ export default function VideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerWrapperRef = useRef<HTMLDivElement | null>(null);
+  const lastTimeRef = useRef<number>(0);
+  const lastDurationRef = useRef<number>(0);
 
   // Premium Custom Controls States
   const [isPlaying, setIsPlaying] = useState(true);
@@ -535,6 +537,8 @@ export default function VideoPlayer({
 
     const handleVideoProgress = () => {
       if (video.currentTime > 0 && video.duration > 0) {
+        lastTimeRef.current = video.currentTime;
+        lastDurationRef.current = video.duration;
         saveEpisodeProgress(
           animeId,
           episodeId,
@@ -552,6 +556,8 @@ export default function VideoPlayer({
 
     const handleForceSave = () => {
       if (video.currentTime > 0 && video.duration > 0) {
+        lastTimeRef.current = video.currentTime;
+        lastDurationRef.current = video.duration;
         saveEpisodeProgress(
           animeId,
           episodeId,
@@ -572,13 +578,13 @@ export default function VideoPlayer({
     video.addEventListener("seeked", handleVideoProgress);
 
     return () => {
-      if (video.currentTime > 0 && video.duration > 0) {
+      if (lastTimeRef.current > 0 && lastDurationRef.current > 0) {
         saveEpisodeProgress(
           animeId,
           episodeId,
           episodeNumber,
-          video.currentTime,
-          video.duration,
+          lastTimeRef.current,
+          lastDurationRef.current,
           currentUser,
           true,
           "anime",
@@ -590,7 +596,7 @@ export default function VideoPlayer({
       video.removeEventListener("pause", handleForceSave);
       video.removeEventListener("seeked", handleVideoProgress);
     };
-  }, [activeServer, activeServerIdx, episodeId, animeId, currentUser]);
+  }, [activeServer, activeServerIdx, episodeId, animeId, currentUser, resolvedTitle, resolvedCover]);
 
   // Simulated timer and postMessage API for iframe embeds
   useEffect(() => {
@@ -906,12 +912,16 @@ export default function VideoPlayer({
                     onDoubleClick={toggleFullscreen}
                     onTimeUpdate={() => {
                       if (videoRef.current) {
-                        setCurrentTime(videoRef.current.currentTime);
+                        const time = videoRef.current.currentTime;
+                        setCurrentTime(time);
+                        lastTimeRef.current = time;
                       }
                     }}
                     onLoadedMetadata={() => {
                       if (videoRef.current) {
-                        setDuration(videoRef.current.duration);
+                        const dur = videoRef.current.duration;
+                        setDuration(dur);
+                        lastDurationRef.current = dur;
                         setIsPlaying(!videoRef.current.paused);
                       }
                     }}
