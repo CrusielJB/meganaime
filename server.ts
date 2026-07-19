@@ -2,6 +2,9 @@ import express from "express";
 import "dotenv/config";
 import path from "path";
 import fs from "fs";
+import http from "http";
+import https from "https";
+import { parse as parseUrl } from "url";
 import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
@@ -1363,6 +1366,139 @@ async function startServer() {
       res.json({ success: true, anime: newAnime });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // --- STREAMING PROXY & LINK RESOLVERS ---
+
+  // 1. Proxy Stream to bypass CORS & Referer checks (handles HTTP Range requests)
+  app.get("/api/proxy-stream", (req, res) => {
+    const videoUrl = req.query.url as string;
+    const referer = req.query.referer as string;
+    if (!videoUrl) {
+      return res.status(400).send("Missing video URL");
+    }
+
+    const parsed = parseUrl(videoUrl);
+    const protocol = parsed.protocol === "https:" ? https : http;
+    const clientRange = req.headers.range;
+
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    };
+    if (referer) {
+      headers["Referer"] = referer;
+      try {
+        const refUrl = new URL(referer);
+        headers["Origin"] = refUrl.origin;
+      } catch(e) {}
+    }
+    if (clientRange) {
+      headers["Range"] = clientRange;
+    }
+
+    const options = {
+      headers,
+      timeout: 15000
+    };
+
+    const request = protocol.get(videoUrl, options, (response) => {
+      // Forward headers and status code back to client
+      res.writeHead(response.statusCode || 200, response.headers);
+      response.pipe(res);
+    });
+
+    request.on("error", (err) => {
+      console.error("Proxy stream error:", err);
+      if (!res.headersSent) {
+        res.status(500).send("Error streaming video");
+      }
+    });
+  });
+
+  // 2. Resolve embed server URL to direct stream link
+  app.get("/api/admin/resolve", async (req, res) => {
+    const serverName = (req.query.server as string || "").toLowerCase();
+    const embedUrl = req.query.url as string;
+
+    if (!embedUrl) {
+      return res.status(400).json({ error: "Missing URL to resolve" });
+    }
+
+    const isDirect = embedUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".mp4") ||
+                     embedUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
+    if (isDirect) {
+      return res.json({
+        url: embedUrl,
+        isHls: embedUrl.toLowerCase().includes(".m3u8")
+      });
+    }
+
+    try {
+      const response = await fetch(embedUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Referer": embedUrl
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch page: status ${response.status}`);
+      }
+      const html = await response.text();
+
+      let directUrl: string | null = null;
+      let isHls = false;
+
+      // Extractors based on server type signature
+      if (serverName.includes("wish") || serverName.includes("streamwish") || html.includes("streamwish")) {
+        const match = html.match(/file\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) ||
+                      html.match(/["']file["']\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i);
+        if (match) {
+          directUrl = match[1];
+          isHls = true;
+        }
+      } else if (serverName.includes("mp4upload") || html.includes("mp4upload")) {
+        const match = html.match(/src\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i) ||
+                      html.match(/player\.src\(\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
+        if (match) {
+          directUrl = match[1];
+        }
+      } else if (serverName.includes("voe") || html.includes("voe")) {
+        const match = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i) ||
+                      html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i);
+        if (match) {
+          directUrl = match[1];
+          isHls = directUrl.includes(".m3u8");
+        }
+      }
+
+      // Generic fallback extractor regex
+      if (!directUrl) {
+        const m3u8Match = html.match(/(https?:\/\/[^"' ]+\.m3u8[^"' ]*)/i);
+        if (m3u8Match) {
+          directUrl = m3u8Match[1];
+          isHls = true;
+        } else {
+          const mp4Match = html.match(/(https?:\/\/[^"' ]+\.mp4[^"' ]*)/i);
+          if (mp4Match) {
+            directUrl = mp4Match[1];
+          }
+        }
+      }
+
+      if (directUrl) {
+        res.json({
+          url: `/api/proxy-stream?url=${encodeURIComponent(directUrl)}&referer=${encodeURIComponent(embedUrl)}`,
+          isHls,
+          headers: {
+            "Referer": embedUrl
+          }
+        });
+      } else {
+        res.status(404).json({ error: "Could not extract direct stream link from this page." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to resolve link" });
     }
   });
 

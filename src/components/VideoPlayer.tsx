@@ -142,6 +142,12 @@ export default function VideoPlayer({
   const lastTimeRef = useRef<number>(0);
   const lastDurationRef = useRef<number>(0);
 
+  // Resolver States
+  const [resolvedStreamUrl, setResolvedStreamUrl] = useState<string>("");
+  const [useResolvedPlayer, setUseResolvedPlayer] = useState<boolean>(false);
+  const [resolvedIsHls, setResolvedIsHls] = useState<boolean>(false);
+  const [isResolving, setIsResolving] = useState<boolean>(false);
+
   // Premium Custom Controls States
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
@@ -253,6 +259,47 @@ export default function VideoPlayer({
   ];
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
+
+  // Resolve link dynamically on server selection change
+  useEffect(() => {
+    if (!activeServer) return;
+
+    setResolvedStreamUrl("");
+    setUseResolvedPlayer(false);
+    setResolvedIsHls(false);
+
+    const checkAndResolve = async () => {
+      const direct = !isEmbedUrl(activeServer.url);
+      if (direct) {
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(true);
+        setResolvedIsHls(activeServer.url.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8"));
+        return;
+      }
+
+      setIsResolving(true);
+      try {
+        const { resolveEmbedUrl } = await import("../utils/resolvers");
+        const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
+        if (resolved && resolved.url) {
+          setResolvedStreamUrl(resolved.url);
+          setUseResolvedPlayer(true);
+          setResolvedIsHls(resolved.isHls);
+        } else {
+          setResolvedStreamUrl(activeServer.url);
+          setUseResolvedPlayer(false);
+        }
+      } catch (e) {
+        console.error("Error resolving server URL:", e);
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(false);
+      } finally {
+        setIsResolving(false);
+      }
+    };
+
+    checkAndResolve();
+  }, [activeServer]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -478,10 +525,10 @@ export default function VideoPlayer({
   // Direct video load & Hls support
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !activeServer || isEmbedUrl(activeServer.url)) return;
+    if (!video || !activeServer || !resolvedStreamUrl || (isEmbedUrl(activeServer.url) && !useResolvedPlayer)) return;
 
     let hls: Hls | null = null;
-    const isHls = activeServer.url.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
+    const isHls = resolvedIsHls || resolvedStreamUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
 
     if (isHls) {
       if (Hls.isSupported()) {
@@ -489,18 +536,18 @@ export default function VideoPlayer({
           maxMaxBufferLength: 10,
           enableWorker: true
         });
-        hls.loadSource(activeServer.url);
+        hls.loadSource(resolvedStreamUrl);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(e => console.log("Autoplay blocked:", e));
         });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = activeServer.url;
+        video.src = resolvedStreamUrl;
         video.load();
         video.play().catch(e => console.log("Autoplay blocked:", e));
       }
     } else {
-      video.src = activeServer.url;
+      video.src = resolvedStreamUrl;
       video.load();
       video.play().catch(e => console.log("Autoplay blocked:", e));
     }
@@ -510,12 +557,12 @@ export default function VideoPlayer({
         hls.destroy();
       }
     };
-  }, [activeServer, activeServerIdx, loading]);
+  }, [activeServer, activeServerIdx, loading, resolvedStreamUrl, useResolvedPlayer, resolvedIsHls]);
 
   // Direct video seek progress on loaded
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !activeServer || isEmbedUrl(activeServer.url)) return;
+    if (!video || !activeServer || (isEmbedUrl(activeServer.url) && !useResolvedPlayer)) return;
 
     const handleLoadedMetadata = () => {
       const saved = getLocalEpisodeProgress(animeId, currentUser, resolvedTitle);
@@ -528,12 +575,12 @@ export default function VideoPlayer({
 
     video.addEventListener("loadedmetadata", handleLoadedMetadata);
     return () => video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-  }, [activeServer, activeServerIdx, episodeId, animeId, currentUser]);
+  }, [activeServer, activeServerIdx, episodeId, animeId, currentUser, useResolvedPlayer]);
 
   // Native HTML5 Video real-time event listeners (timeupdate, pause, seeked)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !activeServer || isEmbedUrl(activeServer.url)) return;
+    if (!video || !activeServer || (isEmbedUrl(activeServer.url) && !useResolvedPlayer)) return;
 
     const handleVideoProgress = () => {
       if (video.currentTime > 0 && video.duration > 0) {
@@ -865,7 +912,12 @@ export default function VideoPlayer({
             </div>
           ) : activeServer ? (
             <div className="w-full h-full flex items-center justify-center bg-black relative">
-              {isEmbed ? (
+              {isResolving ? (
+                <div className="flex flex-col items-center justify-center space-y-4 text-center p-6">
+                  <div className="h-12 w-12 rounded-full border-2 border-t-2 border-neutral-800 border-t-rose-500 animate-spin" />
+                  <span className="text-xs text-neutral-400 animate-pulse">Resolviendo enlace directo de {activeServer.name}...</span>
+                </div>
+              ) : isEmbed && !useResolvedPlayer ? (
                 <div className="w-full h-full relative overflow-hidden shadow-2xl">
                   <iframe
                     key={embedUrlWithTime}
@@ -896,13 +948,13 @@ export default function VideoPlayer({
                   </div>
                 </div>
               ) : (
-                <div 
+                 <div 
                   ref={playerWrapperRef}
                   className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center group"
                 >
                   <video
                     ref={videoRef}
-                    src={activeServer.url}
+                    src={resolvedStreamUrl}
                     className="w-full h-full max-h-full object-contain cursor-pointer"
                     controls={false}
                     autoPlay
