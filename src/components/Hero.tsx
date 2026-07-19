@@ -17,6 +17,7 @@ export default function Hero({
   onToggleFavorite
 }: HeroProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [playVideo, setPlayVideo] = useState(false);
 
   useEffect(() => {
     if (featuredAnimes.length <= 1) return;
@@ -25,6 +26,15 @@ export default function Hero({
     }, 8000);
     return () => clearInterval(interval);
   }, [featuredAnimes]);
+
+  useEffect(() => {
+    setPlayVideo(false);
+    const videoTimer = setTimeout(() => {
+      setPlayVideo(true);
+    }, 3500);
+
+    return () => clearTimeout(videoTimer);
+  }, [activeIndex]);
 
   if (!featuredAnimes || featuredAnimes.length === 0) {
     return (
@@ -49,15 +59,26 @@ export default function Hero({
     <div className="relative h-[480px] w-full overflow-hidden rounded-2xl border border-white/5 bg-neutral-950 shadow-2xl">
       {/* Background Image with Dark Overlays */}
       <div className="absolute inset-0 transition-all duration-1000 ease-out">
-        <img
-          src={getProxyImageUrl(active.bannerUrl, active.title)}
-          alt={active.title}
-          className="h-full w-full object-cover object-center scale-105 filter brightness-75 transition-all duration-1000"
-          referrerPolicy="no-referrer"
-          onError={(e) => {
-            recoverCoverImageInHotPath(e, active.title, active.id);
-          }}
-        />
+        {playVideo ? (
+          <video
+            src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="h-full w-full object-cover object-center filter brightness-[0.6] transition-opacity duration-1000 animate-fade-in"
+          />
+        ) : (
+          <img
+            src={getProxyImageUrl(active.bannerUrl, active.title)}
+            alt={active.title}
+            className="h-full w-full object-cover object-center scale-105 filter brightness-75 transition-all duration-1000"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              recoverCoverImageInHotPath(e, active.title, active.id);
+            }}
+          />
+        )}
         {/* Gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent" />

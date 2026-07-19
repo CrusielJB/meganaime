@@ -5,6 +5,9 @@ import { getAnimePlaceholder, getProxyImageUrl, recoverCoverImageInHotPath } fro
 import { getAnimesWithEpisodes, getBaseTitle } from "../utils/animeDb";
 import { syncEpisodeProgress, PlaybackProgress, syncAllEpisodesProgressFromFirestore, getCanonicalEpisodeKey, normalizeAnimeId } from "../utils/progress";
 import { saveEpisodeDownload, isEpisodeDownloaded, deleteEpisodeDownload } from "../utils/downloadDb";
+import { collection, query, where, orderBy, getDocs, addDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
+
 
 interface AnimeDetailProps {
   anime: Anime;
@@ -27,7 +30,7 @@ export default function AnimeDetail({
   onSelectManga,
   currentUser = null
 }: AnimeDetailProps) {
-  const [activeTab, setActiveTab] = useState<"info" | "capitulos">("capitulos"); // Default to chapters like Crunchyroll/Netflix detail views
+  const [activeTab, setActiveTab] = useState<"info" | "capitulos" | "reseñas">("capitulos"); // Default to chapters like Crunchyroll/Netflix detail views
   const [ascending, setAscending] = useState(true);
   const [currentAnime, setCurrentAnime] = useState<Anime>(initialAnime);
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
@@ -40,6 +43,106 @@ export default function AnimeDetail({
 
   const [playbackProgress, setPlaybackProgress] = useState<PlaybackProgress | null>(null);
   const [allProgress, setAllProgress] = useState<Record<string, PlaybackProgress>>({});
+
+  // Reviews & Comments states
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+
+  // Load reviews on anime change
+  React.useEffect(() => {
+    async function loadReviews() {
+      if (!currentAnime || !currentAnime.id) return;
+      try {
+        const q = query(
+          collection(db, "reviews"),
+          where("animeId", "==", currentAnime.id),
+          orderBy("createdAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+        const list: any[] = [];
+        snapshot.forEach(doc => {
+          list.push({ id: doc.id, ...doc.data() });
+        });
+        setReviews(list);
+      } catch (err) {
+        console.warn("Firestore reviews load failed, falling back to localStorage:", err);
+        try {
+          const cached = localStorage.getItem("megaAnime_local_reviews");
+          if (cached) {
+            const allLocal = JSON.parse(cached);
+            const matching = allLocal.filter((r: any) => r.animeId === currentAnime.id);
+            setReviews(matching);
+          } else {
+            setReviews([]);
+          }
+        } catch (e) {
+          setReviews([]);
+        }
+      }
+    }
+    loadReviews();
+  }, [currentAnime?.id]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReviewError("");
+    const commentText = newComment.trim();
+    if (!commentText) {
+      setReviewError("Por favor escribe un comentario.");
+      return;
+    }
+    if (!currentUser) {
+      setReviewError("Debes iniciar sesión para escribir una reseña.");
+      return;
+    }
+
+    setSubmittingReview(true);
+    const newRev = {
+      animeId: currentAnime.id,
+      userId: currentUser.id,
+      username: currentUser.username || currentUser.email.split("@")[0],
+      avatarUrl: currentUser.profiles?.find(p => p.id === currentUser.activeProfileId)?.avatarUrl || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop",
+      comment: commentText,
+      rating: newRating,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const docRef = await addDoc(collection(db, "reviews"), newRev);
+      const addedReview = { id: docRef.id, ...newRev };
+      setReviews(prev => [addedReview, ...prev]);
+      setNewComment("");
+      setNewRating(5);
+    } catch (err) {
+      console.warn("Firestore save review failed, saving to localStorage fallback:", err);
+      try {
+        const addedReview = { id: `local_${Date.now()}`, ...newRev };
+        const cached = localStorage.getItem("megaAnime_local_reviews");
+        const allLocal = cached ? JSON.parse(cached) : [];
+        allLocal.unshift(addedReview);
+        localStorage.setItem("megaAnime_local_reviews", JSON.stringify(allLocal));
+        setReviews(prev => [addedReview, ...prev]);
+        setNewComment("");
+        setNewRating(5);
+      } catch (e) {
+        setReviewError("No se pudo guardar la reseña. Inténtalo de nuevo.");
+      }
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const averageStars = React.useMemo(() => {
+    if (reviews.length === 0) {
+      return currentAnime.rating ? Math.round((currentAnime.rating / 2) * 10) / 10 : 4.5;
+    }
+    const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+    return Math.round((total / reviews.length) * 10) / 10;
+  }, [reviews, currentAnime.rating]);
+
 
   // Sync and load viewing progress
   React.useEffect(() => {
@@ -431,6 +534,18 @@ export default function AnimeDetail({
               >
                 Contenido Relacionado
               </button>
+
+              <button
+                onClick={() => setActiveTab("reseñas")}
+                className={`py-3 px-4 transition-all border-b-2 -mb-px cursor-pointer ${
+                  activeTab === "reseñas"
+                    ? "border-rose-500 text-rose-400 font-bold"
+                    : "border-transparent text-neutral-400 hover:text-white"
+                }`}
+              >
+                Reseñas
+              </button>
+
             </div>
 
             {/* Season Selector Dropdown */}
@@ -660,7 +775,7 @@ export default function AnimeDetail({
                   </div>
                 )}
               </div>
-            ) : (
+            ) : activeTab === "info" ? (
               // RELATED TAB
               <div className="space-y-6">
                 {relatedSeasons.filter(s => s.type === "Película").length > 0 && (
@@ -744,7 +859,145 @@ export default function AnimeDetail({
                   </div>
                 )}
               </div>
+            ) : (
+              // REVIEWS/COMMENTS TAB
+              <div className="space-y-6 animate-fade-in">
+                {/* Community Score Card */}
+                <div className="flex flex-col sm:flex-row items-center justify-between p-6 rounded-2xl bg-neutral-900/40 border border-white/5 gap-6">
+                  <div className="text-center sm:text-left space-y-1">
+                    <h3 className="text-base font-bold text-white uppercase tracking-wider">Puntuación de la Comunidad</h3>
+                    <p className="text-xs text-neutral-400">¿Qué opinan otros fanáticos de {currentAnime.title}?</p>
+                  </div>
+                  <div className="flex items-center gap-4 bg-neutral-950 px-6 py-4 rounded-xl border border-white/5">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-extrabold text-xl">
+                      {averageStars}
+                    </div>
+                    <div>
+                      <div className="flex text-amber-400">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`h-4 w-4 ${i < Math.round(averageStars) ? 'fill-amber-400 text-amber-400' : 'text-neutral-700'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-neutral-500 font-semibold uppercase tracking-wider block mt-1">
+                        {reviews.length} {reviews.length === 1 ? 'reseña' : 'reseñas'} en total
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form to submit review */}
+                <form onSubmit={handleSubmitReview} className="p-6 rounded-2xl bg-neutral-900/40 border border-white/5 space-y-4">
+                  <h4 className="text-sm font-bold text-neutral-200">Escribe tu opinión</h4>
+                  
+                  {/* Rating star selector */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-neutral-400">Tu calificación:</span>
+                    <div className="flex gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const starValue = i + 1;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => setNewRating(starValue)}
+                            className="text-neutral-600 hover:scale-110 transition-transform cursor-pointer"
+                          >
+                            <Star 
+                              className={`h-5 w-5 ${starValue <= newRating ? 'fill-amber-400 text-amber-400' : 'text-neutral-700'}`} 
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs font-bold text-amber-400">{newRating} {newRating === 1 ? 'Estrella' : 'Estrellas'}</span>
+                  </div>
+
+                  {/* Comment Input */}
+                  <div className="space-y-1.5">
+                    <textarea
+                      placeholder="¿Qué te pareció este anime? Escribe tu reseña..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full bg-neutral-950 border border-white/5 rounded-xl px-4 py-3 text-xs text-white placeholder-neutral-500 focus:border-rose-500 outline-none resize-none leading-relaxed"
+                    />
+                    <div className="flex justify-between items-center text-[10px] text-neutral-500 font-semibold">
+                      <span>Máximo 1000 caracteres</span>
+                      <span>{newComment.length}/1000</span>
+                    </div>
+                  </div>
+
+                  {reviewError && (
+                    <p className="text-xs text-rose-500 font-semibold">{reviewError}</p>
+                  )}
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="px-6 py-2.5 bg-rose-600 hover:bg-rose-500 disabled:bg-neutral-800 disabled:text-neutral-500 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2"
+                    >
+                      {submittingReview ? (
+                        <>
+                          <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Enviando...</span>
+                        </>
+                      ) : (
+                        <span>Publicar Reseña</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Reviews List */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-extrabold text-neutral-400 uppercase tracking-widest font-mono">Comentarios Recientes</h4>
+                  {reviews.length === 0 ? (
+                    <div className="text-center py-8 text-neutral-600 text-xs">
+                      Aún no hay reseñas. ¡Sé el primero en opinar!
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {reviews.map((rev) => (
+                        <div key={rev.id} className="p-4 rounded-xl bg-neutral-900/30 border border-white/5 space-y-2.5 animate-fade-in">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                              <img 
+                                src={rev.avatarUrl} 
+                                alt={rev.username} 
+                                className="h-8 w-8 rounded-full object-cover border border-white/10 shadow-sm"
+                              />
+                              <div>
+                                <span className="text-xs font-bold text-neutral-200 block">{rev.username}</span>
+                                <span className="text-[10px] text-neutral-500 font-medium">
+                                  {new Date(rev.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex text-amber-400 bg-black/40 px-2.5 py-1 rounded-lg border border-white/5">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className={`h-3 w-3 ${i < rev.rating ? 'fill-amber-400 text-amber-400' : 'text-neutral-700'}`} 
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs text-neutral-300 leading-relaxed pl-1">
+                            {rev.comment}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
+
           </div>
         </div>
       </div>

@@ -5,7 +5,15 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Info,
-  Menu
+  Menu,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  RotateCcw,
+  RotateCw
 } from "lucide-react";
 import { Episode, User } from "../types";
 import Hls from "hls.js";
@@ -130,6 +138,21 @@ export default function VideoPlayer({
   const [customUrlError, setCustomUrlError] = useState("");
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playerWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // Premium Custom Controls States
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1.0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [showCenterFeedback, setShowCenterFeedback] = useState<"play" | "pause" | null>(null);
+  const [showNextEpPrompt, setShowNextEpPrompt] = useState(false);
+  const [nextEpCountdown, setNextEpCountdown] = useState(10);
+
 
   const episodeNumber = React.useMemo(() => {
     if (episodeData?.number !== undefined) return episodeData.number;
@@ -227,6 +250,215 @@ export default function VideoPlayer({
     ...customServers
   ];
   const activeServer = servers[activeServerIdx] || servers[0];
+  const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(e => console.log("Play error:", e));
+      setIsPlaying(true);
+      setShowCenterFeedback("play");
+    } else {
+      video.pause();
+      setIsPlaying(false);
+      setShowCenterFeedback("pause");
+    }
+    setTimeout(() => setShowCenterFeedback(null), 500);
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const newMuteState = !video.muted;
+    video.muted = newMuteState;
+    setIsMuted(newMuteState);
+  };
+
+  const handleVolumeChange = (newVal: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = newVal;
+    setVolume(newVal);
+    if (newVal === 0) {
+      video.muted = true;
+      setIsMuted(true);
+    } else {
+      video.muted = false;
+      setIsMuted(false);
+    }
+  };
+
+  const handleSpeedChange = (rate: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.playbackRate = rate;
+    setPlaybackRate(rate);
+  };
+
+  const toggleFullscreen = () => {
+    const container = playerWrapperRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(err => {
+        console.warn("Fullscreen request rejected:", err);
+      });
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen().catch(err => {
+        console.warn("Fullscreen exit rejected:", err);
+      });
+      setIsFullscreen(false);
+    }
+  };
+
+  // Sync fullscreen state if changed externally (e.g. Escape key)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // Keyboard Hotkeys Integration
+  useEffect(() => {
+    if (isEmbed) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+        return;
+      }
+
+      const video = videoRef.current;
+      if (!video) return;
+
+      switch (e.key.toLowerCase()) {
+        case " ":
+          e.preventDefault();
+          togglePlay();
+          break;
+        case "arrowleft":
+          e.preventDefault();
+          video.currentTime = Math.max(0, video.currentTime - 10);
+          setCurrentTime(video.currentTime);
+          break;
+        case "arrowright":
+          e.preventDefault();
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+          setCurrentTime(video.currentTime);
+          break;
+        case "arrowup":
+          e.preventDefault();
+          setVolume(prev => {
+            const newVol = Math.min(1.0, prev + 0.1);
+            video.volume = newVol;
+            video.muted = false;
+            setIsMuted(false);
+            return newVol;
+          });
+          break;
+        case "arrowdown":
+          e.preventDefault();
+          setVolume(prev => {
+            const newVol = Math.max(0, prev - 0.1);
+            video.volume = newVol;
+            if (newVol === 0) {
+              video.muted = true;
+              setIsMuted(true);
+            }
+            return newVol;
+          });
+          break;
+        case "f":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case "m":
+          e.preventDefault();
+          toggleMute();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEmbed, volume]);
+
+  // Auto-hide controls timer
+  useEffect(() => {
+    if (isEmbed) return;
+
+    let timer: NodeJS.Timeout;
+    const handleMouseMove = () => {
+      setShowControls(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    };
+
+    const container = playerWrapperRef.current;
+    if (container) {
+      container.addEventListener("mousemove", handleMouseMove);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      if (container) {
+        container.removeEventListener("mousemove", handleMouseMove);
+      }
+    };
+  }, [isEmbed]);
+
+  // Next episode countdown triggers
+  useEffect(() => {
+    if (isEmbed) return;
+    if (hasNext && duration > 0 && duration - currentTime <= 20 && currentTime > 0) {
+      setShowNextEpPrompt(true);
+    } else {
+      setShowNextEpPrompt(false);
+    }
+  }, [currentTime, duration, hasNext, isEmbed]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showNextEpPrompt) {
+      setNextEpCountdown(10);
+      interval = setInterval(() => {
+        setNextEpCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            onNavigateEpisode("next");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showNextEpPrompt, onNavigateEpisode]);
+
+  function formatTime(seconds: number): string {
+    if (isNaN(seconds) || seconds < 0) return "00:00";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    
+    const mStr = m < 10 ? `0${m}` : `${m}`;
+    const sStr = s < 10 ? `0${s}` : `${s}`;
+    
+    if (h > 0) {
+      const hStr = h < 10 ? `0${h}` : `${h}`;
+      return `${hStr}:${mStr}:${sStr}`;
+    }
+    return `${mStr}:${sStr}`;
+  }
+
 
   const embedUrlWithTime = React.useMemo(() => {
     if (!activeServer || !isEmbedUrl(activeServer.url)) return "";
@@ -563,7 +795,6 @@ export default function VideoPlayer({
     setExternalUrlInput("");
   };
 
-  const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in">
@@ -659,16 +890,194 @@ export default function VideoPlayer({
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+                <div 
+                  ref={playerWrapperRef}
+                  className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center group"
+                >
                   <video
                     ref={videoRef}
                     src={activeServer.url}
                     className="w-full h-full max-h-full object-contain cursor-pointer"
-                    controls
+                    controls={false}
                     autoPlay
                     playsInline
                     referrerPolicy="no-referrer"
+                    onClick={togglePlay}
+                    onDoubleClick={toggleFullscreen}
+                    onTimeUpdate={() => {
+                      if (videoRef.current) {
+                        setCurrentTime(videoRef.current.currentTime);
+                      }
+                    }}
+                    onLoadedMetadata={() => {
+                      if (videoRef.current) {
+                        setDuration(videoRef.current.duration);
+                        setIsPlaying(!videoRef.current.paused);
+                      }
+                    }}
                   />
+                  
+                  {/* Center Play/Pause Animated Feedback */}
+                  {showCenterFeedback && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none z-10 animate-ping">
+                      <div className="p-5 rounded-full bg-black/60 text-rose-500">
+                        {showCenterFeedback === "play" ? (
+                          <Play className="h-10 w-10 fill-rose-500" />
+                        ) : (
+                          <Pause className="h-10 w-10 fill-rose-500" />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skip Intro Floating Overlay */}
+                  {currentTime >= 85 && currentTime <= 175 && (
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = 175;
+                          setCurrentTime(175);
+                        }
+                      }}
+                      className="absolute bottom-20 right-6 px-6 py-3 bg-rose-600/90 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl shadow-2xl border border-rose-500/20 backdrop-blur-md transition hover:scale-105 cursor-pointer z-30"
+                    >
+                      Omitir Introducción (Skip Intro)
+                    </button>
+                  )}
+
+                  {/* Next Episode Countdown Overlay */}
+                  {showNextEpPrompt && hasNext && (
+                    <div className="absolute bottom-24 right-6 p-5 rounded-2xl bg-neutral-900/90 border border-white/5 backdrop-blur-md shadow-2xl text-center flex flex-col items-center gap-3 animate-slide-in max-w-xs z-30">
+                      <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Siguiente Capítulo</span>
+                      <h4 className="text-xs font-bold text-white">Comienza en {nextEpCountdown} segundos...</h4>
+                      <div className="flex gap-2 w-full mt-1.5">
+                        <button
+                          onClick={() => {
+                            onNavigateEpisode("next");
+                          }}
+                          className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] rounded-lg transition cursor-pointer"
+                        >
+                          Ver Ahora
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowNextEpPrompt(false);
+                          }}
+                          className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-[10px] rounded-lg transition cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Premium Custom Control Bar */}
+                  <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/85 to-transparent px-6 pb-6 pt-16 flex flex-col gap-4 transition-all duration-300 z-20 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    
+                    {/* Time Scrubber (Seekbar) */}
+                    <div className="flex items-center gap-4 w-full">
+                      <input
+                        type="range"
+                        min={0}
+                        max={duration || 100}
+                        value={currentTime}
+                        onChange={(e) => {
+                          const time = parseFloat(e.target.value);
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = time;
+                          }
+                          setCurrentTime(time);
+                        }}
+                        className="w-full h-1.5 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Actions and Indicators Row */}
+                    <div className="flex items-center justify-between">
+                      {/* Left: Playback controls & Time */}
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={togglePlay}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                        >
+                          {isPlaying ? <Pause className="h-5 w-5 fill-white text-white" /> : <Play className="h-5 w-5 fill-white text-white" />}
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (videoRef.current) {
+                              videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+                            }
+                          }}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          title="Retroceder 10s"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (videoRef.current) {
+                              videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
+                            }
+                          }}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          title="Adelantar 10s"
+                        >
+                          <RotateCw className="h-4 w-4" />
+                        </button>
+
+                        {/* Mute and Volume bar */}
+                        <div className="flex items-center gap-2 group/volume">
+                          <button
+                            onClick={toggleMute}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          >
+                            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                          </button>
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={isMuted ? 0 : volume}
+                            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                            className="w-0 group-hover/volume:w-16 h-1 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none transition-all duration-300"
+                          />
+                        </div>
+
+                        {/* Current time / Duration label */}
+                        <span className="text-xs text-neutral-400 font-mono select-none">
+                          {formatTime(currentTime)} / {formatTime(duration)}
+                        </span>
+                      </div>
+
+                      {/* Right: navigation buttons, speed and full-screen */}
+                      <div className="flex items-center gap-4">
+                        {/* Speed controller selection */}
+                        <div className="flex items-center gap-1.5 bg-neutral-900/60 border border-white/5 rounded-xl p-1">
+                          {[0.5, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                            <button
+                              key={rate}
+                              onClick={() => handleSpeedChange(rate)}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer ${playbackRate === rate ? 'bg-rose-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                            >
+                              {rate}x
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Fullscreen Button */}
+                        <button
+                          onClick={toggleFullscreen}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                        >
+                          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -74,5 +74,22 @@ service cloud.firestore {
       allow create: if isValidPageView(incoming());
       allow update, delete: if false;
     }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().animeId is string && incoming().animeId.size() <= 128
+        && incoming().comment is string && incoming().comment.size() <= 1500
+        && incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5;
+      allow update: if isSignedIn()
+        && existing().userId == request.auth.uid
+        && incoming().userId == request.auth.uid
+        && incoming().animeId == existing().animeId
+        && incoming().comment is string && incoming().comment.size() <= 1500
+        && incoming().rating is number && incoming().rating >= 1 && incoming().rating <= 5;
+      allow delete: if isSignedIn()
+        && (existing().userId == request.auth.uid || isAdmin());
+    }
   }
 }
