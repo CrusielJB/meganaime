@@ -1012,7 +1012,14 @@ async function startServer() {
     try {
       console.log(`Hot cover recovery requested for title: "${title}", ID: "${animeId}", Type: "${requestedType}"`);
 
-      let cleanId = animeId ? animeId.replace(/^(consumet-|hianime-|anilist-)/, "").replace(/-ep-\d+$/, "").replace(/-\d+$/, "") : "";
+      let cleanId = "";
+      if (animeId) {
+        if (animeId.startsWith("consumet-") || animeId.startsWith("hianime-") || animeId.startsWith("anilist-")) {
+          cleanId = animeId.replace(/^(consumet-|hianime-|anilist-)/, "").replace(/-ep-\d+$/, "");
+        } else {
+          cleanId = animeId.replace(/-ep-\d+$/, "").replace(/-\d+$/, "");
+        }
+      }
       const isNumericId = /^\d+$/.test(cleanId);
       
       // Determine if media is Anime or Manga

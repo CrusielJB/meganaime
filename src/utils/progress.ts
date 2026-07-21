@@ -77,8 +77,8 @@ export function normalizeAnimeId(animeId: string, animeTitle?: string): string {
 
   // --- Step 1: consumet- and hianime- prefixed IDs ---
   if (animeId.startsWith("consumet-") || animeId.startsWith("hianime-")) {
-    // Strip episode suffix (e.g. consumet-21-ep-123 → consumet-21)
-    const withoutEp = animeId.replace(/-ep-\d+$/, "").replace(/-\d+$/, "");
+    // Strip ONLY the episode suffix (e.g. consumet-21-ep-123 → consumet-21)
+    const withoutEp = animeId.replace(/-ep-\d+$/, "");
     const externalId = withoutEp.replace(/^(consumet-|hianime-)/, "");
 
     try {
@@ -430,6 +430,25 @@ export function getAllLocalProgress(currentUser: User | null): PlaybackProgress[
     const existingRaw = safeLocalStorage.getItem(cacheKey);
     if (!existingRaw) return [];
     const existing = JSON.parse(existingRaw);
+    
+    // Auto-heal/delete corrupted generic "consumet" and "hianime" keys from local cache
+    let changed = false;
+    const cleanMap: Record<string, PlaybackProgress> = {};
+    Object.entries(existing).forEach(([key, val]: [string, any]) => {
+      const lowerKey = key.toLowerCase().trim();
+      const lowerValId = (val.animeId || "").toLowerCase().trim();
+      if (lowerKey === "consumet" || lowerKey === "hianime" || lowerValId === "consumet" || lowerValId === "hianime") {
+        changed = true;
+      } else {
+        cleanMap[key] = val;
+      }
+    });
+
+    if (changed) {
+      safeLocalStorage.setItem(cacheKey, JSON.stringify(cleanMap));
+      return Object.values(cleanMap) as PlaybackProgress[];
+    }
+
     return Object.values(existing) as PlaybackProgress[];
   } catch (err) {
     console.warn("Failed to load all local progress:", err);
@@ -458,6 +477,13 @@ export async function syncAllProgressFromFirestore(currentUser: User | null) {
     snap.forEach((doc) => {
       const data = doc.data();
       if (data.animeId) {
+        // Automatically delete corrupt generic records from Firestore
+        const lowerId = data.animeId.toLowerCase().trim();
+        if (lowerId === "consumet" || lowerId === "hianime") {
+          deleteDoc(doc.ref).catch(() => {});
+          return;
+        }
+
         progressList.push({
           docId: doc.id,
           data: {
