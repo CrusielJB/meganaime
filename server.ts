@@ -1378,52 +1378,95 @@ async function startServer() {
 
   // --- STREAMING PROXY & LINK RESOLVERS ---
 
-  // 1. Proxy Stream to bypass CORS & Referer checks (handles HTTP Range requests)
-  app.get("/api/proxy-stream", (req, res) => {
+  // 1. Robust CORS-fixed Streaming Proxy (handles Range requests, HLS segments, CORS)
+  app.get("/api/proxy-stream", async (req, res) => {
     const videoUrl = req.query.url as string;
-    const referer = req.query.referer as string;
+    const referer = (req.query.referer as string) || videoUrl;
     if (!videoUrl) {
       return res.status(400).send("Missing video URL");
     }
 
-    const parsed = parseUrl(videoUrl);
-    const protocol = parsed.protocol === "https:" ? https : http;
+    // Always set permissive CORS headers so the browser can read the stream
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type");
+
     const clientRange = req.headers.range;
+    let refOrigin = videoUrl;
+    try { refOrigin = new URL(referer).origin; } catch(e) {}
 
-    const headers: Record<string, string> = {
+    const fetchHeaders: Record<string, string> = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Referer": referer,
+      "Origin": refOrigin,
+      "Accept": "*/*",
+      "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
     };
-    if (referer) {
-      headers["Referer"] = referer;
-      try {
-        const refUrl = new URL(referer);
-        headers["Origin"] = refUrl.origin;
-      } catch(e) {}
-    }
     if (clientRange) {
-      headers["Range"] = clientRange;
+      fetchHeaders["Range"] = clientRange;
     }
 
-    const options = {
-      headers,
-      timeout: 15000
-    };
+    try {
+      const upstream = await fetch(videoUrl, {
+        headers: fetchHeaders,
+        signal: AbortSignal.timeout(30000)
+      });
 
-    const request = protocol.get(videoUrl, options, (response) => {
-      // Forward headers and status code back to client
-      res.writeHead(response.statusCode || 200, response.headers);
-      response.pipe(res);
-    });
+      // If it's an HLS manifest (.m3u8), rewrite segment URLs to go through proxy
+      const contentType = upstream.headers.get("content-type") || "";
+      const isHlsManifest = videoUrl.split("?")[0].endsWith(".m3u8") || contentType.includes("mpegurl");
 
-    request.on("error", (err) => {
-      console.error("Proxy stream error:", err);
-      if (!res.headersSent) {
-        res.status(500).send("Error streaming video");
+      if (isHlsManifest && upstream.ok) {
+        let manifest = await upstream.text();
+        const baseUrl = videoUrl.substring(0, videoUrl.lastIndexOf("/") + 1);
+        // Rewrite relative segment/playlist URLs to go through our proxy
+        manifest = manifest.replace(/^(?!#)(.+\.ts.*)$/gm, (match) => {
+          const absUrl = match.startsWith("http") ? match : baseUrl + match;
+          return `/api/proxy-stream?url=${encodeURIComponent(absUrl)}&referer=${encodeURIComponent(referer)}`;
+        });
+        manifest = manifest.replace(/^(?!#)(.+\.m3u8.*)$/gm, (match) => {
+          const absUrl = match.startsWith("http") ? match : baseUrl + match;
+          return `/api/proxy-stream?url=${encodeURIComponent(absUrl)}&referer=${encodeURIComponent(referer)}`;
+        });
+        res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+        return res.send(manifest);
       }
-    });
+
+      // Forward status + headers for video segments and MP4 files
+      res.status(upstream.status);
+      const forwardHeaders = ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"];
+      forwardHeaders.forEach(h => {
+        const val = upstream.headers.get(h);
+        if (val) res.setHeader(h, val);
+      });
+
+      // Stream the body
+      if (upstream.body) {
+        const reader = upstream.body.getReader();
+        const pump = async () => {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) { res.end(); break; }
+              res.write(value);
+            }
+          } catch (e) {
+            res.end();
+          }
+        };
+        pump();
+      } else {
+        res.end();
+      }
+    } catch (err: any) {
+      console.error("Proxy stream error:", err.message);
+      if (!res.headersSent) {
+        res.status(502).send("Upstream stream error: " + err.message);
+      }
+    }
   });
 
-  // 2. Resolve embed server URL to direct stream link
+  // 2. Comprehensive Embed URL Resolver — supports 12+ server types
   app.get("/api/admin/resolve", async (req, res) => {
     const serverName = (req.query.server as string || "").toLowerCase();
     const embedUrl = req.query.url as string;
@@ -1432,81 +1475,250 @@ async function startServer() {
       return res.status(400).json({ error: "Missing URL to resolve" });
     }
 
-    const isDirect = embedUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".mp4") ||
-                     embedUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
-    if (isDirect) {
+    // Direct .mp4 / .m3u8 → proxy immediately, no extraction needed
+    const cleanExt = embedUrl.toLowerCase().split("?")[0].split("#")[0];
+    if (cleanExt.endsWith(".mp4") || cleanExt.endsWith(".m3u8") || cleanExt.endsWith(".webm")) {
+      const isHls = cleanExt.endsWith(".m3u8");
       return res.json({
-        url: embedUrl,
-        isHls: embedUrl.toLowerCase().includes(".m3u8")
+        url: `/api/proxy-stream?url=${encodeURIComponent(embedUrl)}&referer=${encodeURIComponent(embedUrl)}`,
+        isHls
       });
     }
 
     try {
+      let referer = embedUrl;
+      try {
+        const embedUrlObj = new URL(embedUrl);
+        referer = embedUrlObj.origin;
+      } catch(e) {}
+
       const response = await fetch(embedUrl, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": embedUrl
-        }
+          "Referer": referer,
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
+        },
+        signal: AbortSignal.timeout(8000)
       });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch page: status ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Failed to fetch embed page: status ${response.status}`);
       const html = await response.text();
 
       let directUrl: string | null = null;
       let isHls = false;
 
-      // Extractors based on server type signature
-      if (serverName.includes("wish") || serverName.includes("streamwish") || html.includes("streamwish")) {
-        const match = html.match(/file\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i) ||
-                      html.match(/["']file["']\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i);
-        if (match) {
-          directUrl = match[1];
-          isHls = true;
-        }
-      } else if (serverName.includes("mp4upload") || html.includes("mp4upload")) {
-        const match = html.match(/src\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i) ||
-                      html.match(/player\.src\(\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
-        if (match) {
-          directUrl = match[1];
-        }
-      } else if (serverName.includes("voe") || html.includes("voe")) {
-        const match = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i) ||
-                      html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i);
-        if (match) {
-          directUrl = match[1];
-          isHls = directUrl.includes(".m3u8");
+      // ── Streamwish / Filelions / Wishembed ──
+      if (serverName.includes("wish") || serverName.includes("lion") || html.includes("jwplayer") || html.includes("streamwish")) {
+        const m = html.match(/file\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i)
+               || html.match(/["']file["']\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i)
+               || html.match(/source\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i);
+        if (m) { directUrl = m[1]; isHls = true; }
+      }
+
+      // ── Doodstream / DoodPlayer ──
+      if (!directUrl && (serverName.includes("dood") || html.includes("dood") || embedUrl.includes("dood"))) {
+        const passMatch = html.match(/pass_md5\/([^'"\s]+)/i);
+        if (passMatch) {
+          try {
+            const doodBase = new URL(embedUrl).origin;
+            const passRes = await fetch(`${doodBase}/pass_md5/${passMatch[1]}`, {
+              headers: { "Referer": embedUrl, "User-Agent": "Mozilla/5.0" },
+              signal: AbortSignal.timeout(5000)
+            });
+            if (passRes.ok) {
+              const token = await passRes.text();
+              const ts = Date.now();
+              directUrl = `${token.trim()}zUEJeL3mUN?token=${passMatch[1].split("/").pop()}&expiry=${ts}`;
+            }
+          } catch(e) {}
         }
       }
 
-      // Generic fallback extractor regex
-      if (!directUrl) {
-        const m3u8Match = html.match(/(https?:\/\/[^"' ]+\.m3u8[^"' ]*)/i);
-        if (m3u8Match) {
-          directUrl = m3u8Match[1];
-          isHls = true;
-        } else {
-          const mp4Match = html.match(/(https?:\/\/[^"' ]+\.mp4[^"' ]*)/i);
-          if (mp4Match) {
-            directUrl = mp4Match[1];
+      // ── Filemoon / Moonplayer ──
+      if (!directUrl && (serverName.includes("moon") || serverName.includes("filemoon") || html.includes("filemoon"))) {
+        const m = html.match(/sources\s*:\s*\[\s*\{\s*file\s*:\s*["'](https?:\/\/[^"']+)["']/i)
+               || html.match(/file\s*:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)["']/i);
+        if (m) { directUrl = m[1]; isHls = directUrl.includes(".m3u8"); }
+      }
+
+      // ── OK.ru / okru ──
+      if (!directUrl && (serverName.includes("ok") || embedUrl.includes("ok.ru"))) {
+        const m = html.match(/"contentUrl":\s*"(https?:\/\/[^"]+\.mp4[^"]*)"/i)
+               || html.match(/data-options=["']([^"']+)["']/i);
+        if (m) {
+          try {
+            const opts = JSON.parse(decodeURIComponent(m[1]));
+            const videos = opts?.flashvars?.metadata?.videos || opts?.metadata?.videos || [];
+            const best = videos.sort((a: any, b: any) => (b.seekSchema || 0) - (a.seekSchema || 0))[0];
+            if (best?.url) directUrl = best.url;
+          } catch(e) {
+            if (m[1].startsWith("http")) directUrl = m[1];
           }
+        }
+      }
+
+      // ── Mp4Upload ──
+      if (!directUrl && (serverName.includes("mp4upload") || html.includes("mp4upload"))) {
+        const m = html.match(/src\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
+               || html.match(/player\.src\(["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
+        if (m) { directUrl = m[1]; }
+      }
+
+      // ── VOE.sx ──
+      if (!directUrl && (serverName.includes("voe") || html.includes("voe.sx"))) {
+        const m = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+               || html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i);
+        if (m) { directUrl = m[1]; isHls = directUrl.includes(".m3u8"); }
+      }
+
+      // ── YourUpload / uqload ──
+      if (!directUrl && (serverName.includes("upload") || serverName.includes("uq"))) {
+        const m = html.match(/sources\s*:\s*\[[\s\S]*?["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
+        if (m) { directUrl = m[1]; }
+      }
+
+      // ── StreamTape ──
+      if (!directUrl && (serverName.includes("tape") || html.includes("streamtape"))) {
+        const m = html.match(/get_video\?id=([^&'"\s]+).*token=([^&'"\s]+)/i);
+        if (m) directUrl = `https://streamtape.com/get_video?id=${m[1]}&token=${m[2]}&stream=1`;
+      }
+
+      // ── Mixdrop ──
+      if (!directUrl && (serverName.includes("mix") || html.includes("mixdrop"))) {
+        const m = html.match(/MDCore\.wurl\s*=\s*["'](https?:\/\/[^"']+)["']/i)
+               || html.match(/["'](https?:\/\/s[0-9]+\.mixdrop\.co\/[^"']+)["']/i);
+        if (m) { directUrl = m[1]; }
+      }
+
+      // ── Generic HLS/MP4 extraction (works for most unknown servers) ──
+      if (!directUrl) {
+        const m3u8 = html.match(/["'`](https?:\/\/[^"'`\s]{10,}\.m3u8(?:[^"'`\s]*)?)["'`]/i)
+                  || html.match(/file:\s*["'](https?:\/\/[^"']+)["']/i);
+        if (m3u8) { directUrl = m3u8[1]; isHls = true; }
+        else {
+          const mp4 = html.match(/["'`](https?:\/\/[^"'`\s]{10,}\.mp4(?:[^"'`\s]*)?)["'`]/i);
+          if (mp4) { directUrl = mp4[1]; }
         }
       }
 
       if (directUrl) {
-        res.json({
+        return res.json({
           url: `/api/proxy-stream?url=${encodeURIComponent(directUrl)}&referer=${encodeURIComponent(embedUrl)}`,
-          isHls,
-          headers: {
-            "Referer": embedUrl
-          }
+          isHls
         });
-      } else {
-        res.status(404).json({ error: "Could not extract direct stream link from this page." });
       }
+
+      res.status(404).json({ error: "No direct stream found in embed page" });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to resolve link" });
+      res.status(500).json({ error: err.message || "Failed to resolve embed link" });
     }
+  });
+
+  // 3. Public Anime Streams — queries Gogoanime & AnimePahe without needing local servers
+  app.get("/api/public-streams", async (req, res) => {
+    const title = (req.query.title as string || "").trim();
+    const epNum = parseInt(req.query.ep as string || "1", 10);
+    const isMovie = req.query.movie === "1";
+
+    if (!title) return res.status(400).json({ error: "Missing title" });
+
+    const servers: { name: string; url: string }[] = [];
+
+    // ── Source 1: Gogoanime via api.ani.zip ──
+    try {
+      const searchRes = await fetch(
+        `https://api.ani.zip/mappings?title=${encodeURIComponent(title)}`,
+        { signal: AbortSignal.timeout(4000) }
+      );
+      if (searchRes.ok) {
+        const data = await searchRes.json();
+        const gogoanimeId = data?.mappings?.gogoanime_id || data?.mappings?.animepahe_id;
+        if (gogoanimeId) {
+          const epId = isMovie ? `${gogoanimeId}-movie` : `${gogoanimeId}-episode-${epNum}`;
+          const streamRes = await fetch(
+            `https://api.ani.zip/stream?episode_id=${encodeURIComponent(epId)}`,
+            { signal: AbortSignal.timeout(5000) }
+          );
+          if (streamRes.ok) {
+            const streamData = await streamRes.json();
+            (streamData.sources || []).forEach((s: any) => {
+              if (s.url) servers.push({ name: `Gogoanime (${s.quality || "HD"})`, url: s.url });
+            });
+          }
+        }
+      }
+    } catch(e) { console.warn("api.ani.zip failed:", e); }
+
+    // ── Source 2: AnimePahe search ──
+    if (servers.length === 0) {
+      try {
+        const searchRes = await fetch(
+          `https://animepahe.ru/api?m=search&q=${encodeURIComponent(title)}`,
+          {
+            headers: { "User-Agent": "Mozilla/5.0", "Cookie": "__ddg2_=lel" },
+            signal: AbortSignal.timeout(4000)
+          }
+        );
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const first = searchData?.data?.[0];
+          if (first?.session) {
+            const epListRes = await fetch(
+              `https://animepahe.ru/api?m=episode&id=${first.session}&sort=episode_asc&page=1`,
+              {
+                headers: { "User-Agent": "Mozilla/5.0", "Cookie": "__ddg2_=lel" },
+                signal: AbortSignal.timeout(4000)
+              }
+            );
+            if (epListRes.ok) {
+              const epListData = await epListRes.json();
+              const targetEp = (epListData?.data || []).find((e: any) => e.episode === epNum)
+                            || epListData?.data?.[epNum - 1]
+                            || epListData?.data?.[0];
+              if (targetEp?.session) {
+                const playerRes = await fetch(
+                  `https://animepahe.ru/play/${first.session}/${targetEp.session}`,
+                  {
+                    headers: {
+                      "User-Agent": "Mozilla/5.0",
+                      "Referer": "https://animepahe.ru",
+                      "Cookie": "__ddg2_=lel"
+                    },
+                    signal: AbortSignal.timeout(5000)
+                  }
+                );
+                if (playerRes.ok) {
+                  const playerHtml = await playerRes.text();
+                  const kwikMatches = [...playerHtml.matchAll(/href=["'](https:\/\/kwik\.cx[^"']+)["']/gi)];
+                  for (const m of kwikMatches.slice(0, 3)) {
+                    servers.push({ name: `AnimePahe (Kwik)`, url: m[1] });
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch(e) { console.warn("AnimePahe search failed:", e); }
+    }
+
+    // ── Source 3: Jikan MAL search → YouTube trailer as guaranteed fallback ──
+    if (servers.length === 0) {
+      try {
+        const jikanRes = await fetch(
+          `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`,
+          { signal: AbortSignal.timeout(4000) }
+        );
+        if (jikanRes.ok) {
+          const jikanData = await jikanRes.json();
+          const anime = jikanData?.data?.[0];
+          if (anime?.trailer?.embed_url) {
+            servers.push({ name: "Tráiler Oficial (YouTube)", url: anime.trailer.embed_url });
+          }
+        }
+      } catch(e) { console.warn("Jikan trailer fallback failed:", e); }
+    }
+
+    res.json({ servers });
   });
 
   // Configure middleware (Vite Dev Server vs Static Production bundle)

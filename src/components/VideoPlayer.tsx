@@ -137,6 +137,10 @@ export default function VideoPlayer({
   const [customServers, setCustomServers] = useState<Array<{ name: string; url: string }>>([]);
   const [customUrlError, setCustomUrlError] = useState("");
 
+  // Auto-advance state: tracks if current server failed and we're switching
+  const [videoError, setVideoError] = useState<string | null>(null);
+  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
+  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerWrapperRef = useRef<HTMLDivElement | null>(null);
   const lastTimeRef = useRef<number>(0);
@@ -522,42 +526,77 @@ export default function VideoPlayer({
     return activeServer.url;
   }, [activeServer, episodeId, animeId, currentUser, resolvedTitle]);
 
-  // Direct video load & Hls support
+  // Direct video load & HLS support with auto-advance on fatal error
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !activeServer || !resolvedStreamUrl || (isEmbedUrl(activeServer.url) && !useResolvedPlayer)) return;
 
+    // Reset error state whenever we load a new stream
+    setVideoError(null);
+    setIsAutoAdvancing(false);
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
+
     let hls: Hls | null = null;
     const isHls = resolvedIsHls || resolvedStreamUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
+
+    const handleVideoError = () => {
+      const hasMoreServers = activeServerIdx < servers.length - 1;
+      if (hasMoreServers) {
+        setVideoError(`Error en "${activeServer.name}" — cambiando al siguiente servidor...`);
+        setIsAutoAdvancing(true);
+        autoAdvanceTimerRef.current = setTimeout(() => {
+          setActiveServerIdx(prev => Math.min(prev + 1, servers.length - 1));
+          setVideoError(null);
+          setIsAutoAdvancing(false);
+        }, 2500);
+      } else {
+        setVideoError(`No se pudo reproducir en ningún servidor disponible. Intenta agregar un enlace externo.`);
+        setIsAutoAdvancing(false);
+      }
+    };
 
     if (isHls) {
       if (Hls.isSupported()) {
         hls = new Hls({
-          maxMaxBufferLength: 10,
-          enableWorker: true
+          maxMaxBufferLength: 30,
+          enableWorker: true,
+          fragLoadingTimeOut: 15000,
+          manifestLoadingTimeOut: 10000,
+          levelLoadingTimeOut: 10000
         });
         hls.loadSource(resolvedStreamUrl);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(e => console.log("Autoplay blocked:", e));
         });
+        hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+          if (data.fatal) {
+            console.warn("HLS fatal error:", data.type, data.details);
+            hls?.destroy();
+            handleVideoError();
+          }
+        });
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = resolvedStreamUrl;
         video.load();
+        video.addEventListener("error", handleVideoError, { once: true });
         video.play().catch(e => console.log("Autoplay blocked:", e));
       }
     } else {
       video.src = resolvedStreamUrl;
       video.load();
+      video.addEventListener("error", handleVideoError, { once: true });
       video.play().catch(e => console.log("Autoplay blocked:", e));
     }
 
     return () => {
-      if (hls) {
-        hls.destroy();
-      }
+      if (hls) hls.destroy();
+      video.removeEventListener("error", handleVideoError);
+      if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServer, activeServerIdx, loading, resolvedStreamUrl, useResolvedPlayer, resolvedIsHls]);
+
 
   // Direct video seek progress on loaded
   useEffect(() => {
@@ -917,6 +956,40 @@ export default function VideoPlayer({
                   <div className="h-12 w-12 rounded-full border-2 border-t-2 border-neutral-800 border-t-rose-500 animate-spin" />
                   <span className="text-xs text-neutral-400 animate-pulse">Resolviendo enlace directo de {activeServer.name}...</span>
                 </div>
+              ) : videoError ? (
+                <div className="flex flex-col items-center justify-center space-y-5 text-center p-8 max-w-lg">
+                  <div className="h-14 w-14 rounded-full bg-rose-500/15 border border-rose-500/30 flex items-center justify-center">
+                    {isAutoAdvancing ? (
+                      <div className="h-7 w-7 rounded-full border-2 border-t-2 border-neutral-700 border-t-rose-500 animate-spin" />
+                    ) : (
+                      <Info className="h-7 w-7 text-rose-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-1">
+                      {isAutoAdvancing ? "Cambiando de servidor..." : "Error de reproducción"}
+                    </h3>
+                    <p className="text-xs text-neutral-400">{videoError}</p>
+                  </div>
+                  {!isAutoAdvancing && (
+                    <div className="flex gap-3">
+                      {activeServerIdx < servers.length - 1 && (
+                        <button
+                          onClick={() => setActiveServerIdx(prev => Math.min(prev + 1, servers.length - 1))}
+                          className="px-5 py-2.5 bg-rose-500 hover:bg-rose-400 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                        >
+                          Siguiente Servidor
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setVideoError(null); setActiveServerIdx(0); }}
+                        className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-neutral-300 text-xs font-semibold rounded-xl transition cursor-pointer"
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : isEmbed && !useResolvedPlayer ? (
                 <div className="w-full h-full relative overflow-hidden shadow-2xl">
                   <iframe
@@ -948,6 +1021,7 @@ export default function VideoPlayer({
                   </div>
                 </div>
               ) : (
+
                  <div 
                   ref={playerWrapperRef}
                   className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center group"

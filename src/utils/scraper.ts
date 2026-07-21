@@ -2005,43 +2005,68 @@ export class AnimeApiAggregator {
       }
     }
 
-    // If no direct anime video streams were resolved, inject dynamic YouTube and Trailer fallbacks
+    // ── Tier 2 Fallback: Query public streaming APIs (Gogoanime via ani.zip, AnimePahe) ──
     if (servers.length === 0) {
-      console.log(`Stream resolution returned empty. Injecting dynamic YouTube/Trailer servers for: ${matchedAnimeTitle || animeId}`);
-      
-      const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ");
-      if (searchTitle && searchTitle !== "undefined") {
-        // 1. YouTube Live Search Player for the episode
-        const queryTerm = isMovie 
-          ? `${searchTitle} pelicula completa sub español` 
-          : `${searchTitle} episodio ${epNum} sub español`;
-        
-        servers.push({
-          name: "YouTube Búsqueda Directa",
-          url: `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(queryTerm)}`
-        });
-
-        // 2. Fetch the official trailer from AniList details if available
-        try {
-          const details = await AnimeApiAggregator.getDetails(animeId);
-          const detailsAny = details as any;
-          if (detailsAny?.trailer?.site === "youtube" && detailsAny.trailer.id) {
-            servers.push({
-              name: "Tráiler Oficial (YouTube)",
-              url: `https://www.youtube.com/embed/${detailsAny.trailer.id}`
-            });
+      const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+      console.log(`All scrapers returned 0 servers. Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
+      try {
+        const pubRes = await fetch(
+          `/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (pubRes.ok) {
+          const pubData = await pubRes.json();
+          if (Array.isArray(pubData.servers) && pubData.servers.length > 0) {
+            servers.push(...pubData.servers);
+            console.log(`Public streaming APIs returned ${pubData.servers.length} server(s) for "${searchTitle}"`);
           }
-        } catch (e) {
-          // ignore
         }
+      } catch (e) {
+        console.warn("Public streaming API call failed:", e);
       }
     }
 
-    // Ultimate fallback mockups (Big Buck Bunny) ONLY when servers count is absolutely zero
+    // ── Tier 3 Fallback: YouTube search with working embed format ──
+    if (servers.length === 0) {
+      const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ");
+      console.log(`Injecting YouTube search fallback for: "${searchTitle}" ep ${epNum}`);
+
+      if (searchTitle && searchTitle !== "undefined" && searchTitle.toLowerCase() !== "consumet" && searchTitle.toLowerCase() !== "hianime") {
+        // Build a YouTube search query — use youtube.com/results embed (reliable free fallback)
+        const queryTerm = isMovie
+          ? `${searchTitle} película completa sub español`
+          : `${searchTitle} episodio ${epNum} sub español`;
+
+        // YouTube search results page embedded — always loads correctly
+        servers.push({
+          name: "🔍 Buscar en YouTube",
+          url: `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(queryTerm)}&autoplay=1`
+        });
+
+        // Try to get official trailer from Jikan (MAL) as additional option
+        try {
+          const jikanRes = await fetch(
+            `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchTitle)}&limit=1`,
+            { signal: AbortSignal.timeout(4000) }
+          );
+          if (jikanRes.ok) {
+            const jikanData = await jikanRes.json();
+            const anime = jikanData?.data?.[0];
+            if (anime?.trailer?.embed_url) {
+              servers.push({
+                name: "🎬 Tráiler Oficial (YouTube)",
+                url: anime.trailer.embed_url
+              });
+            }
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    // ── Absolute Last Resort: Placeholder player (only if truly everything above failed) ──
     if (servers.length === 0) {
       servers.push(
-        { name: "MegaServer Directo (Prueba)", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-        { name: "MegaServer Respaldo (Prueba)", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
+        { name: "⚠️ Sin Servidor Disponible — Intenta Más Tarde", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
       );
     }
 
