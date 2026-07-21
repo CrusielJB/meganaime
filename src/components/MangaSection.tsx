@@ -114,7 +114,7 @@ export const MangaSection: React.FC<MangaSectionProps> = ({ categories }) => {
               {/* Cover image backdrop */}
               <div className="absolute inset-0 z-0">
                 <img
-                  src={getProxyImageUrl(featuredManga.coverUrl, featuredManga.title)}
+                  src={getProxyImageUrl(featuredManga.coverUrl, featuredManga.title, true)}
                   alt=""
                   className="h-full w-full object-cover object-center brightness-[0.35] blur-[1px]"
                   referrerPolicy="no-referrer"

@@ -161,7 +161,7 @@ export const MovieSection: React.FC<MovieSectionProps> = ({
               {/* Cover image backdrop */}
               <div className="absolute inset-0 z-0">
                 <img
-                  src={getProxyImageUrl(featuredMovie.bannerUrl || featuredMovie.coverUrl, featuredMovie.title)}
+                  src={getProxyImageUrl(featuredMovie.bannerUrl || featuredMovie.coverUrl, featuredMovie.title, true)}
                   alt=""
                   className="h-full w-full object-cover object-center brightness-[0.4]"
                   referrerPolicy="no-referrer"

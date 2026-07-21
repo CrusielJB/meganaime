@@ -399,7 +399,7 @@ export default function AnimeDetail({
         {/* Giant Netflix-style Immersive Banner */}
         <div className="relative h-[280px] sm:h-[380px] md:h-[440px] w-full flex-shrink-0">
           <img
-            src={getProxyImageUrl(currentAnime.bannerUrl || currentAnime.coverUrl, currentAnime.title)}
+            src={getProxyImageUrl(currentAnime.bannerUrl || currentAnime.coverUrl, currentAnime.title, true)}
             alt={currentAnime.title}
             className="h-full w-full object-cover object-center filter brightness-[0.4]"
             referrerPolicy="no-referrer"
@@ -689,7 +689,7 @@ export default function AnimeDetail({
                           {/* 16:9 Aspect Video Thumbnail */}
                           <div className="relative aspect-video w-32 sm:w-44 flex-shrink-0 overflow-hidden rounded-xl bg-neutral-900 border border-white/10 hover:border-rose-500/30 transition-colors">
                             <img
-                               src={getProxyImageUrl(currentAnime.bannerUrl || currentAnime.coverUrl, currentAnime.title)}
+                               src={getProxyImageUrl(currentAnime.bannerUrl || currentAnime.coverUrl, currentAnime.title, true)}
                                alt={(ep.title && typeof ep.title === "string") ? ep.title : `Episodio ${ep.number}`}
                                className="h-full w-full object-cover transition-transform duration-500 group-hover/item:scale-105"
                                referrerPolicy="no-referrer"

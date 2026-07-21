@@ -705,81 +705,66 @@ async function startServer() {
     res.json({ success: true, favorites: USERS_DB[emailKey].favorites });
   });
 
-  // 9. Server-side image proxy to completely bypass MAL 403 Forbidden hotlinking blocks
+  // 9. Server-side image proxy to bypass hotlinking blocks and CORS restrictions
   app.get("/api/image-proxy", async (req, res) => {
-    let imageUrl = req.query.url as string;
-    const title = (req.query.title as string) || "Anime";
+    let imageUrl = (req.query.url as string || "").trim();
+    const title = (req.query.title as string || "Anime").trim();
     const encodeParam = req.query.encode as string;
 
+    // Step 1: Decode the URL
     if (encodeParam === "base64" && imageUrl) {
       try {
-        imageUrl = Buffer.from(imageUrl, "base64").toString("utf-8");
+        const decoded = Buffer.from(imageUrl, "base64").toString("utf-8");
+        if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+          imageUrl = decoded;
+        }
       } catch (err) {
-        // fallback
+        try { imageUrl = decodeURIComponent(imageUrl); } catch(e) {}
       }
+    } else if (imageUrl && !imageUrl.startsWith("http") && !imageUrl.startsWith("data:")) {
+      try { imageUrl = decodeURIComponent(imageUrl); } catch(e) {}
     }
+    // Step 2: If URL is missing/invalid → try AniList then serve SVG
+    const isBannerQuery = req.query.isBanner === "1" || imageUrl.includes("banner") || imageUrl.includes("cover-large") || imageUrl.includes("bannerUrl") || imageUrl.includes("banner_url");
 
-    if (!imageUrl || imageUrl === "trigger-error") {
-      // Try resolving empty or broken image URLs in the backend first using AniList GraphQL
-      if (title && title.toLowerCase() !== "anime" && title.toLowerCase() !== "manga" && title.toLowerCase() !== "undefined") {
+    if (!imageUrl || imageUrl === "trigger-error" || (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://"))) {
+      if (title && title.toLowerCase() !== "anime" && title.toLowerCase() !== "manga" && title.toLowerCase() !== "undefined" && title.length > 2) {
         try {
-          const queryStr = `
-            query ($search: String, $type: MediaType) {
-              Page(page: 1, perPage: 1) {
-                media(search: $search, type: $type) {
-                  coverImage {
-                    extraLarge
-                    large
-                  }
-                }
-              }
-            }
-          `;
-          const variables = { search: title, type: "ANIME" };
           const gqlResponse = await fetch("https://graphql.anilist.co", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Accept": "application/json",
-            },
-            body: JSON.stringify({ query: queryStr, variables }),
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              query: `query ($search: String) { Page(page:1,perPage:1) { media(search:$search) { bannerImage coverImage { extraLarge large } } } }`,
+              variables: { search: title }
+            }),
             signal: AbortSignal.timeout(4000)
           });
-
           if (gqlResponse.ok) {
             const json: any = await gqlResponse.json();
             const media = json.data?.Page?.media?.[0];
-            const coverUrl = media?.coverImage?.extraLarge || media?.coverImage?.large || null;
+            const coverUrl = isBannerQuery 
+              ? (media?.bannerImage || media?.coverImage?.extraLarge || media?.coverImage?.large)
+              : (media?.coverImage?.extraLarge || media?.coverImage?.large || media?.bannerImage);
             if (coverUrl) {
               imageUrl = coverUrl;
-              console.log(`[image-proxy] Resolved empty/trigger-error cover for "${title}" directly to: ${coverUrl}`);
+              console.log(`[image-proxy] AniList resolved missing image for "${title}" (isBanner=${isBannerQuery}): ${coverUrl}`);
             }
           }
         } catch (err: any) {
-          console.warn(`[image-proxy] Direct GraphQL resolve failed for "${title}":`, err.message);
+          console.warn(`[image-proxy] AniList resolve failed for "${title}":`, err.message);
         }
       }
     }
 
-    // Serve premium SVG vector placeholder if still empty or unresolved to prevent broken image frames in UI
+    // Step 3: Still no valid URL → serve SVG placeholder
     if (!imageUrl || imageUrl === "trigger-error" || (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://"))) {
       res.setHeader("Content-Type", "image/svg+xml");
-      res.setHeader("Cache-Control", "public, max-age=604800");
-      return res.send(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" width="100%" height="100%">
-          <defs>
-            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#1f1f2e"/>
-              <stop offset="100%" stop-color="#0d0d13"/>
-            </linearGradient>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#g)"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#8c8c9e">${title}</text>
-        </svg>
-      `);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      return res.send(getSvgPlaceholder(title, isBannerQuery));
     }
 
     try {
+
       const parsedUrl = new URL(imageUrl);
       const headers: Record<string, string> = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -898,16 +883,19 @@ async function startServer() {
         }
       }
       
-      // Try searching AniList GraphQL for a valid cover using the title parameter
-      if (title && title.toLowerCase() !== "anime" && title.toLowerCase() !== "manga" && title.toLowerCase() !== "undefined") {
+      // Try searching AniList GraphQL for a valid cover/banner using the title parameter
+      const isBannerRecovery = req.query.isBanner === "1" || imageUrl.includes("banner") || imageUrl.includes("cover-large") || imageUrl.includes("bannerUrl") || imageUrl.includes("banner_url");
+      if (title && title.toLowerCase() !== "anime" && title.toLowerCase() !== "manga" && title.toLowerCase() !== "undefined" && title.length > 2) {
         try {
-          const variables = { search: title, page: 1, perPage: 1 };
+          const variables = { search: title };
           const queryStr = `
             query ($search: String) {
               Page(page: 1, perPage: 1) {
-                media(search: $search, type: ANIME) {
+                media(search: $search) {
+                  bannerImage
                   coverImage {
                     large
+                    extraLarge
                   }
                 }
               }
@@ -924,10 +912,18 @@ async function startServer() {
           });
           if (gqlResponse.ok) {
             const json = await gqlResponse.json();
-            const altCoverUrl = json.data?.Page?.media?.[0]?.coverImage?.large;
+            const media = json.data?.Page?.media?.[0];
+            const altCoverUrl = isBannerRecovery 
+              ? (media?.bannerImage || media?.coverImage?.extraLarge || media?.coverImage?.large)
+              : (media?.coverImage?.extraLarge || media?.coverImage?.large || media?.bannerImage);
+            
             if (altCoverUrl && altCoverUrl !== imageUrl) {
-              console.log(`Image proxy fallback: Found alternative cover on AniList for "${title}": ${altCoverUrl}`);
+              console.log(`Image proxy fallback: Found alternative image on AniList for "${title}": ${altCoverUrl}`);
               const altResponse = await fetch(altCoverUrl, {
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                  "Accept": "image/*"
+                },
                 signal: AbortSignal.timeout(6000)
               });
               if (altResponse.ok) {
@@ -944,8 +940,7 @@ async function startServer() {
       }
 
       // Serve beautiful dynamic server-side fallback SVG
-      const isBanner = imageUrl.includes("banner") || imageUrl.includes("cover-large") || imageUrl.includes("bannerUrl") || imageUrl.includes("banner_url");
-      const fallbackSvg = getSvgPlaceholder(title, isBanner);
+      const fallbackSvg = getSvgPlaceholder(title, isBannerRecovery);
       res.setHeader("Content-Type", "image/svg+xml");
       res.setHeader("Cache-Control", "public, max-age=604800");
       res.status(200).send(fallbackSvg);

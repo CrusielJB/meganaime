@@ -70,7 +70,7 @@ export default function Hero({
           />
         ) : (
           <img
-            src={getProxyImageUrl(active.bannerUrl, active.title)}
+            src={getProxyImageUrl(active.bannerUrl, active.title, true)}
             alt={active.title}
             className="h-full w-full object-cover object-center scale-105 filter brightness-75 transition-all duration-1000"
             referrerPolicy="no-referrer"

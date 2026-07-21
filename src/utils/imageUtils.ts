@@ -90,30 +90,49 @@ function escapeSvgText(text: string): string {
 
 /**
  * Proxies external image URLs through our custom Express proxy route to bypass hotlinking and geo-blocking restrictions.
+ * Robust against empty URLs, Unicode domains, and encoding failures.
  */
-export function getProxyImageUrl(url: string | undefined, title: string = "Manga"): string {
-  if (!url || url.trim() === "" || url.includes('unsplash.com')) {
-    // Return a trigger path to force browser to load it, auto-resolve in backend or fire onError for recovery
-    return `/api/image-proxy?url=trigger-error&title=${encodeURIComponent(title)}`;
-  }
-  
-  const trimmedUrl = url.trim();
-  
+export function getProxyImageUrl(url: string | undefined, title: string = "Anime", isBanner: boolean = false): string {
+  const trimmedUrl = (url || "").trim();
+
   // Return as-is if it's already a local data URI
   if (trimmedUrl.startsWith("data:")) {
     return trimmedUrl;
   }
 
-  // Base64 encode the URL to bypass adblockers blocking parameters containing external domains
-  let encodedUrl = trimmedUrl;
+  // Empty / obviously broken URL → serve the SVG placeholder directly from the client
+  // (avoids a round-trip to the server that could fail too)
+  if (!trimmedUrl || trimmedUrl.length < 10) {
+    return getAnimePlaceholder(title, isBanner);
+  }
+
+  // If it's a relative path (already proxied), return as-is
+  if (trimmedUrl.startsWith("/")) {
+    return trimmedUrl;
+  }
+
+  // Try base64 encoding for cleaner URL (avoids adblocker blocking external domain params)
+  let encodedUrl: string;
+  let useBase64 = true;
   try {
+    // Safe base64 with Unicode support
     encodedUrl = btoa(unescape(encodeURIComponent(trimmedUrl)));
   } catch (e) {
-    encodedUrl = encodeURIComponent(trimmedUrl);
+    // Fall back to plain URI encoding if btoa fails (e.g. characters btoa can't handle)
+    try {
+      encodedUrl = encodeURIComponent(trimmedUrl);
+      useBase64 = false;
+    } catch (e2) {
+      // Absolute fallback: return placeholder
+      return getAnimePlaceholder(title, isBanner);
+    }
   }
-  
-  return `/api/image-proxy?url=${encodedUrl}&encode=base64&title=${encodeURIComponent(title)}`;
+
+  const encodeParam = useBase64 ? "&encode=base64" : "";
+  const bannerParam = isBanner || trimmedUrl.includes("banner") || trimmedUrl.includes("cover-large") || trimmedUrl.includes("bannerUrl") || trimmedUrl.includes("banner_url") ? "&isBanner=1" : "";
+  return `/api/image-proxy?url=${encodedUrl}${encodeParam}&title=${encodeURIComponent(title)}${bannerParam}`;
 }
+
 
 /**
  * Resolves and recovers a broken cover image by calling the server-side /api/resolve-cover route,
