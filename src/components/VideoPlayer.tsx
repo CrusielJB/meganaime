@@ -13,7 +13,13 @@ import {
   Maximize,
   Minimize,
   RotateCcw,
-  RotateCw
+  RotateCw,
+  Share2,
+  Cast,
+  Tv,
+  Check,
+  Sparkles,
+  Globe
 } from "lucide-react";
 import { Episode, User } from "../types";
 import Hls from "hls.js";
@@ -21,6 +27,7 @@ import { saveEpisodeProgress, getLocalEpisodeProgress, normalizeAnimeId } from "
 import { getProxyImageUrl, getAnimePlaceholder, recoverCoverImageInHotPath } from "../utils/imageUtils";
 import { getAnimesWithEpisodes } from "../utils/animeDb";
 import { getDownloadedEpisodeBlob } from "../utils/downloadDb";
+import CommentSection from "./CommentSection";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
@@ -164,6 +171,19 @@ export default function VideoPlayer({
   const [showCenterFeedback, setShowCenterFeedback] = useState<"play" | "pause" | null>(null);
   const [showNextEpPrompt, setShowNextEpPrompt] = useState(false);
   const [nextEpCountdown, setNextEpCountdown] = useState(10);
+  const [copiedTimestamp, setCopiedTimestamp] = useState(false);
+
+  // Check URL query param ?t= for direct timestamp seeking
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const timeParam = params.get("t");
+    if (timeParam && !isNaN(parseFloat(timeParam)) && parseFloat(timeParam) > 0) {
+      const targetTime = parseFloat(timeParam);
+      if (videoRef.current) {
+        videoRef.current.currentTime = targetTime;
+      }
+    }
+  }, [episodeId]);
 
 
   const episodeNumber = React.useMemo(() => {
@@ -251,7 +271,7 @@ export default function VideoPlayer({
     setCustomUrlError("");
   }, [episodeId]);
 
-  const servers = [
+  const rawServersList = [
     ...(localVideoUrl ? [{ name: "Reproducción Local (Descargado)", url: localVideoUrl }] : []),
     ...(episodeData?.videoServers && episodeData.videoServers.length > 0
       ? episodeData.videoServers
@@ -261,6 +281,12 @@ export default function VideoPlayer({
         ]),
     ...customServers
   ];
+
+  // Purge any restricted YouTube embeds to ensure clean video playback
+  const servers = rawServersList.filter(s => 
+    s && s.url && !s.url.toLowerCase().includes("youtube.com") && !s.url.toLowerCase().includes("youtu.be")
+  );
+
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
@@ -290,11 +316,21 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
+          // If current server resolution fails and more servers exist, auto-advance to next server
+          if (servers.length > 1 && activeServerIdx < servers.length - 1) {
+            console.log(`[Auto-Verify] Servidor "${activeServer.name}" no disponible. Probando siguiente opción automáticamente...`);
+            setActiveServerIdx(prev => prev + 1);
+            return;
+          }
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
+        if (servers.length > 1 && activeServerIdx < servers.length - 1) {
+          setActiveServerIdx(prev => prev + 1);
+          return;
+        }
         setResolvedStreamUrl(activeServer.url);
         setUseResolvedPlayer(false);
       } finally {
@@ -1203,6 +1239,53 @@ export default function VideoPlayer({
                           ))}
                         </div>
 
+                        {/* Share Exact Timestamp */}
+                        <button
+                          onClick={() => {
+                            const seconds = Math.floor(currentTime);
+                            const url = new URL(window.location.href);
+                            url.searchParams.set("t", seconds.toString());
+                            navigator.clipboard.writeText(url.toString());
+                            setCopiedTimestamp(true);
+                            setTimeout(() => setCopiedTimestamp(false), 2500);
+                          }}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition flex items-center gap-1 text-xs"
+                          title="Copiar enlace con minuto exacto"
+                        >
+                          {copiedTimestamp ? (
+                            <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                              <Check className="h-4 w-4" />
+                              ¡Copiado!
+                            </span>
+                          ) : (
+                            <Share2 className="h-4.5 w-4.5" />
+                          )}
+                        </button>
+
+                        {/* Chromecast */}
+                        <button
+                          onClick={() => alert("Chromecast listo: abre esta página en un navegador compatible con Cast para transmitir a tu TV.")}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          title="Transmitir a Chromecast"
+                        >
+                          <Cast className="h-4.5 w-4.5" />
+                        </button>
+
+                        {/* AirPlay */}
+                        <button
+                          onClick={() => {
+                            if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
+                              (videoRef.current as any).webkitShowPlaybackTargetPicker();
+                            } else {
+                              alert("AirPlay no está disponible en este navegador/dispositivo.");
+                            }
+                          }}
+                          className="text-neutral-400 hover:text-white cursor-pointer transition"
+                          title="Transmitir con AirPlay"
+                        >
+                          <Tv className="h-4.5 w-4.5" />
+                        </button>
+
                         {/* Fullscreen Button */}
                         <button
                           onClick={toggleFullscreen}
@@ -1335,6 +1418,14 @@ export default function VideoPlayer({
                 <span>Siguiente</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
+            </div>
+            {/* Episode Discussion & Comments */}
+            <div className="pt-6 border-t border-white/5">
+              <CommentSection
+                targetId={episodeId}
+                title={`Comentarios del Episodio ${episodeNumber}`}
+                currentUser={currentUser}
+              />
             </div>
           </div>
         )}

@@ -29,3 +29,10 @@
     transform: translateY(0);
   }
 }
+
+/* Smart TV & D-Pad Keyboard Focus Ring Styling */
+*:focus-visible {
+  outline: 2px solid #e11d48 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 15px rgba(225, 29, 72, 0.5) !important;
+}

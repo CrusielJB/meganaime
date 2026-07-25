@@ -72,11 +72,43 @@ export const FavoriteSection: React.FC<FavoriteSectionProps> = ({
     };
   }, [favorites, trendingAnimes, seasonalAnimes, searchResults]);
 
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const STATUS_TABS = [
+    { id: "all", label: "Todos", icon: "⭐" },
+    { id: "viendo", label: "Viendo", icon: "🟢" },
+    { id: "por_ver", label: "Por Ver", icon: "🟡" },
+    { id: "completado", label: "Completado", icon: "✅" },
+    { id: "en_pausa", label: "En Pausa", icon: "⏸️" },
+    { id: "abandonado", label: "Abandonado", icon: "🔴" }
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col space-y-2">
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">Mi Biblioteca de Favoritos</h1>
-        <p className="text-xs text-neutral-400">Guarda tus series preferidas para acceder a sus capítulos de forma inmediata.</p>
+        <h1 className="text-2xl font-extrabold text-white tracking-tight">Mi Biblioteca de Anime</h1>
+        <p className="text-xs text-neutral-400">Organiza tu lista de seguimiento, animes guardados y estados de reproducción.</p>
+      </div>
+
+      {/* Watch Status Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-white/5 scrollbar-none">
+        {STATUS_TABS.map((tab) => {
+          const isActive = statusFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setStatusFilter(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border shrink-0 ${
+                isActive
+                  ? "bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-600/20"
+                  : "bg-neutral-900/60 text-neutral-400 border-white/5 hover:bg-neutral-800 hover:text-white"
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {!currentUser && (

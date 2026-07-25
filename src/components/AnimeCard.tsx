@@ -64,6 +64,7 @@ export default function AnimeCard({
           </span>
         </div>
 
+
         {/* Heart Icon Button (Manual click handler, stops propagation) */}
         <button
           onClick={(e) => onToggleFavorite(e, anime.id)}

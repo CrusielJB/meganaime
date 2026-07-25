@@ -5,12 +5,14 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 import { parse as parseUrl } from "url";
-import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, AnimeApiAggregator } from "./src/utils/scraper";
+import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
+import { MOCK_ANIMES } from "./src/utils/animeDb";
 import cron from "node-cron";
 import NodeCache from "node-cache";
+import { fuzzyMatch } from "./src/utils/titleNormalizer";
 
 // Initialize cache: check every 2 minutes for expired items
 const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
@@ -77,10 +79,247 @@ async function startServer() {
   let GLOBAL_CUSTOM_ANIMES = readCustomDb();
   let GLOBAL_CUSTOM_MANGAS = readCustomMangasDb();
 
+  async function scrapeAnimeFromMonosChinosByTitle(title: string): Promise<any> {
+    const cleanTitle = title
+      .toLowerCase()
+      .replace(/season \d+/gi, "")
+      .replace(/temporada \d+/gi, "")
+      .replace(/[:.\-()\[\]]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const domains = [
+      "https://monoschinos2.com",
+      "https://monoschinos3.com",
+      "https://monoschinos2.net",
+      "https://monoschinos.net",
+      "https://monoschinos.st"
+    ];
+
+    for (const domain of domains) {
+      try {
+        const searchUrl = `${domain}/buscar?q=${encodeURIComponent(cleanTitle)}`;
+        const searchRes = await fetch(searchUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(4000)
+        });
+        
+        if (searchRes.ok) {
+          const searchText = await searchRes.text();
+          const searchRegex = /href=["']?(?:https?:\/\/[^\/]+)?\/anime\/([^"'\s>]+)["']?/gi;
+          let match;
+          const matchedSlugs: string[] = [];
+          while ((match = searchRegex.exec(searchText)) !== null) {
+            matchedSlugs.push(match[1].replace(/-sub-espanol$/, ""));
+          }
+          
+          if (matchedSlugs.length > 0) {
+            const foundSlug = matchedSlugs[0];
+            
+            // Now scrape the details page of MonosChinos
+            const animeUrl = `${domain}/anime/${foundSlug}`;
+            const detailsRes = await fetch(animeUrl, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+              },
+              signal: AbortSignal.timeout(4000)
+            });
+
+            if (detailsRes.ok) {
+              const html = await detailsRes.text();
+              
+              let mTitle = title;
+              let mSynopsis = "";
+              let mCoverUrl = "";
+              const mGenres: string[] = [];
+              let mEpisodesCount = 12;
+
+              // Parse Title
+              const titleMatch = html.match(/<h1 class="title-nit[^>]*>([^<]+)<\/h1>/i);
+              if (titleMatch) mTitle = titleMatch[1].trim();
+
+              // Parse Synopsis
+              const synMatch = html.match(/<p class="text-justify[^>]*>([^<]+)<\/p>/i);
+              if (synMatch) mSynopsis = synMatch[1].trim();
+
+              // Parse Cover
+              const coverMatch = html.match(/<div class="chapter-pic">[^]*?<img[^>]+src="([^"]+)"/i);
+              if (coverMatch) mCoverUrl = coverMatch[1];
+
+              // Parse Genres
+              const genreRegex = /<a class="btn btn-outline-primary[^>]*>([^<]+)<\/a>/gi;
+              let gMatch;
+              while ((gMatch = genreRegex.exec(html)) !== null) {
+                if (!mGenres.includes(gMatch[1])) mGenres.push(gMatch[1]);
+              }
+
+              // Parse Episodes
+              const epRegex = /class="episode-item"[^>]*>Episode\s*(\d+)/gi;
+              let maxEp = 0;
+              let epM;
+              while ((epM = epRegex.exec(html)) !== null) {
+                const num = parseInt(epM[1], 10);
+                if (num > maxEp) maxEp = num;
+              }
+              mEpisodesCount = maxEp || 12;
+
+              const id = mTitle.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "");
+
+              return {
+                id,
+                title: mTitle,
+                synopsis: mSynopsis,
+                coverUrl: mCoverUrl,
+                genres: mGenres.length > 0 ? mGenres : ["Acción"],
+                status: "En emisión",
+                rating: 8.5,
+                type: "Anime",
+                episodesCount: mEpisodesCount,
+                year: new Date().getFullYear(),
+                episodes: []
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[Audit/Scraper] Sourcing from MonosChinos failed on domain ${domain}:`, e);
+      }
+    }
+    return null;
+  }
+
+  // Audit existing custom database to remove/migrate any AnimeFLV-sourced entries
+  async function auditAndMigrateCustomDatabase() {
+    let customAnimes = readCustomDb();
+    if (customAnimes.length === 0) return;
+
+    console.log("[Audit] Checking custom database for AnimeFLV entries...");
+    const updatedList = [];
+    let changed = false;
+
+    for (const anime of customAnimes) {
+      const isAnimeFLVEntry = (anime.coverUrl && anime.coverUrl.includes("animeflv.net"));
+      if (isAnimeFLVEntry) {
+        console.log(`[Audit] Custom anime "${anime.title}" was sourced from AnimeFLV. Sourcing from MonosChinos instead...`);
+        const monosAnime = await scrapeAnimeFromMonosChinosByTitle(anime.title);
+        if (monosAnime) {
+          updatedList.push(monosAnime);
+          changed = true;
+          console.log(`[Audit] Successfully migrated "${anime.title}" to MonosChinos.`);
+        } else {
+          changed = true;
+          console.log(`[Audit] "${anime.title}" is not available on MonosChinos. Removing from database.`);
+        }
+      } else {
+        updatedList.push(anime);
+      }
+    }
+
+    if (changed) {
+      GLOBAL_CUSTOM_ANIMES = updatedList;
+      writeCustomDb(updatedList);
+      apiCache.flushAll();
+      console.log("[Audit] Custom database audit completed and updated.");
+    } else {
+      console.log("[Audit] Custom database is clean of AnimeFLV entries.");
+    }
+  }
+
+  // Trigger migration audit immediately
+  auditAndMigrateCustomDatabase();
+
+  // File to persist dynamically retrieved airing episodes count
+  const airingEpisodesPath = path.join(process.cwd(), "src/utils/airing_episodes.json");
+
+  function loadAiringEpisodesFromFile() {
+    try {
+      if (fs.existsSync(airingEpisodesPath)) {
+        const raw = fs.readFileSync(airingEpisodesPath, "utf8");
+        const data = JSON.parse(raw);
+        console.log("Loaded cached airing episode counts:", data);
+        MOCK_ANIMES.forEach(anime => {
+          if (data[anime.id] !== undefined) {
+            anime.airedEpisodesCount = data[anime.id];
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load cached airing episode counts:", e);
+    }
+  }
+
+  async function refreshAiringEpisodesCount() {
+    console.log("Checking airing/releasing anime episodes on AniList...");
+    const counts: Record<string, number> = {};
+    
+    // Read current ones first
+    try {
+      if (fs.existsSync(airingEpisodesPath)) {
+        const raw = fs.readFileSync(airingEpisodesPath, "utf8");
+        Object.assign(counts, JSON.parse(raw));
+      }
+    } catch (e) {}
+
+    let updatedAny = false;
+    for (const anime of MOCK_ANIMES) {
+      if (anime.status === "En emisión" && anime.external_id) {
+        const extId = parseInt(anime.external_id.toString(), 10);
+        if (!isNaN(extId)) {
+          try {
+            console.log(`[AniList Audit] Fetching metadata for airing anime "${anime.title}" (ID: ${extId})...`);
+            const data = await queryAniListGraphQL({ id: extId });
+            if (data && data.Page && data.Page.media && data.Page.media[0]) {
+              const media = data.Page.media[0];
+              let count = anime.episodesCount;
+              if (media.nextAiringEpisode) {
+                count = Math.max(1, media.nextAiringEpisode.episode - 1);
+              } else if (media.episodes) {
+                count = media.episodes;
+              }
+              
+              if (counts[anime.id] !== count) {
+                counts[anime.id] = count;
+                anime.airedEpisodesCount = count;
+                updatedAny = true;
+                console.log(`[AniList Audit] Airing anime "${anime.title}" updated episodes count: ${count}`);
+              } else {
+                anime.airedEpisodesCount = count;
+              }
+            }
+          } catch (e: any) {
+            console.warn(`[AniList Audit] Failed to query AniList for "${anime.title}":`, e.message || e);
+          }
+        }
+      }
+    }
+
+    if (updatedAny) {
+      try {
+        const parentDir = path.dirname(airingEpisodesPath);
+        if (!fs.existsSync(parentDir)) {
+          fs.mkdirSync(parentDir, { recursive: true });
+        }
+        fs.writeFileSync(airingEpisodesPath, JSON.stringify(counts, null, 2), "utf8");
+        console.log("Successfully persisted updated airing episode counts to disk.");
+      } catch (e) {
+        console.error("Failed to write airing episodes count to file:", e);
+      }
+    }
+  }
+
+  // Load cached episode counts from file
+  loadAiringEpisodesFromFile();
+
   // Initialize background Cron Job (8:00 AM Eastern Time every day)
   cron.schedule("0 8 * * *", async () => {
     console.log("CRON JOB TRIGGERED: Starting automatic data refresh at 8:00 AM Eastern Time...");
     await updateEpisodesRepository();
+    await refreshAiringEpisodesCount();
     apiCache.flushAll(); // Clear cache on manual refresh
   }, {
     timezone: "America/New_York"
@@ -88,6 +327,7 @@ async function startServer() {
   
   // Pre-fetch the latest episodes immediately when server starts
   updateEpisodesRepository();
+  refreshAiringEpisodesCount();
 
   // Body parsers
   app.use(express.json());
@@ -1249,7 +1489,41 @@ async function startServer() {
       const isMonosChinos = lowercaseUrl.includes("monoschinos2.com") || lowercaseUrl.includes("monoschinos");
 
       if (!isAnimeFLV && !isMonosChinos) {
-        return res.status(400).json({ error: "Only AnimeFLV and MonosChinos URLs are supported." });
+        return res.status(400).json({ error: "Only MonosChinos URLs are supported." });
+      }
+
+      if (isAnimeFLV) {
+        console.log(`[Scraper] URL is AnimeFLV: "${url}". Sourcing equivalent from MonosChinos instead...`);
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+          }
+        });
+        const html = await response.text();
+        let flvTitle = "";
+        const titleMatch = html.match(/<h1 class="Title font-weight-bold">([^<]+)<\/h1>/i) || html.match(/<h1 class="Title">([^<]+)<\/h1>/i);
+        if (titleMatch) flvTitle = titleMatch[1].trim();
+
+        if (!flvTitle) {
+          const slug = url.split("/anime/")[1] || "";
+          flvTitle = slug.replace(/-/g, " ");
+        }
+
+        const monosAnime = await scrapeAnimeFromMonosChinosByTitle(flvTitle);
+        if (monosAnime) {
+          GLOBAL_CUSTOM_ANIMES = readCustomDb();
+          const index = GLOBAL_CUSTOM_ANIMES.findIndex(a => a.id === monosAnime.id);
+          if (index !== -1) {
+            GLOBAL_CUSTOM_ANIMES[index] = { ...GLOBAL_CUSTOM_ANIMES[index], ...monosAnime };
+          } else {
+            GLOBAL_CUSTOM_ANIMES.push(monosAnime);
+          }
+          writeCustomDb(GLOBAL_CUSTOM_ANIMES);
+          apiCache.flushAll();
+          return res.json({ success: true, anime: monosAnime });
+        } else {
+          return res.status(400).json({ error: `El anime "${flvTitle}" no está disponible en MonosChinos. No se puede importar desde AnimeFLV.` });
+        }
       }
 
       const response = await fetch(url, {
@@ -1266,73 +1540,34 @@ async function startServer() {
       let status = "En emisión";
       let episodesCount = 12;
 
-      if (isAnimeFLV) {
-        // Parse Title
-        const titleMatch = html.match(/<h1 class="Title font-weight-bold">([^<]+)<\/h1>/i) || html.match(/<h1 class="Title">([^<]+)<\/h1>/i);
-        if (titleMatch) title = titleMatch[1].trim();
+      // Parse Title
+      const titleMatch = html.match(/<h1 class="title-nit[^>]*>([^<]+)<\/h1>/i);
+      if (titleMatch) title = titleMatch[1].trim();
 
-        // Parse Synopsis
-        const synMatch = html.match(/<div class="Description">[^]*?<p>([^<]+)<\/p>/i);
-        if (synMatch) synopsis = synMatch[1].trim();
+      // Parse Synopsis
+      const synMatch = html.match(/<p class="text-justify[^>]*>([^<]+)<\/p>/i);
+      if (synMatch) synopsis = synMatch[1].trim();
 
-        // Parse Cover
-        const coverMatch = html.match(/<div class="thumb">[^]*?<img src="([^"]+)"/i);
-        if (coverMatch) {
-          coverUrl = coverMatch[1];
-          if (!coverUrl.startsWith("http")) {
-            coverUrl = "https://animeflv.net" + coverUrl;
-          }
-        }
+      // Parse Cover
+      const coverMatch = html.match(/<div class="chapter-pic">[^]*?<img[^>]+src="([^"]+)"/i);
+      if (coverMatch) coverUrl = coverMatch[1];
 
-        // Parse Genres
-        const genreRegex = /<a href="\/genre\/[^"]+">([^<]+)<\/a>/gi;
-        let gMatch;
-        while ((gMatch = genreRegex.exec(html)) !== null) {
-          if (!genres.includes(gMatch[1])) genres.push(gMatch[1]);
-        }
-
-        // Parse Episodes list script to count episodes
-        const epsMatch = html.match(/var episodes = \[\s*\[(\d+)/i);
-        if (epsMatch) {
-          episodesCount = parseInt(epsMatch[1], 10);
-        } else {
-          // Alternative episode regex match
-          const epArrayMatch = html.match(/var episodes = \[([^\]]+)\]/i);
-          if (epArrayMatch) {
-            const matches = epArrayMatch[1].match(/\[(\d+),/g);
-            if (matches) episodesCount = matches.length;
-          }
-        }
-      } else if (isMonosChinos) {
-        // Parse Title
-        const titleMatch = html.match(/<h1 class="title-nit[^>]*>([^<]+)<\/h1>/i);
-        if (titleMatch) title = titleMatch[1].trim();
-
-        // Parse Synopsis
-        const synMatch = html.match(/<p class="text-justify[^>]*>([^<]+)<\/p>/i);
-        if (synMatch) synopsis = synMatch[1].trim();
-
-        // Parse Cover
-        const coverMatch = html.match(/<div class="chapter-pic">[^]*?<img[^>]+src="([^"]+)"/i);
-        if (coverMatch) coverUrl = coverMatch[1];
-
-        // Parse Genres
-        const genreRegex = /<a class="btn btn-outline-primary[^>]*>([^<]+)<\/a>/gi;
-        let gMatch;
-        while ((gMatch = genreRegex.exec(html)) !== null) {
-          if (!genres.includes(gMatch[1])) genres.push(gMatch[1]);
-        }
-
-        // Parse Episodes
-        const epRegex = /class="episode-item"[^>]*>Episode\s*(\d+)/gi;
-        let maxEp = 0;
-        let epM;
-        while ((epM = epRegex.exec(html)) !== null) {
-          const num = parseInt(epM[1], 10);
-          if (num > maxEp) maxEp = num;
-        }
-        episodesCount = maxEp || 12;
+      // Parse Genres
+      const genreRegex = /<a class="btn btn-outline-primary[^>]*>([^<]+)<\/a>/gi;
+      let gMatch;
+      while ((gMatch = genreRegex.exec(html)) !== null) {
+        if (!genres.includes(gMatch[1])) genres.push(gMatch[1]);
       }
+
+      // Parse Episodes
+      const epRegex = /class="episode-item"[^>]*>Episode\s*(\d+)/gi;
+      let maxEp = 0;
+      let epM;
+      while ((epM = epRegex.exec(html)) !== null) {
+        const num = parseInt(epM[1], 10);
+        if (num > maxEp) maxEp = num;
+      }
+      episodesCount = maxEp || 12;
 
       // Format ID (slugify)
       const id = title.toLowerCase()
@@ -1656,8 +1891,18 @@ async function startServer() {
         );
         if (searchRes.ok) {
           const searchData = await searchRes.json();
-          const first = searchData?.data?.[0];
-          if (first?.session) {
+          const candidates = searchData?.data || [];
+          let bestCandidate: any = null;
+          let bestScore = 0;
+          for (const item of candidates) {
+            const score = fuzzyMatch(title, item.title);
+            if (score > bestScore) {
+              bestScore = score;
+              bestCandidate = item;
+            }
+          }
+          if (bestCandidate && bestScore >= 0.70) {
+            const first = bestCandidate;
             const epListRes = await fetch(
               `https://animepahe.ru/api?m=episode&id=${first.session}&sort=episode_asc&page=1`,
               {

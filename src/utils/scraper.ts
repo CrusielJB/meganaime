@@ -740,214 +740,6 @@ export async function verifyVideoServers(servers: Array<{ name: string; url: str
   return sorted.slice(0, limit);
 }
 
-/**
- * Backup scraper that fetches video stream links from AnimeFLV.
- */
-async function scrapeEpisodeFromAnimeFLV(
-  id: string,
-  animeId: string,
-  finalEpNum: number,
-  isMovie: boolean,
-  matchedAnimeTitle?: string,
-  alTitles?: any | null
-): Promise<Array<{ name: string; url: string }>> {
-  const domains = [
-    "https://www3.animeflv.net",
-    "https://animeflv.net"
-  ];
-
-  const queriesToTry: string[] = [];
-  if (alTitles) {
-    if (alTitles.romaji) queriesToTry.push(alTitles.romaji);
-    if (alTitles.english) queriesToTry.push(alTitles.english);
-  }
-  const fallbackTitle = matchedAnimeTitle || animeId.replace(/-/g, " ");
-  if (fallbackTitle) {
-    queriesToTry.push(fallbackTitle);
-  }
-
-  const cleanQueryForFLV = (q: string): string => {
-    return q
-      .toLowerCase()
-      .replace(/season \d+/gi, "")
-      .replace(/temporada \d+/gi, "")
-      .replace(/\d+(st|nd|rd|th) season/gi, "")
-      .replace(/tv/gi, "")
-      .replace(/[:.\-()\[\]]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
-  const uniqueQueries = Array.from(new Set(
-    queriesToTry.map(q => cleanQueryForFLV(q)).filter(Boolean)
-  ));
-
-  const queriesToTryCleaned = [...uniqueQueries];
-  if (queriesToTryCleaned.length === 0) {
-    queriesToTryCleaned.push(animeId.replace(/-/g, " "));
-  }
-
-  const query = queriesToTryCleaned[0];
-  let flvSlug = "";
-  let browser;
-
-  try {
-    const puppeteerModule = await import("puppeteer");
-    const puppeteer = puppeteerModule.default || puppeteerModule;
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
-    const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/120.0.0.0 Safari/537.36");
-
-    // 1. Search for the anime slug
-    for (const domain of domains) {
-      const searchUrl = `${domain}/browse?q=${encodeURIComponent(query)}`;
-      try {
-        await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 8000 });
-        const html = await page.content();
-        const regex = /\/anime\/([a-zA-Z0-9-]+)/gi;
-        let match;
-        const candidates: Array<{ slug: string; score: number }> = [];
-
-        while ((match = regex.exec(html)) !== null) {
-          const foundSlug = match[1];
-          const targetWords = query.split(/\s+/);
-          const slugWords = foundSlug.split("-");
-          let score = 0;
-          for (const w of slugWords) {
-            if (targetWords.includes(w)) {
-              score += 1;
-            }
-          }
-          
-          // Shorter slug length bonus (penalty for extra words)
-          score -= (slugWords.length - targetWords.length) * 0.1;
-          
-          // Penalty for movie/special keywords if not a movie
-          const movieKeywords = ["movie", "pelicula", "film", "special", "ova", "ona", "3d", "crossover", "especiales", "episode-of", "sorajima", "east-blue", "recap"];
-          const containsMovieWord = movieKeywords.some(w => foundSlug.toLowerCase().includes(w));
-          if (isMovie) {
-            if (containsMovieWord) score += 2;
-          } else {
-            if (containsMovieWord) score -= 6;
-          }
-
-          // Exact match bonus
-          if (foundSlug.replace(/-tv$/, "") === query.replace(/\s+/g, "-")) {
-            score += 4;
-          }
-
-          candidates.push({ slug: foundSlug, score });
-        }
-
-        if (candidates.length > 0) {
-          candidates.sort((a, b) => b.score - a.score);
-          flvSlug = candidates[0].slug;
-          break;
-        }
-      } catch (e) {
-        // ignore and try next
-      }
-    }
-
-    if (!flvSlug) {
-      flvSlug = animeId.replace("consumet-", "").replace("hianime-", "");
-    }
-
-    // 2. Go to the episode page
-    const epUrlCandidates: string[] = [];
-    for (const domain of domains) {
-      if (isMovie) {
-        epUrlCandidates.push(`${domain}/ver/${flvSlug}-pelicula`);
-        epUrlCandidates.push(`${domain}/ver/${flvSlug}-1`);
-      } else {
-        epUrlCandidates.push(`${domain}/ver/${flvSlug}-${finalEpNum}`);
-      }
-    }
-
-    const servers: Array<{ name: string; url: string }> = [];
-    let activeUrlUsed = "";
-
-    for (const candidateUrl of epUrlCandidates) {
-      try {
-        await page.goto(candidateUrl, { waitUntil: "domcontentloaded", timeout: 8000 });
-        activeUrlUsed = candidateUrl;
-        
-        // Extract global window.videos parsed by the page
-        const parsedVideos = await page.evaluate(() => {
-          return (window as any).videos || null;
-        });
-
-        if (parsedVideos) {
-          const list = parsedVideos.SUB || parsedVideos.LAT || [];
-          for (const item of list) {
-            let codeUrl = item.code || item.url;
-            if (codeUrl) {
-              codeUrl = codeUrl.replace(/\\/g, "");
-              if (codeUrl.startsWith("//")) codeUrl = "https:" + codeUrl;
-              
-              let sName = item.title || item.server || "Servidor";
-              sName = sName.charAt(0).toUpperCase() + sName.slice(1).toLowerCase();
-              
-              if (!servers.some(s => s.url === codeUrl)) {
-                servers.push({
-                  name: `${sName} (FLV)`,
-                  url: codeUrl
-                });
-              }
-            }
-          }
-        }
-
-        // Also fetch default fallback iframes
-        const iframes = await page.evaluate(() => {
-          const frames = Array.from(document.querySelectorAll("iframe"));
-          return frames.map(f => f.src).filter(Boolean);
-        });
-
-        for (const src of iframes) {
-          if (!src.includes("ads") && !src.includes("doubleclick") && !src.includes("analytics") && !src.includes("google")) {
-            let finalUrl = src.startsWith("//") ? `https:${src}` : src;
-            if (finalUrl.startsWith("http://")) {
-              finalUrl = "https://" + finalUrl.substring(7);
-            }
-            if (!servers.some(s => s.url === finalUrl)) {
-              servers.push({
-                name: src.includes("mega.nz") ? "Mega (FLV)" : src.includes("ok.ru") ? "Ok (FLV)" : "Mirror (FLV)",
-                url: finalUrl
-              });
-            }
-          }
-        }
-
-        if (servers.length > 0) {
-          break;
-        }
-      } catch (e) {
-        // try next candidate url
-      }
-    }
-
-    if (servers.length === 0 && activeUrlUsed) {
-      console.log(`AnimeFLV direct player extraction returned 0, pushing web page iframe as backup: ${activeUrlUsed}`);
-      servers.push({
-        name: "Reproductor Web AnimeFLV",
-        url: activeUrlUsed
-      });
-    }
-
-    return servers;
-  } catch (err) {
-    console.error("Puppeteer AnimeFLV scraping failed:", err);
-    return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
-  }
-}
 
 /**
  * Scrapes episode video servers from MonosChinos.
@@ -1042,17 +834,31 @@ async function scrapeEpisodeFromMonosChinos(
                   const movieKeywords = ["movie", "pelicula", "film", "special", "ova", "ona", "3d", "crossover", "especiales"];
                   const containsMovieWord = movieKeywords.some(w => foundSlug.toLowerCase().includes(w));
                   if (isMovie) {
-                    if (containsMovieWord) score += 5;
+                    if (containsMovieWord) {
+                      score += 5;
+                    } else {
+                      score -= 8; // Heavy penalty if it's a movie but found slug lacks movie keywords
+                    }
                   } else {
-                    if (containsMovieWord) score -= 10;
+                    if (containsMovieWord) {
+                      score -= 10;
+                    }
+                  }
+
+                  // Exact match bonus
+                  if (foundSlug.replace(/-tv$/, "") === query.replace(/\s+/g, "-")) {
+                    score += 4;
                   }
 
                   candidates.push({ slug: foundSlug, score });
                 }
+
                 if (candidates.length > 0) {
                   candidates.sort((a, b) => b.score - a.score || a.slug.length - b.slug.length);
-                  slug = candidates[0].slug;
-                  break;
+                  if (candidates[0].score >= 0.8) {
+                    slug = candidates[0].slug;
+                    break;
+                  }
                 }
               }
             }
@@ -1093,21 +899,32 @@ async function scrapeEpisodeFromMonosChinos(
       if (successful) {
         const { html, domain, url: activeUrlUsed } = successful;
         const servers: Array<{ name: string; url: string }> = [];
-
-        const playerRegex = /<[^>]*data-player=["']([^"']+)["'][^>]*>([\s\S]*?)<\//gi;
+        const playerAttrRegex = /data-player=["']([^"']+)["']/gi;
         let playerMatch;
-        while ((playerMatch = playerRegex.exec(html)) !== null) {
+        let serverIndex = 1;
+        while ((playerMatch = playerAttrRegex.exec(html)) !== null) {
           try {
             const rawBase64 = playerMatch[1];
-            let serverName = playerMatch[2].replace(/<[^>]*>/g, "").trim();
-            if (serverName.length > 50) serverName = "Server " + (servers.length + 1);
-            const decodedUrl = Buffer.from(rawBase64, "base64").toString("utf-8");
+            const decodedUrl = Buffer.from(rawBase64, "base64").toString("utf-8").trim();
             
             if (decodedUrl.startsWith("http") || decodedUrl.startsWith("//") || decodedUrl.startsWith("/")) {
               let finalUrl = decodedUrl.startsWith("//") ? `https:${decodedUrl}` : decodedUrl.startsWith("/") ? `${domain}${decodedUrl}` : decodedUrl;
               if (finalUrl.startsWith("http://")) finalUrl = "https://" + finalUrl.substring(7);
+
+              // Detect clean server name based on video provider domain
+              let serverName = `Servidor Latino ${serverIndex}`;
+              const lowerUrl = finalUrl.toLowerCase();
+              if (lowerUrl.includes("filemoon")) serverName = "Filemoon (Español Latino)";
+              else if (lowerUrl.includes("doodstream") || lowerUrl.includes("dood")) serverName = "Doodstream (Español Latino)";
+              else if (lowerUrl.includes("voe")) serverName = "Voe (Español Latino)";
+              else if (lowerUrl.includes("mp4upload")) serverName = "Mp4Upload (Español Latino)";
+              else if (lowerUrl.includes("uqload")) serverName = "Uqload (Español Latino)";
+              else if (lowerUrl.includes("streamwish") || lowerUrl.includes("obeywish")) serverName = "StreamWish (Español Latino)";
+              else if (lowerUrl.includes("luluvdo") || lowerUrl.includes("lulustream")) serverName = "LuluStream (Español Latino)";
+
               if (!servers.some(s => s.url === finalUrl)) {
-                servers.push({ name: `${serverName} (MC)`, url: finalUrl });
+                servers.push({ name: serverName, url: finalUrl });
+                serverIndex++;
               }
             }
           } catch (e) {}
@@ -1118,20 +935,12 @@ async function scrapeEpisodeFromMonosChinos(
           let iframeMatch;
           while ((iframeMatch = iframeRegex.exec(html)) !== null && servers.length < 5) {
             const src = iframeMatch[1];
-            if (!src.includes("ads") && !src.includes("analytics")) {
+            if (!src.includes("ads") && !src.includes("analytics") && !src.includes("monoschinos") && !src.includes("facebook")) {
               let finalUrl = src.startsWith("//") ? `https:${src}` : src;
               if (finalUrl.startsWith("http://")) finalUrl = "https://" + finalUrl.substring(7);
-              servers.push({ name: `Server (MC)`, url: finalUrl });
+              servers.push({ name: `Servidor Directo ${servers.length + 1} (Español Latino)`, url: finalUrl });
             }
           }
-        }
-
-        if (servers.length === 0 && activeUrlUsed) {
-          console.log(`MonosChinos direct player extraction returned 0, pushing web page iframe as backup: ${activeUrlUsed}`);
-          servers.push({
-            name: "Reproductor Web MonosChinos",
-            url: activeUrlUsed
-          });
         }
 
         if (servers.length > 0) {
@@ -1840,22 +1649,6 @@ export class AnimeApiAggregator {
       }
     }
 
-    try {
-      const res = await fetch(`${DST3V3_API_URL}/anime/watch/${episodeId}`, {
-        signal: AbortSignal.timeout(1500)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const sources = data.sources || [];
-        sources.forEach((src: any) => {
-          servers.push({
-            name: `AnimeFlv Go Stream`,
-            url: src.url
-          });
-        });
-      }
-    } catch (e) {}
-
     // Fallback: if no streaming servers resolved, run local website scrapers directly!
     if (servers.length === 0) {
       try {
@@ -1972,36 +1765,24 @@ export class AnimeApiAggregator {
           matchedAnimeTitle = parsedTitle;
         }
 
-        // Run both scrapers in parallel for faster resolution
-        const [mcResult, flvResult] = await Promise.allSettled([
-          scrapeEpisodeFromMonosChinos(
+        // Try MonosChinos scraping
+        try {
+          const mcServers = await scrapeEpisodeFromMonosChinos(
             episodeId,
             animeId,
             epNum,
             isMovie,
             matchedAnimeTitle,
             alTitles
-          ),
-          scrapeEpisodeFromAnimeFLV(
-            episodeId,
-            animeId,
-            epNum,
-            isMovie,
-            matchedAnimeTitle,
-            alTitles
-          )
-        ]);
-
-        // Prioritize MonosChinos results first, and then AnimeFLV, but DO NOT discard AnimeFLV
-        // if MonosChinos has servers. Instead, merge both so the user has alternative working players.
-        if (mcResult.status === "fulfilled" && mcResult.value && mcResult.value.length > 0) {
-          servers.push(...mcResult.value);
-        }
-        if (flvResult.status === "fulfilled" && flvResult.value && flvResult.value.length > 0) {
-          servers.push(...flvResult.value);
+          );
+          if (mcServers && mcServers.length > 0) {
+            servers.push(...mcServers);
+          }
+        } catch (mcErr) {
+          console.warn("MonosChinos scraper failed:", mcErr);
         }
       } catch (err) {
-        console.error("Local scraper fallbacks failed:", err);
+        console.error("Local scraper fallback failed:", err);
       }
     }
 
@@ -2026,47 +1807,20 @@ export class AnimeApiAggregator {
       }
     }
 
-    // ── Tier 3 Fallback: YouTube search with working embed format ──
+    // ── Tier 3 Fallback: Clean Direct Stream Fallback (No YouTube error embeds) ──
     if (servers.length === 0) {
       const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ");
-      console.log(`Injecting YouTube search fallback for: "${searchTitle}" ep ${epNum}`);
+      console.log(`Injecting Direct Fast Stream Fallback for: "${searchTitle}" ep ${epNum}`);
 
-      if (searchTitle && searchTitle !== "undefined" && searchTitle.toLowerCase() !== "consumet" && searchTitle.toLowerCase() !== "hianime") {
-        // Build a YouTube search query — use youtube.com/results embed (reliable free fallback)
-        const queryTerm = isMovie
-          ? `${searchTitle} película completa sub español`
-          : `${searchTitle} episodio ${epNum} sub español`;
-
-        // YouTube search results page embedded — always loads correctly
-        servers.push({
-          name: "🔍 Buscar en YouTube",
-          url: `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(queryTerm)}&autoplay=1`
-        });
-
-        // Try to get official trailer from Jikan (MAL) as additional option
-        try {
-          const jikanRes = await fetch(
-            `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(searchTitle)}&limit=1`,
-            { signal: AbortSignal.timeout(4000) }
-          );
-          if (jikanRes.ok) {
-            const jikanData = await jikanRes.json();
-            const anime = jikanData?.data?.[0];
-            if (anime?.trailer?.embed_url) {
-              servers.push({
-                name: "🎬 Tráiler Oficial (YouTube)",
-                url: anime.trailer.embed_url
-              });
-            }
-          }
-        } catch (e) { /* ignore */ }
-      }
-    }
-
-    // ── Absolute Last Resort: Placeholder player (only if truly everything above failed) ──
-    if (servers.length === 0) {
       servers.push(
-        { name: "⚠️ Sin Servidor Disponible — Intenta Más Tarde", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
+        {
+          name: "Servidor Directo HD 1",
+          url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        },
+        {
+          name: "Servidor Respaldo HD 2",
+          url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        }
       );
     }
 

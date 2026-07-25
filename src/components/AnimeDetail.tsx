@@ -7,6 +7,7 @@ import { syncEpisodeProgress, PlaybackProgress, syncAllEpisodesProgressFromFires
 import { saveEpisodeDownload, isEpisodeDownloaded, deleteEpisodeDownload } from "../utils/downloadDb";
 import { collection, query, where, orderBy, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import CommentSection from "./CommentSection";
 
 
 interface AnimeDetailProps {
@@ -997,6 +998,15 @@ export default function AnimeDetail({
                 </div>
               </div>
             )}
+
+            {/* Community Comments & Discussion Section */}
+            <div className="pt-8 border-t border-white/5">
+              <CommentSection
+                targetId={currentAnime.id}
+                title={`Discusión y Comentarios de ${currentAnime.title}`}
+                currentUser={currentUser}
+              />
+            </div>
 
           </div>
         </div>

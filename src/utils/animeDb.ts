@@ -1060,6 +1060,10 @@ export function getAiringBaseCount(id: string, totalCount: number = 12): number 
 
 // Helper to calculate available episode count for airing animes based on their real weekly premiere schedules
 export function getAvailableEpisodesCountForAiring(anime: Anime): number {
+  if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
+    return anime.airedEpisodesCount;
+  }
+
   // 1. One Piece: currently fixed at 1115 aired episodes as of mid-July 2026
   if (anime.id === "one-piece") {
     return 1115;

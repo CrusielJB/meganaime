@@ -3,6 +3,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db, OperationType, handleFirestoreError } from "../lib/firebase";
 import { Anime, Episode, User } from "../types";
 import { safeLocalStorage } from "../utils/safeStorage";
+import { getAnimesWithEpisodes } from "../utils/animeDb";
 
 export function useAnimeData(currentUser: User | null, setCurrentUser: (user: User | null) => void) {
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
@@ -24,19 +25,24 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
       try {
         const res = await fetch("/api/home?page=1");
         const data = await res.json();
-        if (data.success) {
+        if (data && data.success && Array.isArray(data.trending) && data.trending.length > 0) {
           setEpisodes(data.episodes || []);
           setTrendingAnimes(data.trending || []);
           setSeasonalAnimes(data.seasonal || []);
           if (data.totalPages) {
             setSeasonalTotalPages(data.totalPages);
           }
+        } else {
+          // Fallback to local database if API response is empty or missing lists
+          const localDb = getAnimesWithEpisodes();
+          setSeasonalAnimes(localDb.filter(a => a.status === "En emisión"));
+          setTrendingAnimes(localDb.slice(0, 15));
         }
 
         const moviesRes = await fetch("/api/movies");
         if (moviesRes.ok) {
           const moviesData = await moviesRes.json();
-          if (Array.isArray(moviesData)) {
+          if (Array.isArray(moviesData) && moviesData.length > 0) {
             const mapped = moviesData.map((m: any) => ({
               ...m,
               coverUrl: m.coverUrl || m.cover,
@@ -56,10 +62,20 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
             } else {
               setMovies(movies2026.slice(0, 12));
             }
+          } else {
+            const localDb = getAnimesWithEpisodes();
+            setMovies(localDb.filter(a => a.type === "Película"));
           }
+        } else {
+          const localDb = getAnimesWithEpisodes();
+          setMovies(localDb.filter(a => a.type === "Película"));
         }
       } catch (err) {
-        console.error("Error loading home lists:", err);
+        console.error("Error loading home lists, utilizing local catalog fallback:", err);
+        const localDb = getAnimesWithEpisodes();
+        setSeasonalAnimes(localDb.filter(a => a.status === "En emisión"));
+        setTrendingAnimes(localDb.slice(0, 15));
+        setMovies(localDb.filter(a => a.type === "Película"));
       } finally {
         setLoadingHome(false);
       }

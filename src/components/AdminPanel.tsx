@@ -69,7 +69,7 @@ export default function AdminPanel() {
   // Advanced Servers Tab States
   const [serverPriority, setServerPriority] = useState<string[]>(() => {
     const saved = localStorage.getItem("megaAnime_server_priority");
-    return saved ? JSON.parse(saved) : ["MonosChinos", "AnimeFLV", "Mp4Upload", "Streamwish", "Fembed", "VOE"];
+    return saved ? JSON.parse(saved) : ["MonosChinos", "Mp4Upload", "Streamwish", "Fembed", "VOE"];
   });
 
   const [selectedAnimeIdForSources, setSelectedAnimeIdForSources] = useState<string>("");
@@ -127,7 +127,7 @@ export default function AdminPanel() {
 
   // System alerts state
   const [alerts, setAlerts] = useState([
-    { id: 1, type: 'critical', msg: 'Caída detectada en servidor de video de respaldo (AnimeFLV). Redirigiendo automáticamente a MonosChinos.', time: 'Hace 12 min' },
+    { id: 1, type: 'info', msg: 'Sistemas de reproducción e integridad operando correctamente con MonosChinos y proveedores públicos.', time: 'Hace 5 min' },
     { id: 2, type: 'warning', msg: 'Cuota de llamadas API a AniList GraphQL superando el 85%. Caché activo para evitar bloqueos.', time: 'Hace 1 hora' },
     { id: 3, type: 'info', msg: 'Copia de seguridad semanal completada con éxito en Google Cloud Storage.', time: 'Hoy, 04:00 AM' }
   ]);
@@ -861,13 +861,13 @@ export default function AdminPanel() {
                   <Palette className="h-4 w-4 text-rose-500" />
                   Importador de Contenido (Scraper URL)
                 </span>
-                <span className="text-[10px] text-neutral-500">Pega un enlace de AnimeFLV o MonosChinos para escanear y agregar automáticamente el anime y sus episodios.</span>
+                <span className="text-[10px] text-neutral-500">Pega un enlace de MonosChinos para escanear y agregar automáticamente el anime y sus episodios.</span>
               </div>
               
               <form onSubmit={handleScrapeUrl} className="flex gap-3">
                 <input
                   type="url"
-                  placeholder="https://animeflv.net/anime/... o https://monoschinos2.com/anime/..."
+                  placeholder="https://monoschinos2.com/anime/..."
                   value={scrapeUrl}
                   onChange={(e) => setScrapeUrl(e.target.value)}
                   className="flex-grow bg-neutral-900 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-rose-500 transition-colors"

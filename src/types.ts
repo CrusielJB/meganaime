@@ -1,3 +1,9 @@
+export interface VideoServer {
+  name: string;
+  url: string;
+  language?: "sub" | "latino" | "castellano";
+}
+
 export interface Episode {
   id: string; // e.g. "one-piece-1110" or from animeid
   title: string; // e.g. "Episodio 1110"
@@ -6,7 +12,7 @@ export interface Episode {
   animeTitle: string;
   coverUrl?: string;
   videoUrl?: string; // Player iframe or MP4 url
-  videoServers?: Array<{ name: string; url: string }>;
+  videoServers?: VideoServer[];
   releaseDate?: string;
 }
 
@@ -29,6 +35,9 @@ export interface Anime {
   title_english?: string;
   title_native?: string;
   external_id?: string | number;
+  airedEpisodesCount?: number;
+  hasDub?: boolean;
+  dubLanguages?: ("latino" | "castellano")[];
 }
 
 export interface Manga {
@@ -52,11 +61,21 @@ export interface Profile {
   isChild?: boolean;
 }
 
+export type WatchStatus = "viendo" | "por_ver" | "completado" | "en_pausa" | "abandonado";
+
+export interface WatchlistItem {
+  animeId: string;
+  status: WatchStatus;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   username: string;
   email: string;
   favorites: string[]; // List of anime IDs (legacy/fallback)
+  watchlist?: WatchlistItem[];
+  ratings?: Record<string, number>; // user rating per animeId
   history: Array<{ episodeId: string; watchedAt: string; progress: number }>;
   isAdmin?: boolean;
   profiles?: Profile[]; // Multiple sub-profiles like Crunchyroll

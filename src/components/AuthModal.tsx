@@ -146,7 +146,13 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
       onSuccess(userData);
     } catch (err: any) {
       if (err.code !== "auth/popup-closed-by-user") {
-        setErrorMsg(err.message || "Error al iniciar sesión con Google.");
+        let msg = err.message || "Error al iniciar sesión con Google.";
+        if (err.code === "auth/unauthorized-domain" || (typeof err.message === "string" && err.message.includes("unauthorized-domain"))) {
+          const currentHost = window.location.hostname;
+          msg = `El dominio actual ("${currentHost}") no está autorizado en Firebase para inicio de sesión con Google. ` +
+                `Para solucionarlo, usa http://localhost:${window.location.port || '3000'} o agrega "${currentHost}" en Firebase Console -> Authentication -> Settings -> Authorized Domains.`;
+        }
+        setErrorMsg(msg);
       }
     } finally {
       setLoading(false);
@@ -179,9 +185,27 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
 
       {/* Error Alert */}
       {errorMsg && (
-        <div className="mb-4 flex items-start space-x-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400">
-          <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 mt-0.5" />
-          <span>{errorMsg}</span>
+        <div className="mb-4 flex flex-col gap-2.5 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400 animate-fade-in">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 mt-0.5" />
+            <span className="leading-relaxed">{errorMsg}</span>
+          </div>
+
+          {/* Quick redirect button when on 0.0.0.0 or 127.0.0.1 */}
+          {(window.location.hostname === "0.0.0.0" || window.location.hostname === "127.0.0.1") && (
+            <button
+              type="button"
+              onClick={() => {
+                const targetUrl = window.location.href
+                  .replace("//0.0.0.0", "//localhost")
+                  .replace("//127.0.0.1", "//localhost");
+                window.location.href = targetUrl;
+              }}
+              className="mt-1 w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/20"
+            >
+              <span>🚀 Cambiar a localhost:{window.location.port || '3000'} (Solución Rápida)</span>
+            </button>
+          )}
         </div>
       )}
 

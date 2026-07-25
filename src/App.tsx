@@ -22,6 +22,7 @@ import { getAnimesWithEpisodes } from "./utils/animeDb";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
 import { syncAllProgressFromFirestore } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
+import SimulcastCalendar from "./components/SimulcastCalendar";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -154,6 +155,32 @@ function AppContent() {
   });
 
   const [activeMangaChapterId, setActiveMangaChapterId] = useState<string | null>(null);
+
+  // Smart TV D-Pad Remote Control keyboard listener
+  useEffect(() => {
+    function handleDpadNavigation(e: KeyboardEvent) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        ));
+        const active = document.activeElement as HTMLElement;
+        if (!active || !focusable.includes(active)) {
+          if (focusable.length > 0) focusable[0].focus();
+          return;
+        }
+        const index = focusable.indexOf(active);
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          const next = focusable[(index + 1) % focusable.length];
+          next?.focus();
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          const prev = focusable[(index - 1 + focusable.length) % focusable.length];
+          prev?.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", handleDpadNavigation);
+    return () => window.removeEventListener("keydown", handleDpadNavigation);
+  }, []);
 
   const handleResumeEpisode = React.useCallback(async (animeId: string, episodeId: string) => {
     const allAnimes = getAnimesWithEpisodes();
@@ -347,6 +374,14 @@ function AppContent() {
             onSelectAnime={handleSelectAnime}
             favorites={localFavorites}
             onToggleFavorite={handleToggleFavoriteWithEvent}
+          />
+        )}
+
+        {activeTab === "calendario" && (
+          <SimulcastCalendar
+            animes={[...seasonalAnimes, ...trendingAnimes, ...movies]}
+            onSelectAnime={handleSelectAnime}
+            onPlayEpisode={(animeId, epId) => handleResumeEpisode(animeId, epId)}
           />
         )}
 

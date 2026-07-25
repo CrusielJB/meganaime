@@ -275,6 +275,33 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
     );
   }
 
+  // Netflix recommendation engine: "Porque viste X..."
+  const becauseYouWatchedData = useMemo(() => {
+    if (!continueWatching || continueWatching.length === 0) return null;
+    const lastItem = continueWatching[0];
+    const sourceAnime = lastItem.isManga ? lastItem.manga : lastItem.anime;
+    if (!sourceAnime || !sourceAnime.genres || sourceAnime.genres.length === 0) return null;
+
+    const sourceGenres = sourceAnime.genres;
+    const allAnimes = [...trendingAnimes, ...seasonalAnimes, ...movies];
+
+    const recommendations = allAnimes.filter(a => {
+      if (a.id === sourceAnime.id) return false;
+      return a.genres && a.genres.some(g => sourceGenres.includes(g));
+    });
+
+    const uniqueRecs = Array.from(new Set(recommendations.map(a => a.id)))
+      .map(id => recommendations.find(a => a.id === id)!)
+      .slice(0, 10);
+
+    if (uniqueRecs.length === 0) return null;
+
+    return {
+      sourceAnimeTitle: sourceAnime.title,
+      animes: uniqueRecs
+    };
+  }, [continueWatching, trendingAnimes, seasonalAnimes, movies]);
+
   return (
     <div className="space-y-14 animate-fade-in pb-16">
       {/* Featured Hero Slideshow */}
@@ -284,6 +311,50 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         favorites={favorites}
         onToggleFavorite={(id) => onToggleFavorite({ stopPropagation: () => {} } as any, id)}
       />
+
+      {/* SECTION: Porque viste X... (Netflix Recommendation Engine) */}
+      {becauseYouWatchedData && (
+        <section className="space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-1 bg-purple-500 rounded-full" />
+              <h2 className="text-xl font-extrabold text-white flex items-center gap-2 tracking-tight">
+                <Sparkles className="h-5 w-5 text-purple-400" />
+                <span>Porque viste <span className="text-rose-400">{becauseYouWatchedData.sourceAnimeTitle}</span></span>
+              </h2>
+            </div>
+          </div>
+
+          <div className="relative group/row">
+            <button
+              onClick={() => scrollRow(recommendedRef, 'left')}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-full w-12 bg-gradient-to-r from-black/90 to-transparent flex items-center justify-center text-white opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </button>
+
+            <div ref={recommendedRef} className="flex gap-4 overflow-x-auto scrollbar-none scroll-smooth py-2 px-1">
+              {becauseYouWatchedData.animes.map((anime) => (
+                <div key={anime.id} className="w-[180px] sm:w-[200px] shrink-0">
+                  <AnimeCard
+                    anime={anime}
+                    onSelect={onSelectAnime}
+                    isFavorite={favorites.includes(anime.id)}
+                    onToggleFavorite={onToggleFavorite}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => scrollRow(recommendedRef, 'right')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-full w-12 bg-gradient-to-l from-black/90 to-transparent flex items-center justify-center text-white opacity-0 group-hover/row:opacity-100 transition-opacity cursor-pointer"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* SECTION: Seguir Viendo (Netflix Style Carousel) */}
       {continueWatching && continueWatching.length > 0 && (
