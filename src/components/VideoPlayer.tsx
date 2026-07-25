@@ -591,15 +591,15 @@ export default function VideoPlayer({
     const handleVideoError = () => {
       const hasMoreServers = activeServerIdx < servers.length - 1;
       if (hasMoreServers) {
-        setVideoError(`Error en "${activeServer.name}" — cambiando al siguiente servidor...`);
+        setVideoError("Cargando reproductor...");
         setIsAutoAdvancing(true);
         autoAdvanceTimerRef.current = setTimeout(() => {
           setActiveServerIdx(prev => Math.min(prev + 1, servers.length - 1));
           setVideoError(null);
           setIsAutoAdvancing(false);
-        }, 2500);
+        }, 1500);
       } else {
-        setVideoError(`No se pudo reproducir en ningún servidor disponible. Intenta agregar un enlace externo.`);
+        setVideoError("No se pudo iniciar la reproducción. Intenta seleccionar otro servidor de la lista.");
         setIsAutoAdvancing(false);
       }
     };
@@ -1005,7 +1005,7 @@ export default function VideoPlayer({
               {isResolving ? (
                 <div className="flex flex-col items-center justify-center space-y-4 text-center p-6">
                   <div className="h-12 w-12 rounded-full border-2 border-t-2 border-neutral-800 border-t-rose-500 animate-spin" />
-                  <span className="text-xs text-neutral-400 animate-pulse">Resolviendo enlace directo de {activeServer.name}...</span>
+                  <span className="text-xs text-neutral-400 animate-pulse">Cargando reproductor...</span>
                 </div>
               ) : videoError ? (
                 <div className="flex flex-col items-center justify-center space-y-5 text-center p-8 max-w-lg">
@@ -1385,27 +1385,6 @@ export default function VideoPlayer({
                       {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              {/* Add Custom Streaming Source */}
-              <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
-                <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Añadir Servidor Externo</span>
-                <div className="flex flex-col gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enlace de video o código iframe..."
-                    value={externalUrlInput}
-                    onChange={(e) => setExternalUrlInput(e.target.value)}
-                    className="w-full bg-neutral-950 border border-white/5 rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-500 focus:border-rose-500 outline-none"
-                  />
-                  {customUrlError && <p className="text-[10px] text-rose-500 font-semibold">{customUrlError}</p>}
-                  <button
-                    onClick={handleAddCustomUrl}
-                    className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-xl transition cursor-pointer"
-                  >
-                    Agregar y Reproducir
-                  </button>
                 </div>
               </div>
             </div>
