@@ -912,15 +912,15 @@ async function scrapeEpisodeFromMonosChinos(
               if (finalUrl.startsWith("http://")) finalUrl = "https://" + finalUrl.substring(7);
 
               // Detect clean server name based on video provider domain
-              let serverName = `Servidor Latino ${serverIndex}`;
+              let serverName = `Servidor Subtitulado ${serverIndex}`;
               const lowerUrl = finalUrl.toLowerCase();
-              if (lowerUrl.includes("filemoon")) serverName = "Filemoon (Español Latino)";
-              else if (lowerUrl.includes("doodstream") || lowerUrl.includes("dood")) serverName = "Doodstream (Español Latino)";
-              else if (lowerUrl.includes("voe")) serverName = "Voe (Español Latino)";
-              else if (lowerUrl.includes("mp4upload")) serverName = "Mp4Upload (Español Latino)";
-              else if (lowerUrl.includes("uqload")) serverName = "Uqload (Español Latino)";
-              else if (lowerUrl.includes("streamwish") || lowerUrl.includes("obeywish")) serverName = "StreamWish (Español Latino)";
-              else if (lowerUrl.includes("luluvdo") || lowerUrl.includes("lulustream")) serverName = "LuluStream (Español Latino)";
+              if (lowerUrl.includes("filemoon")) serverName = "Filemoon (SUB Español)";
+              else if (lowerUrl.includes("doodstream") || lowerUrl.includes("dood")) serverName = "Doodstream (SUB Español)";
+              else if (lowerUrl.includes("voe")) serverName = "Voe (SUB Español)";
+              else if (lowerUrl.includes("mp4upload")) serverName = "Mp4Upload (SUB Español)";
+              else if (lowerUrl.includes("uqload")) serverName = "Uqload (SUB Español)";
+              else if (lowerUrl.includes("streamwish") || lowerUrl.includes("obeywish")) serverName = "StreamWish (SUB Español)";
+              else if (lowerUrl.includes("luluvdo") || lowerUrl.includes("lulustream")) serverName = "LuluStream (SUB Español)";
 
               if (!servers.some(s => s.url === finalUrl)) {
                 servers.push({ name: serverName, url: finalUrl });
@@ -938,7 +938,7 @@ async function scrapeEpisodeFromMonosChinos(
             if (!src.includes("ads") && !src.includes("analytics") && !src.includes("monoschinos") && !src.includes("facebook")) {
               let finalUrl = src.startsWith("//") ? `https:${src}` : src;
               if (finalUrl.startsWith("http://")) finalUrl = "https://" + finalUrl.substring(7);
-              servers.push({ name: `Servidor Directo ${servers.length + 1} (Español Latino)`, url: finalUrl });
+              servers.push({ name: `Servidor Directo ${servers.length + 1} (SUB Español)`, url: finalUrl });
             }
           }
         }
