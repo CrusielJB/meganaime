@@ -914,7 +914,13 @@ async function scrapeEpisodeFromMonosChinos(
               // Detect clean server name based on video provider domain
               let serverName = `Servidor Subtitulado ${serverIndex}`;
               const lowerUrl = finalUrl.toLowerCase();
-              if (lowerUrl.includes("filemoon")) serverName = "Filemoon (SUB Español)";
+              if (lowerUrl.includes("mega.nz") || lowerUrl.includes("mega.co.nz") || lowerUrl.includes("meganz")) {
+                serverName = "🚀 Mega (SUB Español)";
+                if (finalUrl.includes("mega.nz/file/")) {
+                  finalUrl = finalUrl.replace("mega.nz/file/", "mega.nz/embed/");
+                }
+              }
+              else if (lowerUrl.includes("filemoon")) serverName = "Filemoon (SUB Español)";
               else if (lowerUrl.includes("doodstream") || lowerUrl.includes("dood")) serverName = "Doodstream (SUB Español)";
               else if (lowerUrl.includes("voe")) serverName = "Voe (SUB Español)";
               else if (lowerUrl.includes("mp4upload")) serverName = "Mp4Upload (SUB Español)";
