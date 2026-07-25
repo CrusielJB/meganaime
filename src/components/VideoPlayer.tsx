@@ -478,12 +478,11 @@ export default function VideoPlayer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isEmbed, volume]);
 
-  // Auto-hide controls timer
+  // Auto-hide controls & mouse cursor when inactive (Fullscreen & Normal viewing)
   useEffect(() => {
-    if (isEmbed) return;
-
     let timer: NodeJS.Timeout;
-    const handleMouseMove = () => {
+
+    const resetControlsTimer = () => {
       setShowControls(true);
       clearTimeout(timer);
       timer = setTimeout(() => {
@@ -493,16 +492,30 @@ export default function VideoPlayer({
 
     const container = playerWrapperRef.current;
     if (container) {
-      container.addEventListener("mousemove", handleMouseMove);
+      container.addEventListener("mousemove", resetControlsTimer);
+      container.addEventListener("touchstart", resetControlsTimer);
+      container.addEventListener("pointerdown", resetControlsTimer);
+      container.addEventListener("click", resetControlsTimer);
     }
+
+    window.addEventListener("mousemove", resetControlsTimer);
+    window.addEventListener("keydown", resetControlsTimer);
+
+    // Initial 3-second timer trigger
+    resetControlsTimer();
 
     return () => {
       clearTimeout(timer);
       if (container) {
-        container.removeEventListener("mousemove", handleMouseMove);
+        container.removeEventListener("mousemove", resetControlsTimer);
+        container.removeEventListener("touchstart", resetControlsTimer);
+        container.removeEventListener("pointerdown", resetControlsTimer);
+        container.removeEventListener("click", resetControlsTimer);
       }
+      window.removeEventListener("mousemove", resetControlsTimer);
+      window.removeEventListener("keydown", resetControlsTimer);
     };
-  }, [isEmbed]);
+  }, [isFullscreen]);
 
   // Next episode countdown triggers
   useEffect(() => {
@@ -927,7 +940,9 @@ export default function VideoPlayer({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in">
       {/* Top Controls Bar */}
-      <div className="flex h-16 items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0">
+      <div className={`flex h-16 items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 ${
+        isFullscreen && !showControls ? "opacity-0 pointer-events-none -translate-y-full" : "opacity-100"
+      }`}>
         <div className="flex items-center space-x-3">
           <button
             onClick={onClose}
@@ -1060,12 +1075,16 @@ export default function VideoPlayer({
 
                  <div 
                   ref={playerWrapperRef}
-                  className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center group"
+                  className={`w-full h-full relative overflow-hidden bg-black flex items-center justify-center group ${
+                    !showControls ? "cursor-none" : ""
+                  }`}
                 >
                   <video
                     ref={videoRef}
                     src={resolvedStreamUrl}
-                    className="w-full h-full max-h-full object-contain cursor-pointer"
+                    className={`w-full h-full max-h-full object-contain ${
+                      !showControls ? "cursor-none" : "cursor-pointer"
+                    }`}
                     controls={false}
                     autoPlay
                     playsInline
