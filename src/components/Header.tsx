@@ -28,6 +28,11 @@ export default function Header({
   const avatarUrl = activeProfile?.avatarUrl || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop";
   const profileName = activeProfile?.name || currentUser?.username || "Usuario";
   const otherProfiles = currentUser?.profiles?.filter(p => p.id !== currentUser.activeProfileId) || [];
+  
+  // Primary / Main profile check (default profile or first profile in list)
+  const isMainProfile = !currentUser?.activeProfileId || 
+    currentUser.activeProfileId === "default" || 
+    (currentUser?.profiles && currentUser.profiles.length > 0 && currentUser.activeProfileId === currentUser.profiles[0].id);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -247,13 +252,15 @@ export default function Header({
 
                   {/* Profile Commands */}
                   <div className="space-y-1 py-3 border-b border-white/5">
-                    <button
-                      onClick={() => handleOpenProfilesClick("security")}
-                      className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
-                    >
-                      <KeyRound className="h-4 w-4 text-rose-500" />
-                      <span>Cambiar Contraseña</span>
-                    </button>
+                    {isMainProfile && (
+                      <button
+                        onClick={() => handleOpenProfilesClick("security")}
+                        className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                      >
+                        <KeyRound className="h-4 w-4 text-rose-500" />
+                        <span>Cambiar Contraseña</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => handleOpenProfilesClick("profiles")}
                       className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition cursor-pointer"

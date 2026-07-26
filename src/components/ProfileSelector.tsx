@@ -36,7 +36,15 @@ export default function ProfileSelector({
   isSettingsMode = false,
   initialTab = "profiles"
 }: ProfileSelectorProps) {
-  const [activeTab, setActiveTab] = useState<"profiles" | "security" | "preferences">(initialTab);
+  const profiles = currentUser.profiles || [];
+
+  // Primary / Main profile check (default profile or first profile in list)
+  const isMainProfile = !currentUser.activeProfileId || 
+    currentUser.activeProfileId === "default" || 
+    (currentUser.profiles && currentUser.profiles.length > 0 && currentUser.activeProfileId === currentUser.profiles[0].id);
+
+  const effectiveInitialTab = (!isMainProfile && initialTab === "security") ? "profiles" : initialTab;
+  const [activeTab, setActiveTab] = useState<"profiles" | "security" | "preferences">(effectiveInitialTab);
   const [isManaging, setIsManaging] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -61,8 +69,6 @@ export default function ProfileSelector({
   const [autoSkipIntro, setAutoSkipIntro] = useState(() => {
     return safeLocalStorage.getItem("megaAnime_autoskip") === "true";
   });
-
-  const profiles = currentUser.profiles || [];
 
   const handleSelectProfile = (profile: Profile) => {
     if (isManaging) {
@@ -200,17 +206,19 @@ export default function ProfileSelector({
               <UserIcon className="h-4 w-4" />
               <span>Perfiles</span>
             </button>
-            <button
-              onClick={() => setActiveTab("security")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition cursor-pointer ${
-                activeTab === "security"
-                  ? "bg-rose-600 text-white shadow-lg shadow-rose-600/25"
-                  : "text-neutral-400 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <KeyRound className="h-4 w-4" />
-              <span>Seguridad</span>
-            </button>
+            {isMainProfile && (
+              <button
+                onClick={() => setActiveTab("security")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  activeTab === "security"
+                    ? "bg-rose-600 text-white shadow-lg shadow-rose-600/25"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <KeyRound className="h-4 w-4" />
+                <span>Seguridad</span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab("preferences")}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition cursor-pointer ${
