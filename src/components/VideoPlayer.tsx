@@ -284,11 +284,35 @@ export default function VideoPlayer({
   // Auto-select best direct stream server when servers load so our custom player is used
   useEffect(() => {
     if (!servers || servers.length === 0) return;
-    const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
-    if (directIdx !== -1 && directIdx !== activeServerIdx) {
-      console.log(`[Auto-Player] Direct stream detected at server #${directIdx + 1}. Auto-selecting custom player.`);
-      setActiveServerIdx(directIdx);
-    }
+
+    let isMounted = true;
+
+    const findAndSelectCustomPlayerServer = async () => {
+      // 1. If any server is ALREADY a direct MP4/M3U8 URL, select it instantly
+      const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
+      if (directIdx !== -1) {
+        if (isMounted) setActiveServerIdx(directIdx);
+        return;
+      }
+
+      // 2. Asynchronously find which server resolves to a direct media stream for OUR custom player
+      const { resolveEmbedUrl } = await import("../utils/resolvers");
+      for (let i = 0; i < servers.length; i++) {
+        const s = servers[i];
+        if (!s || !s.url) continue;
+        try {
+          const resolved = await resolveEmbedUrl(s.name, s.url);
+          if (resolved && resolved.url && isMounted) {
+            console.log(`[Auto-Player] Server #${i + 1} (${s.name}) resolved to direct media stream! Auto-selecting for custom player.`);
+            setActiveServerIdx(i);
+            return;
+          }
+        } catch (e) {}
+      }
+    };
+
+    findAndSelectCustomPlayerServer();
+    return () => { isMounted = false; };
   }, [episodeData]);
 
   const activeServer = servers[activeServerIdx] || servers[0];
