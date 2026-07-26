@@ -153,6 +153,7 @@ function AppContent() {
   const [hasSelectedProfile, setHasSelectedProfile] = useState(() => {
     return safeSessionStorage.getItem("megaAnime_profile_selected") === "true";
   });
+  const [profileModalTab, setProfileModalTab] = useState<"profiles" | "security" | "preferences">("profiles");
 
   const [activeMangaChapterId, setActiveMangaChapterId] = useState<string | null>(null);
 
@@ -311,7 +312,10 @@ function AppContent() {
         setActiveTab={setActiveTab}
         onOpenAuth={() => setShowAuthModal(true)}
         onLogout={handleLogout}
-        onOpenProfiles={() => setShowProfilesModal(true)}
+        onOpenProfiles={(tab) => {
+          setProfileModalTab(tab || "profiles");
+          setShowProfilesModal(true);
+        }}
         onSwitchProfile={switchProfile}
       />
 
@@ -484,6 +488,7 @@ function AppContent() {
         <ProfileSelector
           currentUser={currentUser}
           isSettingsMode={true}
+          initialTab={profileModalTab}
           onSwitchProfile={(profileId) => {
             switchProfile(profileId);
             setShowProfilesModal(false);

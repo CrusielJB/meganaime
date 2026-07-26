@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Search, Heart, LogIn, LogOut, User, Compass, Tv, Film, BookOpen, ChevronDown, Plus, Download, Calendar } from "lucide-react";
+import { Play, Search, Heart, LogIn, LogOut, User, Compass, Tv, Film, BookOpen, ChevronDown, Plus, Download, Calendar, KeyRound } from "lucide-react";
 import { User as UserType } from "../types";
 
 interface HeaderProps {
@@ -8,7 +8,7 @@ interface HeaderProps {
   setActiveTab: (tab: string) => void;
   onOpenAuth: () => void;
   onLogout: () => void;
-  onOpenProfiles?: () => void;
+  onOpenProfiles?: (initialTab?: "profiles" | "security" | "preferences") => void;
   onSwitchProfile?: (id: string) => void;
 }
 
@@ -47,9 +47,9 @@ export default function Header({
     setShowDropdown(false);
   };
 
-  const handleOpenProfilesClick = () => {
+  const handleOpenProfilesClick = (tab: "profiles" | "security" | "preferences" = "profiles") => {
     if (onOpenProfiles) {
-      onOpenProfiles();
+      onOpenProfiles(tab);
     }
     setShowDropdown(false);
   };
@@ -248,10 +248,17 @@ export default function Header({
                   {/* Profile Commands */}
                   <div className="space-y-1 py-3 border-b border-white/5">
                     <button
-                      onClick={handleOpenProfilesClick}
-                      className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition"
+                      onClick={() => handleOpenProfilesClick("security")}
+                      className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
                     >
-                      <User className="h-4 w-4 text-rose-500" />
+                      <KeyRound className="h-4 w-4 text-rose-500" />
+                      <span>Cambiar Contraseña</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenProfilesClick("profiles")}
+                      className="flex w-full items-center space-x-2 rounded-lg px-2.5 py-2 text-xs font-bold text-neutral-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                    >
+                      <User className="h-4 w-4 text-neutral-400" />
                       <span>Administrar Perfiles</span>
                     </button>
                   </div>
