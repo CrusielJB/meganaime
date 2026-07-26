@@ -281,6 +281,16 @@ export default function VideoPlayer({
     s && s.url && !s.url.toLowerCase().includes("youtube.com") && !s.url.toLowerCase().includes("youtu.be")
   );
 
+  // Auto-select best direct stream server when servers load so our custom player is used
+  useEffect(() => {
+    if (!servers || servers.length === 0) return;
+    const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
+    if (directIdx !== -1 && directIdx !== activeServerIdx) {
+      console.log(`[Auto-Player] Direct stream detected at server #${directIdx + 1}. Auto-selecting custom player.`);
+      setActiveServerIdx(directIdx);
+    }
+  }, [episodeData]);
+
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
@@ -310,6 +320,13 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
+          // If current iframe server does not resolve, check if another server is a direct stream
+          const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
+          if (directIdx !== -1 && directIdx !== activeServerIdx) {
+            console.log(`[Auto-Player] Switching to direct server #${directIdx + 1} for custom player.`);
+            setActiveServerIdx(directIdx);
+            return;
+          }
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);
         }
@@ -588,6 +605,17 @@ export default function VideoPlayer({
       }
     };
 
+    const startPlayback = () => {
+      if (!video) return;
+      setIsPlaying(true);
+      video.play().catch(e => {
+        console.log("Autoplay blocked by browser policy, attempting muted autoplay:", e);
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch(() => {});
+      });
+    };
+
     if (isHls) {
       if (Hls.isSupported()) {
         hls = new Hls({
@@ -600,7 +628,7 @@ export default function VideoPlayer({
         hls.loadSource(resolvedStreamUrl);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(e => console.log("Autoplay blocked:", e));
+          startPlayback();
         });
         hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
           if (data.fatal) {
@@ -613,13 +641,13 @@ export default function VideoPlayer({
         video.src = resolvedStreamUrl;
         video.load();
         video.addEventListener("error", handleVideoError, { once: true });
-        video.play().catch(e => console.log("Autoplay blocked:", e));
+        startPlayback();
       }
     } else {
       video.src = resolvedStreamUrl;
       video.load();
       video.addEventListener("error", handleVideoError, { once: true });
-      video.play().catch(e => console.log("Autoplay blocked:", e));
+      startPlayback();
     }
 
     return () => {
