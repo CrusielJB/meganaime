@@ -626,12 +626,19 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "mushoku-tensei-iii-isekai-ittara-honki-dasu": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
   "one-piece": "one-piece",
   "that-time-i-got-reincarnated-as-a-slime-1": "tensei-shitara-slime-datta-ken",
-  "that-time-i-got-reincarnated-as-a-slime-2": "tensei-shitara-slime-datta-ken-2nd-season",
+  "that-time-i-got-reincarnated-as-a-slime-2": "tensei-shitara-slime-datta-ken-2",
   "that-time-i-got-reincarnated-as-a-slime-3": "tensei-shitara-slime-datta-ken-3rd-season",
-  "that-time-i-got-reincarnated-as-a-slime-4": "tensei-shitara-slime-datta-ken-3",
-  "that-time-i-got-reincarnated-as-a-slime-tv-4": "tensei-shitara-slime-datta-ken-3",
-  "tensei-shitara-slime-datta-ken-4": "tensei-shitara-slime-datta-ken-3",
-  "tensei-shitara-slime-datta-ken-iv": "tensei-shitara-slime-datta-ken-3",
+  "that-time-i-got-reincarnated-as-a-slime-4": "that-time-i-got-reincarnated-as-a-slime-s4",
+  "that-time-i-got-reincarnated-as-a-slime-tv-4": "that-time-i-got-reincarnated-as-a-slime-s4",
+  "tensei-shitara-slime-datta-ken-4": "that-time-i-got-reincarnated-as-a-slime-s4",
+  "tensei-shitara-slime-datta-ken-iv": "that-time-i-got-reincarnated-as-a-slime-s4",
+  "consumet-101280": "tensei-shitara-slime-datta-ken",
+  "consumet-108511": "tensei-shitara-slime-datta-ken-2",
+  "consumet-116742": "tensei-shitara-slime-datta-ken-2",
+  "consumet-156822": "tensei-shitara-slime-datta-ken-3rd-season",
+  "consumet-182205": "that-time-i-got-reincarnated-as-a-slime-s4",
+  "consumet-139498": "tensei-shitara-slime-datta-ken-movie-guren-no-kizuna-hen",
+  "consumet-161802": "tensei-shitara-slime-datta-ken-coleus-no-yume",
   "bleach-sennen-kessen-hen-3": "bleach-sennen-kessen-hen-3",
   "kimetsu-no-yaiba-hashira-geiko-hen": "kimetsu-no-yaiba-hashira-geiko-hen",
   "demon-slayer-kimetsu-no-yaiba-mugen-train-arc": "kimetsu-no-yaiba-mugen-ressha-hen-tv",
@@ -1709,36 +1716,45 @@ export class AnimeApiAggregator {
             epNum = 1;
           }
 
-          // Match by external_id if clean ID is numeric or starts with digits (e.g. "21" -> "one-piece")
-          const cleanExternalId = animeId.replace(/^(consumet-|hianime-)/, "");
-          const matchByExtId = localAnimes.find(a => a.external_id && a.external_id === cleanExternalId);
-          if (matchByExtId) {
-            animeId = matchByExtId.id;
-            isMovie = matchByExtId.type === "Película";
-            matchedAnimeTitle = matchByExtId.title;
+          // 1. Check exact ID match first
+          const exactIdMatch = localAnimes.find(a => a.id === animeId);
+          if (exactIdMatch) {
+            animeId = exactIdMatch.id;
+            isMovie = exactIdMatch.type === "Película";
+            matchedAnimeTitle = exactIdMatch.title;
             foundLocal = true;
-          }
+          } else {
+            // 2. Match by external_id if clean ID is numeric or starts with digits (e.g. "21" -> "one-piece")
+            const cleanExternalId = animeId.replace(/^(consumet-|hianime-)/, "");
+            const matchByExtId = localAnimes.find(a => a.external_id && a.external_id === cleanExternalId);
+            if (matchByExtId) {
+              animeId = matchByExtId.id;
+              isMovie = matchByExtId.type === "Película";
+              matchedAnimeTitle = matchByExtId.title;
+              foundLocal = true;
+            } else {
+              // 3. Cross-reference search & Fuzzy matching (Confidence Threshold >= 85%)
+              let bestMatch: any = null;
+              let highestScore = 0;
+              
+              for (const a of localAnimes) {
+                const targets = [a.title, a.title_romaji, a.title_english].filter(Boolean) as string[];
+                for (const target of targets) {
+                  const score = fuzzyMatch(parsedTitle, target);
+                  if (score > highestScore) {
+                    highestScore = score;
+                    bestMatch = a;
+                  }
+                }
+              }
 
-          // 3. Cross-reference search & Fuzzy matching (Confidence Threshold >= 85%)
-          let bestMatch: any = null;
-          let highestScore = 0;
-          
-          for (const a of localAnimes) {
-            const targets = [a.title, a.title_romaji, a.title_english].filter(Boolean) as string[];
-            for (const target of targets) {
-              const score = fuzzyMatch(parsedTitle, target);
-              if (score > highestScore) {
-                highestScore = score;
-                bestMatch = a;
+              if (highestScore >= 0.85 && bestMatch) {
+                animeId = bestMatch.id;
+                isMovie = bestMatch.type === "Película";
+                matchedAnimeTitle = bestMatch.title;
+                foundLocal = true;
               }
             }
-          }
-
-          if (highestScore >= 0.85 && bestMatch) {
-            animeId = bestMatch.id;
-            isMovie = bestMatch.type === "Película";
-            matchedAnimeTitle = bestMatch.title;
-            foundLocal = true;
           }
         }
 

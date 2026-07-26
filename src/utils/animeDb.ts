@@ -766,7 +766,7 @@ export const MOCK_ANIMES: Anime[] = [
     id: "that-time-i-got-reincarnated-as-a-slime-2",
     title: "That Time I Got Reincarnated as a Slime Temporada 2",
     synopsis: "Rimuru Tempest y sus aliados continúan construyendo la Federación Jura Tempest, un faro de paz y cooperación entre monstruos y humanos. Sin embargo, naciones humanas hostiles y antiguos Reyes Demonio observan con recelo su rápido crecimiento. Rimuru tendrá que tomar decisiones difíciles y desatar un poder devastador para proteger a sus seres queridos.",
-    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101280-tDxCVJm714nt.jpg",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx108511-x9qW5K87vYc3.jpg",
     bannerUrl: "https://images4.alphacoders.com/111/1116675.jpg",
     genres: ["Acción", "Aventura", "Fantasía", "Isekai", "Comedia"],
     status: "Finalizado",
@@ -775,7 +775,7 @@ export const MOCK_ANIMES: Anime[] = [
     episodesCount: 24,
     year: 2021,
     episodes: [],
-    external_id: "118586",
+    external_id: "108511",
     title_english: "That Time I Got Reincarnated as a Slime Season 2",
     title_romaji: "Tensei shitara Slime Datta Ken 2nd Season"
   },
@@ -783,7 +783,7 @@ export const MOCK_ANIMES: Anime[] = [
     id: "that-time-i-got-reincarnated-as-a-slime-3",
     title: "That Time I Got Reincarnated as a Slime Temporada 3",
     synopsis: "La Federación Jura Tempest celebra su victoria contra las fuerzas de Clayman y el reconocimiento formal de Rimuru como uno de los Octagrama (los Reyes Demonio). Ahora, Rimuru busca abrir relaciones comerciales y diplomáticas con otras naciones, pero los conflictos con la Iglesia de los Santos de Occidente y la Santa Emperatriz Luminous Valentine amenazan la estabilidad de la región.",
-    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b147850-USIKDjVK7xTn.jpg",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/b156822-USIKDjVK7xTn.jpg",
     bannerUrl: "https://images7.alphacoders.com/136/1360155.jpg",
     genres: ["Acción", "Aventura", "Fantasía", "Isekai", "Comedia"],
     status: "Finalizado",
@@ -792,7 +792,7 @@ export const MOCK_ANIMES: Anime[] = [
     episodesCount: 24,
     year: 2024,
     episodes: [],
-    external_id: "147850",
+    external_id: "156822",
     title_english: "That Time I Got Reincarnated as a Slime Season 3",
     title_romaji: "Tensei shitara Slime Datta Ken 3rd Season"
   },
@@ -800,7 +800,7 @@ export const MOCK_ANIMES: Anime[] = [
     id: "that-time-i-got-reincarnated-as-a-slime-4",
     title: "That Time I Got Reincarnated as a Slime Temporada 4",
     synopsis: "La esperada cuarta temporada de las aventuras de Rimuru Tempest. Tras consolidar su posición como uno de los soberanos más influyentes del mundo, Rimuru y su nación Jura Tempest se enfrentan a nuevos desafíos políticos y amenazas místicas de escala continental, poniendo a prueba el gran poder de su núcleo de slime y sus leales comandantes.",
-    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx185614-98VbrLMznQnP.png",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx182205-q2AeO1oK9vXy.png",
     bannerUrl: "https://images7.alphacoders.com/136/1360155.jpg",
     genres: ["Acción", "Aventura", "Fantasía", "Isekai", "Comedia"],
     status: "En emisión",
@@ -822,7 +822,7 @@ export const MOCK_ANIMES: Anime[] = [
         rating: 8.9
       }
     ],
-    external_id: "185614",
+    external_id: "182205",
     title_english: "That Time I Got Reincarnated as a Slime Season 4",
     title_romaji: "Tensei shitara Slime Datta Ken 4th Season"
   },
