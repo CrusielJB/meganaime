@@ -139,10 +139,7 @@ export default function VideoPlayer({
     };
   }, [animeId, animeTitle, animeCoverUrl]);
 
-  // Custom external video servers added by the user
-  const [externalUrlInput, setExternalUrlInput] = useState("");
-  const [customServers, setCustomServers] = useState<Array<{ name: string; url: string }>>([]);
-  const [customUrlError, setCustomUrlError] = useState("");
+
 
   // Auto-advance state: tracks if current server failed and we're switching
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -265,10 +262,7 @@ export default function VideoPlayer({
     }
     fetchEpisodeDetails();
     
-    setCustomServers([]);
     setActiveServerIdx(0);
-    setExternalUrlInput("");
-    setCustomUrlError("");
   }, [episodeId]);
 
   const rawServersList = [
@@ -279,7 +273,7 @@ export default function VideoPlayer({
           { name: "MegaServer Directo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
           { name: "MegaServer Respaldo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
         ]),
-    ...customServers
+
   ];
 
   // Purge any restricted YouTube embeds to ensure clean video playback
@@ -896,45 +890,7 @@ export default function VideoPlayer({
     };
   }, [activeServer, activeServerIdx, episodeId, animeId, currentUser, resolvedTitle, resolvedCover]);
 
-  // Add custom URL
-  const handleAddCustomUrl = () => {
-    setCustomUrlError("");
-    const input = externalUrlInput.trim();
-    if (!input) {
-      setCustomUrlError("Por favor ingresa un enlace o iframe válido.");
-      return;
-    }
 
-    let targetUrl = input;
-    if (input.toLowerCase().includes("<iframe")) {
-      const srcMatch = input.match(/src=["']([^"']+)["']/i);
-      if (srcMatch && srcMatch[1]) {
-        targetUrl = srcMatch[1];
-      } else {
-        setCustomUrlError("No se pudo extraer la dirección src del iframe.");
-        return;
-      }
-    }
-
-    if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://") && !targetUrl.startsWith("//")) {
-      setCustomUrlError("La dirección debe comenzar con http:// o https:// o //");
-      return;
-    }
-
-    if (targetUrl.startsWith("//")) {
-      targetUrl = `https:${targetUrl}`;
-    }
-
-    const newServer = {
-      name: `🌐 Servidor Externo #${customServers.length + 1}`,
-      url: targetUrl
-    };
-
-    const newCustomServers = [...customServers, newServer];
-    setCustomServers(newCustomServers);
-    setActiveServerIdx(servers.length - 1 + newCustomServers.length);
-    setExternalUrlInput("");
-  };
 
 
   return (
