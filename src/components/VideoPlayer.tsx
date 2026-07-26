@@ -310,21 +310,11 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // If current server resolution fails and more servers exist, auto-advance to next server
-          if (servers.length > 1 && activeServerIdx < servers.length - 1) {
-            console.log(`[Auto-Verify] Servidor "${activeServer.name}" no disponible. Probando siguiente opción automáticamente...`);
-            setActiveServerIdx(prev => prev + 1);
-            return;
-          }
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        if (servers.length > 1 && activeServerIdx < servers.length - 1) {
-          setActiveServerIdx(prev => prev + 1);
-          return;
-        }
         setResolvedStreamUrl(activeServer.url);
         setUseResolvedPlayer(false);
       } finally {
