@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { X, Play, Heart, Star, Calendar, ArrowUpDown, Clock, ChevronDown, BookOpen, Film, Download, CheckCircle, RefreshCw } from "lucide-react";
+import { X, Play, Heart, Star, Calendar, ArrowUpDown, Clock, ChevronDown, BookOpen, Film, Download, CheckCircle, RefreshCw, Sparkles } from "lucide-react";
 import { Anime, Episode, Manga, User } from "../types";
 import { getAnimePlaceholder, getProxyImageUrl, recoverCoverImageInHotPath } from "../utils/imageUtils";
 import { getAnimesWithEpisodes, getBaseTitle } from "../utils/animeDb";
@@ -609,6 +609,25 @@ export default function AnimeDetail({
           <div className="flex-grow overflow-y-auto pt-4 pr-1">
             {activeTab === "capitulos" ? (
               <div className="space-y-6">
+                {/* Special informative notice for Tomb Raider King / Dogul Wang */}
+                {(currentAnime.id.toLowerCase().includes("tomb-raider") || 
+                  currentAnime.title.toLowerCase().includes("tomb raider") || 
+                  currentAnime.id.includes("184356")) && (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed flex items-start gap-3 shadow-lg mb-4">
+                    <Sparkles className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-amber-300 mb-1">ℹ️ Nota sobre Tomb Raider King (Dogul Wang)</h4>
+                      <p>
+                        <strong>Tomb Raider King</strong> es originalmente un aclamado <strong>Manhwa (Webtoon de 411 capítulos)</strong>. 
+                        Su adaptación animada es de emisión reciente y aún no cuenta con fuentes públicas de video con subtítulos/doblaje en los servidores de streaming.
+                      </p>
+                      <p className="mt-1.5 font-bold text-rose-400">
+                        💡 ¡Puedes leer el Manhwa completo de 411 capítulos de Tomb Raider King en la sección de Mangas de la app!
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Series Episodes Listing Header */}
                 {!isMovie && (
                   <div className="flex justify-between items-center text-xs text-neutral-400">

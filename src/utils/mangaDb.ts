@@ -361,4 +361,16 @@ export const MOCK_MANGAS: Manga[] = [
     chaptersCount: 120,
     rating: 9.3,
   },
+  {
+    id: "tomb-raider-king",
+    title: "Tomb Raider King",
+    synopsis:
+      "Aparecen tumbas misteriosas en todo el mundo, cada una con reliquias que otorgan habilidades sobrenaturales. Joo-Heon Suh, un famoso saqueador de tumbas traicionado, renace en el pasado conservando sus conocimientos para reclamar todas las reliquias del mundo.",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx110462-okQFIoSFvb4L.jpg",
+    genres: ["Acción", "Fantasía", "Aventura"],
+    status: "Finalizado",
+    year: 2019,
+    chaptersCount: 411,
+    rating: 9.4,
+  },
 ];
