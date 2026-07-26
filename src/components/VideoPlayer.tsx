@@ -320,12 +320,24 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // If current iframe server does not resolve, check if another server is a direct stream
-          const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
-          if (directIdx !== -1 && directIdx !== activeServerIdx) {
-            console.log(`[Auto-Player] Switching to direct server #${directIdx + 1} for custom player.`);
-            setActiveServerIdx(directIdx);
-            return;
+          // Search candidate servers for any that resolves to direct media for custom player
+          for (let i = 0; i < servers.length; i++) {
+            if (i === activeServerIdx) continue;
+            const cand = servers[i];
+            if (!cand || !cand.url) continue;
+
+            if (!isEmbedUrl(cand.url)) {
+              console.log(`[Auto-Player] Switching to direct server #${i + 1} (${cand.name}) for custom player.`);
+              setActiveServerIdx(i);
+              return;
+            }
+
+            const candResolved = await resolveEmbedUrl(cand.name, cand.url);
+            if (candResolved && candResolved.url) {
+              console.log(`[Auto-Player] Resolved direct stream for server #${i + 1} (${cand.name}). Auto-switching to custom player!`);
+              setActiveServerIdx(i);
+              return;
+            }
           }
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);

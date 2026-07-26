@@ -1788,17 +1788,19 @@ async function startServer() {
       }
 
       // ── Mp4Upload ──
-      if (!directUrl && (serverName.includes("mp4upload") || html.includes("mp4upload"))) {
+      if (!directUrl && (serverName.includes("mp4upload") || embedUrl.includes("mp4upload") || html.includes("mp4upload"))) {
         const m = html.match(/src\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
-               || html.match(/player\.src\(["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
-        if (m) { directUrl = m[1]; }
+               || html.match(/player\.src\(["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
+               || html.match(/(https?:\/\/[^"'`\s\\]+\.mp4\b[^"'`\s]*)/i);
+        if (m && !m[1].includes(".js") && !m[1].includes(".css")) { directUrl = m[1]; isHls = false; }
       }
 
       // ── VOE.sx ──
-      if (!directUrl && (serverName.includes("voe") || html.includes("voe.sx"))) {
+      if (!directUrl && (serverName.includes("voe") || embedUrl.includes("voe") || html.includes("voe"))) {
         const m = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
-               || html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i);
-        if (m) { directUrl = m[1]; isHls = directUrl.includes(".m3u8"); }
+               || html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+               || html.match(/(https?:\/\/[^"'`\s\\]+\.m3u8\b[^"'`\s]*)/i);
+        if (m) { directUrl = m[1]; isHls = true; }
       }
 
       // ── YourUpload / uqload ──
