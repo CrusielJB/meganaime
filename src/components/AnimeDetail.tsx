@@ -616,13 +616,10 @@ export default function AnimeDetail({
                   <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed flex items-start gap-3 shadow-lg mb-4">
                     <Sparkles className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-amber-300 mb-1">ℹ️ Nota sobre Tomb Raider King (Dogul Wang)</h4>
+                      <h4 className="font-bold text-amber-300 mb-1">ℹ️ Tomb Raider King (Dogul Wang / Toukutsuou)</h4>
                       <p>
-                        <strong>Tomb Raider King</strong> es originalmente un aclamado <strong>Manhwa (Webtoon de 411 capítulos)</strong>. 
-                        Su adaptación animada es de emisión reciente y aún no cuenta con fuentes públicas de video con subtítulos/doblaje en los servidores de streaming.
-                      </p>
-                      <p className="mt-1.5 font-bold text-rose-400">
-                        💡 ¡Puedes leer el Manhwa completo de 411 capítulos de Tomb Raider King en la sección de Mangas de la app!
+                        ¡Los capítulos en emisión de la serie animada están conectados desde MonosChinos! 
+                        También puedes leer el Manhwa original completo de 411 capítulos en la sección de Mangas de la app.
                       </p>
                     </div>
                   </div>
