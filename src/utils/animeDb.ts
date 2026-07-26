@@ -1204,6 +1204,9 @@ export function getBaseTitle(title: string): string {
   if (baseLower.includes("youjo senki") || baseLower.includes("saga of tanya the evil")) {
     return "Youjo Senki";
   }
+  if (baseLower.includes("tomb raider king") || baseLower.includes("dogul wang")) {
+    return "Tomb Raider King";
+  }
   if (baseLower.includes("one piece")) {
     return "One Piece";
   }

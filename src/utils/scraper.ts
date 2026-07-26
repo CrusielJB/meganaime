@@ -652,6 +652,11 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "197715": "lv999-no-murabito",
   "my-love-story-with-yamada-kun-at-lv999": "yamada-kun-to-lv999-no-koi-wo-suru",
   "yamada-kun-to-lv999-no-koi-wo-suru": "yamada-kun-to-lv999-no-koi-wo-suru",
+  "tomb-raider-king": "dogul-wang",
+  "dogul-wang": "dogul-wang",
+  "consumet-184356": "dogul-wang",
+  "anilist-184356": "dogul-wang",
+  "184356": "dogul-wang",
   "jujutsu-kaisen-tv": "jujutsu-kaisen",
   "jujutsu-kaisen-tv-2": "jujutsu-kaisen-2nd-season",
   "chainsaw-man": "chainsaw-man",
@@ -1817,8 +1822,9 @@ export class AnimeApiAggregator {
       const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
       console.log(`All scrapers returned 0 servers. Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
       try {
+        const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
         const pubRes = await fetch(
-          `/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
+          `${baseUrl}/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
           { signal: AbortSignal.timeout(10000) }
         );
         if (pubRes.ok) {
