@@ -609,22 +609,6 @@ export default function AnimeDetail({
           <div className="flex-grow overflow-y-auto pt-4 pr-1">
             {activeTab === "capitulos" ? (
               <div className="space-y-6">
-                {/* Special informative notice for Tomb Raider King / Dogul Wang */}
-                {(currentAnime.id.toLowerCase().includes("tomb-raider") || 
-                  currentAnime.title.toLowerCase().includes("tomb raider") || 
-                  currentAnime.id.includes("184356")) && (
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed flex items-start gap-3 shadow-lg mb-4">
-                    <Sparkles className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-bold text-amber-300 mb-1">ℹ️ Tomb Raider King (Dogul Wang / Toukutsuou)</h4>
-                      <p>
-                        ¡Los capítulos en emisión de la serie animada están conectados desde MonosChinos! 
-                        También puedes leer el Manhwa original completo de 411 capítulos en la sección de Mangas de la app.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Series Episodes Listing Header */}
                 {!isMovie && (
                   <div className="flex justify-between items-center text-xs text-neutral-400">
