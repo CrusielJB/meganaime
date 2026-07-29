@@ -20,6 +20,24 @@ export const MOCK_ANIMES: Anime[] = [
     external_id: "178789"
   },
   {
+    id: "a-galaxy-next-door",
+    title: "A Galaxy Next Door",
+    synopsis: "Desde la muerte de su padre, Ichiro Kuga ha luchado por mantener a sus dos hermanos menores con una pequeña herencia y su pasión por dibujar manga. Pero se le hace cada vez más difícil mantenerse al día con sus crecientes responsabilidades y plazos. Todo cambia cuando contrata a una nueva asistente milagrosa, Shiori Goshiki, una hermosa y misteriosa joven con un talento increíble que le revela un secreto galáctico.",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx148098-bM0FfF2MszNn.jpg",
+    bannerUrl: "https://images.alphacoders.com/131/1310125.jpeg",
+    genres: ["Comedia", "Romance", "Sobrenatural", "Recuentos de la vida"],
+    status: "Finalizado",
+    rating: 8.4,
+    type: "Anime",
+    episodesCount: 12,
+    year: 2023,
+    episodes: [],
+    title_romaji: "Otonari ni Ginga",
+    title_english: "A Galaxy Next Door",
+    title_native: "おとなりに銀河",
+    external_id: "148098"
+  },
+  {
     id: "one-piece",
     title: "One Piece",
     synopsis: "Riqueza, fama, poder... el hombre que lo consiguió todo en este mundo fue el Rey de los Piratas, Gold Roger. Antes de morir, sus últimas palabras inspiraron al mundo a lanzarse al mar: '¿Mis riquezas y tesoros? Si los queréis, os los doy. ¡Buscadlos! Lo dejé todo en ese lugar'. Así comenzó la Gran Era de los Piratas, con piratas de todo el mundo izando sus banderas y compitiendo por encontrar el gran tesoro legendario: el One Piece.",
