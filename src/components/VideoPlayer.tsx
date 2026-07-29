@@ -318,7 +318,7 @@ export default function VideoPlayer({
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
-  // Resolve link dynamically on server selection change for EVERY selected anime/movie
+  // Resolve link dynamically on server selection change (fast & non-blocking)
   useEffect(() => {
     if (!activeServer) return;
 
@@ -332,6 +332,7 @@ export default function VideoPlayer({
         setResolvedStreamUrl(activeServer.url);
         setUseResolvedPlayer(true);
         setResolvedIsHls(activeServer.url.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8"));
+        setIsResolving(false);
         return;
       }
 
@@ -343,26 +344,10 @@ export default function VideoPlayer({
           setResolvedStreamUrl(resolved.url);
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
-          return;
+        } else {
+          setResolvedStreamUrl(activeServer.url);
+          setUseResolvedPlayer(false);
         }
-
-        // Check if any other server resolves to direct stream
-        for (let i = 0; i < servers.length; i++) {
-          if (i === activeServerIdx) continue;
-          const cand = servers[i];
-          if (!cand || !cand.url) continue;
-
-          const candResolved = await resolveEmbedUrl(cand.name, cand.url);
-          if (candResolved && candResolved.url) {
-            console.log(`[Auto-Player] Auto-resolved direct stream for server #${i + 1} (${cand.name}). Switching to custom player!`);
-            setActiveServerIdx(i);
-            return;
-          }
-        }
-
-        // Fallback: If no server resolves to direct stream, render iframe so video plays cleanly without freezing
-        setResolvedStreamUrl(activeServer.url);
-        setUseResolvedPlayer(false);
       } catch (e) {
         console.error("Error resolving server URL:", e);
         setResolvedStreamUrl(activeServer.url);
@@ -373,7 +358,7 @@ export default function VideoPlayer({
     };
 
     checkAndResolve();
-  }, [activeServer, activeServerIdx, servers]);
+  }, [activeServer]);
 
   const togglePlay = () => {
     const video = videoRef.current;
