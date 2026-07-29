@@ -38,6 +38,24 @@ export const MOCK_ANIMES: Anime[] = [
     external_id: "148098"
   },
   {
+    id: "ragna-crimson",
+    title: "Ragna Crimson",
+    synopsis: "En un mundo donde los dragones dominan la tierra, los cazadores de dragones luchan para erradicarlos. Ragna, un joven cazador novato considerado el más débil, se une a la genio cazadora Leonica para proteger a la humanidad. Tras recibir una visión aterradora de su futuro y la ayuda de un misterioso aliado conocido como Crimson, Ragna promete venganza y poder absoluto para exterminar a todos los dragones superiores.",
+    coverUrl: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx146493-27zX4H8x4b0B.jpg",
+    bannerUrl: "https://images4.alphacoders.com/133/1335492.jpeg",
+    genres: ["Acción", "Fantasía oscura", "Sobrenatural", "Shounen"],
+    status: "Finalizado",
+    rating: 8.7,
+    type: "Anime",
+    episodesCount: 24,
+    year: 2023,
+    episodes: [],
+    title_romaji: "Ragna Crimson",
+    title_english: "Ragna Crimson",
+    title_native: "ラグナクリムゾン",
+    external_id: "146493"
+  },
+  {
     id: "one-piece",
     title: "One Piece",
     synopsis: "Riqueza, fama, poder... el hombre que lo consiguió todo en este mundo fue el Rey de los Piratas, Gold Roger. Antes de morir, sus últimas palabras inspiraron al mundo a lanzarse al mar: '¿Mis riquezas y tesoros? Si los queréis, os los doy. ¡Buscadlos! Lo dejé todo en ese lugar'. Así comenzó la Gran Era de los Piratas, con piratas de todo el mundo izando sus banderas y compitiendo por encontrar el gran tesoro legendario: el One Piece.",
