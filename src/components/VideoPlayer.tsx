@@ -360,13 +360,13 @@ export default function VideoPlayer({
           }
         }
 
-        // Always enforce custom Mega Anime player using our stream proxy fallback
-        setResolvedStreamUrl(`/api/proxy-stream?url=${encodeURIComponent(activeServer.url)}`);
-        setUseResolvedPlayer(true);
+        // Fallback: If no server resolves to direct stream, render iframe so video plays cleanly without freezing
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(false);
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl(`/api/proxy-stream?url=${encodeURIComponent(activeServer.url)}`);
-        setUseResolvedPlayer(true);
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(false);
       } finally {
         setIsResolving(false);
       }

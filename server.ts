@@ -1722,16 +1722,22 @@ async function startServer() {
         referer = embedUrlObj.origin;
       } catch(e) {}
 
-      const response = await fetch(embedUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": referer,
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-          "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
-        },
-        signal: AbortSignal.timeout(8000)
-      });
-      if (!response.ok) throw new Error(`Failed to fetch embed page: status ${response.status}`);
+      let response: Response | null = null;
+      try {
+        response = await fetch(embedUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": referer,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
+          },
+          signal: AbortSignal.timeout(5000)
+        });
+      } catch (e) {}
+
+      if (!response || !response.ok) {
+        return res.json({ url: null, isHls: false });
+      }
       const html = await response.text();
 
       let directUrl: string | null = null;
