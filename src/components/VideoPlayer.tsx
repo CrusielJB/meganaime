@@ -318,7 +318,7 @@ export default function VideoPlayer({
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
-  // Resolve link dynamically on server selection change
+  // Resolve link dynamically on server selection change for EVERY selected anime/movie
   useEffect(() => {
     if (!activeServer) return;
 
@@ -343,21 +343,37 @@ export default function VideoPlayer({
           setResolvedStreamUrl(resolved.url);
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
-        } else {
-          setResolvedStreamUrl(activeServer.url);
-          setUseResolvedPlayer(false);
+          return;
         }
+
+        // Check if any other server resolves to direct stream
+        for (let i = 0; i < servers.length; i++) {
+          if (i === activeServerIdx) continue;
+          const cand = servers[i];
+          if (!cand || !cand.url) continue;
+
+          const candResolved = await resolveEmbedUrl(cand.name, cand.url);
+          if (candResolved && candResolved.url) {
+            console.log(`[Auto-Player] Auto-resolved direct stream for server #${i + 1} (${cand.name}). Switching to custom player!`);
+            setActiveServerIdx(i);
+            return;
+          }
+        }
+
+        // Always enforce custom Mega Anime player using our stream proxy fallback
+        setResolvedStreamUrl(`/api/proxy-stream?url=${encodeURIComponent(activeServer.url)}`);
+        setUseResolvedPlayer(true);
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl(activeServer.url);
-        setUseResolvedPlayer(false);
+        setResolvedStreamUrl(`/api/proxy-stream?url=${encodeURIComponent(activeServer.url)}`);
+        setUseResolvedPlayer(true);
       } finally {
         setIsResolving(false);
       }
     };
 
     checkAndResolve();
-  }, [activeServer]);
+  }, [activeServer, activeServerIdx, servers]);
 
   const togglePlay = () => {
     const video = videoRef.current;
