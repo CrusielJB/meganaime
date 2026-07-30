@@ -1040,8 +1040,8 @@ export default function VideoPlayer({
                     src={embedUrlWithTime}
                     className="w-full h-full border-0"
                     allowFullScreen
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    referrerPolicy="no-referrer"
+                    allow="autoplay; encrypted-media; picture-in-picture; clipboard-write"
+                    referrerPolicy="no-referrer-when-downgrade"
                     title={activeServer.name}
                   />
                   {!postMessageActive && (
@@ -1080,7 +1080,7 @@ export default function VideoPlayer({
                     controls={false}
                     autoPlay
                     playsInline
-                    referrerPolicy="no-referrer"
+                    referrerPolicy="no-referrer-when-downgrade"
                     onClick={togglePlay}
                     onDoubleClick={toggleFullscreen}
                     onTimeUpdate={() => {
