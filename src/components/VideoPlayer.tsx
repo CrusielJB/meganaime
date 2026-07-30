@@ -339,45 +339,27 @@ export default function VideoPlayer({
       setIsResolving(true);
       try {
         const { resolveEmbedUrl } = await import("../utils/resolvers");
-        let resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
-
-        // If activeServer didn't resolve to direct video, try other available servers in background
-        if (!resolved || !resolved.url) {
-          for (let i = 0; i < servers.length; i++) {
-            if (i === activeServerIdx) continue;
-            const cand = servers[i];
-            if (!cand || !cand.url) continue;
-            const candResolved = await resolveEmbedUrl(cand.name, cand.url);
-            if (candResolved && candResolved.url) {
-              resolved = candResolved;
-              setActiveServerIdx(i);
-              break;
-            }
-          }
-        }
+        const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
 
         if (resolved && resolved.url) {
           setResolvedStreamUrl(resolved.url);
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // Guaranteed direct HD video stream for our custom Mega Anime HTML5 player
-          setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
-          setUseResolvedPlayer(true);
-          setResolvedIsHls(false);
+          setResolvedStreamUrl(activeServer.url);
+          setUseResolvedPlayer(false);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
-        setUseResolvedPlayer(true);
-        setResolvedIsHls(false);
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(false);
       } finally {
         setIsResolving(false);
       }
     };
 
     checkAndResolve();
-  }, [activeServer, activeServerIdx, servers]);
+  }, [activeServer]);
 
   const togglePlay = () => {
     const video = videoRef.current;
