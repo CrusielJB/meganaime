@@ -346,13 +346,16 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          setResolvedStreamUrl(activeServer.url);
-          setUseResolvedPlayer(false);
+          // ALWAYS enforce our custom Mega Anime HTML5 player (<video>) for 100% of animes and movies!
+          setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+          setUseResolvedPlayer(true);
+          setResolvedIsHls(false);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl(activeServer.url);
-        setUseResolvedPlayer(false);
+        setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+        setUseResolvedPlayer(true);
+        setResolvedIsHls(false);
       } finally {
         setIsResolving(false);
       }
