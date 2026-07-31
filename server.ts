@@ -1670,21 +1670,10 @@ async function startServer() {
         if (val) res.setHeader(h, val);
       });
 
-      // Stream the body
+      // Stream the body using standard Node.js stream piping to handle backpressure and range requests
       if (upstream.body) {
-        const reader = upstream.body.getReader();
-        const pump = async () => {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) { res.end(); break; }
-              res.write(value);
-            }
-          } catch (e) {
-            res.end();
-          }
-        };
-        pump();
+        const { Readable } = await import("node:stream");
+        Readable.fromWeb(upstream.body as any).pipe(res);
       } else {
         res.end();
       }
