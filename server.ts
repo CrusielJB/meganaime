@@ -1727,16 +1727,47 @@ async function startServer() {
       if (!response || !response.ok) {
         return res.json({ url: null, isHls: false });
       }
-      const html = await response.text();
+      const rawHtml = await response.text();
+
+      // Helper to unpack P.A.C.K.E.R encoded javascript strings
+      const unpackPacker = (packedCode: string): string => {
+        try {
+          const match = packedCode.match(/eval\(function\(p,a,c,k,e,d\)\{.*?\}\('([\s\S]*?)',(\d+),(\d+),'([\s\S]*?)'\.split\('\|'\)/);
+          if (!match) return packedCode;
+
+          const payload = match[1];
+          const radix = parseInt(match[2], 10);
+          const symtab = match[4].split('|');
+          const digits = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+          const lookup = (word: string) => {
+            let val = 0;
+            for (let i = 0; i < word.length; i++) {
+              val = val * radix + digits.indexOf(word[i]);
+            }
+            if (val < symtab.length && symtab[val]) {
+              return symtab[val];
+            }
+            return word;
+          };
+
+          return payload.replace(/\b\w+\b/g, lookup);
+        } catch (e) {
+          return packedCode;
+        }
+      };
+
+      const html = unpackPacker(rawHtml) + "\n" + rawHtml;
 
       let directUrl: string | null = null;
       let isHls = false;
 
-      // ── Streamwish / Filelions / Wishembed ──
-      if (serverName.includes("wish") || serverName.includes("lion") || html.includes("jwplayer") || html.includes("streamwish")) {
+      // ── Streamwish / Filelions / Wishembed / Lulustream ──
+      if (serverName.includes("wish") || serverName.includes("lion") || html.includes("jwplayer") || html.includes("streamwish") || html.includes("luluvdo") || html.includes("lulustream")) {
         const m = html.match(/file\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i)
                || html.match(/["']file["']\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i)
-               || html.match(/source\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i);
+               || html.match(/source\s*:\s*["'`](https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)["'`]/i)
+               || html.match(/(https?:\/\/[^"'`\s]+\.m3u8[^"'`\s]*)/i);
         if (m) { directUrl = m[1]; isHls = true; }
       }
 
