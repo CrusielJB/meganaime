@@ -1,4 +1,13 @@
 {
+  "apphosting": {
+    "backendId": "megaanime-backend",
+    "rootDir": "/",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "scratch"
+    ]
+  },
   "firestore": {
     "databaseId": "(default)",
     "rules": "firestore.rules",
