@@ -600,8 +600,7 @@ export default function VideoPlayer({
 
   // Direct video load & HLS support with auto-advance on fatal error
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !activeServer || !resolvedStreamUrl || (isEmbedUrl(activeServer.url) && !useResolvedPlayer)) return;
+    if (!resolvedStreamUrl || !useResolvedPlayer) return;
 
     // Reset error state whenever we load a new stream
     setVideoError(null);
@@ -629,58 +628,76 @@ export default function VideoPlayer({
       }
     };
 
-    const startPlayback = () => {
-      if (!video) return;
+    const startPlayback = (videoEl: HTMLVideoElement) => {
       setIsPlaying(true);
-      video.play().catch(e => {
+      videoEl.play().catch(e => {
         console.log("Autoplay blocked by browser policy, attempting muted autoplay:", e);
-        video.muted = true;
+        videoEl.muted = true;
         setIsMuted(true);
-        video.play().catch(() => {});
+        videoEl.play().catch(() => {});
       });
     };
 
-    if (isHls) {
-      if (Hls.isSupported()) {
-        hls = new Hls({
-          maxMaxBufferLength: 30,
-          enableWorker: true,
-          fragLoadingTimeOut: 15000,
-          manifestLoadingTimeOut: 10000,
-          levelLoadingTimeOut: 10000
-        });
-        hls.loadSource(resolvedStreamUrl);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          startPlayback();
-        });
-        hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-          if (data.fatal) {
-            console.warn("HLS fatal error:", data.type, data.details);
-            hls?.destroy();
-            handleVideoError();
-          }
-        });
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    // Attach to video ref when element is ready
+    const attachVideo = () => {
+      const video = videoRef.current;
+      if (!video) return false;
+
+      if (isHls) {
+        if (Hls.isSupported()) {
+          hls = new Hls({
+            maxMaxBufferLength: 30,
+            enableWorker: true,
+            fragLoadingTimeOut: 15000,
+            manifestLoadingTimeOut: 10000,
+            levelLoadingTimeOut: 10000
+          });
+          hls.loadSource(resolvedStreamUrl);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            startPlayback(video);
+          });
+          hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+            if (data.fatal) {
+              console.warn("HLS fatal error:", data.type, data.details);
+              hls?.destroy();
+              handleVideoError();
+            }
+          });
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = resolvedStreamUrl;
+          video.load();
+          video.addEventListener("error", handleVideoError);
+          startPlayback(video);
+        }
+      } else {
         video.src = resolvedStreamUrl;
         video.load();
-        video.addEventListener("error", handleVideoError, { once: true });
-        startPlayback();
+        video.addEventListener("error", handleVideoError);
+        startPlayback(video);
       }
-    } else {
-      video.src = resolvedStreamUrl;
-      video.load();
-      video.addEventListener("error", handleVideoError, { once: true });
-      startPlayback();
+      return true;
+    };
+
+    // Poll until video ref is populated by React rendering
+    let pollTimer: any = null;
+    if (!attachVideo()) {
+      pollTimer = setInterval(() => {
+        if (attachVideo()) {
+          clearInterval(pollTimer);
+        }
+      }, 50);
     }
 
     return () => {
+      if (pollTimer) clearInterval(pollTimer);
       if (hls) hls.destroy();
-      video.removeEventListener("error", handleVideoError);
+      const video = videoRef.current;
+      if (video) video.removeEventListener("error", handleVideoError);
       if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeServer, activeServerIdx, loading, resolvedStreamUrl, useResolvedPlayer, resolvedIsHls]);
+  }, [resolvedStreamUrl, useResolvedPlayer, resolvedIsHls, activeServerIdx, servers.length]);
 
 
   // Direct video seek progress on loaded
