@@ -1838,7 +1838,7 @@ export class AnimeApiAggregator {
     if (!hasDirectOrMp4Upload && servers.length > 0) {
       servers.unshift({
         name: "Servidor Mega Anime HD (Directo)",
-        url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
       });
     }
 
@@ -1872,11 +1872,11 @@ export class AnimeApiAggregator {
       servers.push(
         {
           name: "Servidor Directo HD 1",
-          url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+          url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
         },
         {
           name: "Servidor Respaldo HD 2",
-          url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+          url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
         }
       );
     }

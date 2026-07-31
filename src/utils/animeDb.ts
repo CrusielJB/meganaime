@@ -1145,10 +1145,8 @@ export function getAnimesWithEpisodes(): Anime[] {
       episodes = anime.episodes.map(ep => ({
         ...ep,
         videoServers: ep.videoServers && ep.videoServers.length > 0 ? ep.videoServers : [
-          { name: "MegaServer 1", url: ep.videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-          { name: "Fembed Proxy", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
-          { name: "StreamTape", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
-          { name: "Okru Alt", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" }
+          { name: "MegaServer 1", url: ep.videoUrl || "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
+          { name: "Servidor HD 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
         ]
       }));
     } else {
@@ -1162,12 +1160,10 @@ export function getAnimesWithEpisodes(): Anime[] {
           animeTitle: anime.title,
           coverUrl: anime.coverUrl,
           // High quality legal sample streams for playback
-          videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          videoUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
           videoServers: [
-            { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-            { name: "Fembed Proxy", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" },
-            { name: "StreamTape", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
-            { name: "Okru Alt", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4" }
+            { name: "MegaServer 1", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
+            { name: "Servidor HD 2", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" }
           ],
           releaseDate: `${2023 + Math.floor(i / 10)}-${String((i % 12) + 1).padStart(2, "0")}-${String((i * 3 % 28) + 1).padStart(2, "0")}`
         });

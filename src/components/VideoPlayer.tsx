@@ -270,7 +270,7 @@ export default function VideoPlayer({
     ...(episodeData?.videoServers && episodeData.videoServers.length > 0
       ? episodeData.videoServers
       : [
-          { name: "MegaServer Directo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+          { name: "Servidor Mega Anime HD (Directo)", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
           { name: "MegaServer Respaldo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
         ]),
 
@@ -346,16 +346,15 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // ALWAYS enforce our custom Mega Anime HTML5 player (<video>) for 100% of animes and movies!
-          setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+          setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
           setUseResolvedPlayer(true);
-          setResolvedIsHls(false);
+          setResolvedIsHls(true);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+        setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
         setUseResolvedPlayer(true);
-        setResolvedIsHls(false);
+        setResolvedIsHls(true);
       } finally {
         setIsResolving(false);
       }
@@ -622,7 +621,8 @@ export default function VideoPlayer({
         }, 1500);
       } else {
         console.log("[Auto-Player] All servers exhausted, applying ultimate direct stream fallback.");
-        setResolvedStreamUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+        setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
+        setResolvedIsHls(true);
         setVideoError(null);
         setIsAutoAdvancing(false);
       }
