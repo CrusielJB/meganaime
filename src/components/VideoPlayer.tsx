@@ -582,14 +582,20 @@ export default function VideoPlayer({
   const embedUrlWithTime = React.useMemo(() => {
     if (!activeServer || !isEmbedUrl(activeServer.url)) return "";
     
+    let url = activeServer.url;
     const saved = getLocalEpisodeProgress(animeId, currentUser, resolvedTitle);
     if (saved && saved.episodeId === episodeId && saved.progressSeconds > 5) {
       const duration = saved.durationSeconds || 1440;
       if (saved.progressSeconds < duration * 0.90) {
-        return injectStartTimeIntoEmbedUrl(activeServer.url, saved.progressSeconds);
+        url = injectStartTimeIntoEmbedUrl(url, saved.progressSeconds);
       }
     }
-    return activeServer.url;
+    // Append autoplay parameters so video starts playing immediately on selection
+    const connector = url.includes("?") ? "&" : "?";
+    if (!url.includes("autoplay=") && !url.includes("autostart=")) {
+      url += `${connector}autoplay=1&autostart=true`;
+    }
+    return url;
   }, [activeServer, episodeId, animeId, currentUser, resolvedTitle]);
 
   // Direct video load & HLS support with auto-advance on fatal error
