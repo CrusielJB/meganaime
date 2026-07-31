@@ -1830,18 +1830,6 @@ export class AnimeApiAggregator {
       }
     }
 
-    // Ensure every episode has at least 1 guaranteed direct stream server for our custom Mega Anime player
-    const hasDirectOrMp4Upload = servers.some(s => {
-      const u = (s.url || "").toLowerCase();
-      return s.name.includes("Mp4Upload") || u.includes(".mp4") || u.includes(".m3u8");
-    });
-    if (!hasDirectOrMp4Upload && servers.length > 0) {
-      servers.unshift({
-        name: "Servidor Mega Anime HD (Directo)",
-        url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-      });
-    }
-
     // ── Tier 2 Fallback: Query public streaming APIs (Gogoanime via ani.zip, AnimePahe) ──
     if (servers.length === 0) {
       const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
