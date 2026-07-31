@@ -328,7 +328,7 @@ export default function AnimeDetail({
           const data = await res.json();
           const directServer = data.videoServers?.find((s: any) => {
             const lower = s.url.toLowerCase();
-            return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.includes("commondatastorage");
+            return lower.endsWith(".mp4") || lower.endsWith(".m3u8") || lower.includes("mp4upload") || lower.includes("filemoon") || lower.includes("voe");
           });
           if (directServer) {
             downloadUrl = directServer.url;

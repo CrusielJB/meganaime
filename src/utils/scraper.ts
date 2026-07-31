@@ -1004,15 +1004,11 @@ export async function scrapeEpisode(id: string): Promise<Partial<Episode>> {
     };
   } catch (error) {
     console.warn(`Failed to resolve dynamic stream links for episode ${id}:`, error);
-    const fallbackServers = [
-      { name: "MegaServer Directo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-      { name: "MegaServer Respaldo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
-    ];
     return {
       id,
       title: `Episodio ${id.split("-").pop() || "1"}`,
-      videoServers: fallbackServers,
-      videoUrl: fallbackServers[0].url
+      videoServers: [],
+      videoUrl: `/api/admin/scrape-episode?episodeId=${id}&animeId=${id.split("-")[0]}&epNum=${id.split("-").pop() || "1"}`
     };
   }
 }
@@ -1032,7 +1028,7 @@ function generateMockRecentEpisodes(animes: Anime[]): Episode[] {
       animeId: anime.id,
       animeTitle: anime.title,
       coverUrl: anime.coverUrl,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: `/api/admin/scrape-episode?episodeId=${anime.id}-${latestChapterNum}&animeId=${anime.id}&epNum=${latestChapterNum}`,
       releaseDate: "Hoy"
     });
   });
@@ -1064,11 +1060,8 @@ function generateMockEpisodesFor(animeId: string, animeTitle: string, cover: str
       animeId: animeId,
       animeTitle: animeTitle,
       coverUrl: cover,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      videoServers: [
-        { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-        { name: "Fembed Proxy", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
-      ],
+      videoUrl: `/api/admin/scrape-episode?episodeId=${animeId}-${i}&animeId=${animeId}&epNum=${i}`,
+      videoServers: [],
       releaseDate: `2024-05-${String(i).padStart(2, "0")}`
     });
   }
@@ -1850,23 +1843,6 @@ export class AnimeApiAggregator {
       } catch (e) {
         console.warn("Public streaming API call failed:", e);
       }
-    }
-
-    // ── Tier 3 Fallback: Clean Direct Stream Fallback (No YouTube error embeds) ──
-    if (servers.length === 0) {
-      const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ");
-      console.log(`Injecting Direct Fast Stream Fallback for: "${searchTitle}" ep ${epNum}`);
-
-      servers.push(
-        {
-          name: "Servidor Directo HD 1",
-          url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-        },
-        {
-          name: "Servidor Respaldo HD 2",
-          url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-        }
-      );
     }
 
     return servers;

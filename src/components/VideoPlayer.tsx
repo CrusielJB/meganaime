@@ -269,11 +269,7 @@ export default function VideoPlayer({
     ...(localVideoUrl ? [{ name: "Reproducción Local (Descargado)", url: localVideoUrl }] : []),
     ...(episodeData?.videoServers && episodeData.videoServers.length > 0
       ? episodeData.videoServers
-      : [
-          { name: "Servidor Mega Anime HD (Directo)", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
-          { name: "MegaServer Respaldo", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
-        ]),
-
+      : [])
   ];
 
   // Purge any restricted YouTube embeds to ensure clean video playback
@@ -346,15 +342,14 @@ export default function VideoPlayer({
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
-          setUseResolvedPlayer(true);
-          setResolvedIsHls(true);
+          // Use real activeServer URL for this episode inside player container
+          setResolvedStreamUrl(activeServer.url);
+          setUseResolvedPlayer(false);
         }
       } catch (e) {
         console.error("Error resolving server URL:", e);
-        setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
-        setUseResolvedPlayer(true);
-        setResolvedIsHls(true);
+        setResolvedStreamUrl(activeServer.url);
+        setUseResolvedPlayer(false);
       } finally {
         setIsResolving(false);
       }
@@ -620,10 +615,8 @@ export default function VideoPlayer({
           setIsAutoAdvancing(false);
         }, 1500);
       } else {
-        console.log("[Auto-Player] All servers exhausted, applying ultimate direct stream fallback.");
-        setResolvedStreamUrl("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8");
-        setResolvedIsHls(true);
-        setVideoError(null);
+        console.log("[Auto-Player] All servers exhausted for this episode.");
+        setVideoError("No se pudo cargar el video de este servidor. Por favor selecciona otro servidor arriba o intenta de nuevo.");
         setIsAutoAdvancing(false);
       }
     };
