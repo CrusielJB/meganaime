@@ -1,18 +1,7 @@
 {
-  "apphosting": {
-    "backendId": "megaanime-backend",
-    "rootDir": "/",
-    "ignore": [
-      "node_modules",
-      ".git",
-      "scratch"
-    ]
-  },
-  "firestore": {
-    "databaseId": "(default)",
-    "rules": "firestore.rules",
-    "edition": "ENTERPRISE",
-    "dataAccessMode": "FIRESTORE_NATIVE"
+  "functions": {
+    "source": ".",
+    "codebase": "default"
   },
   "hosting": {
     "public": "dist",
@@ -23,9 +12,19 @@
     ],
     "rewrites": [
       {
+        "source": "/api/**",
+        "function": "api"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "firestore": {
+    "databaseId": "(default)",
+    "rules": "firestore.rules",
+    "edition": "ENTERPRISE",
+    "dataAccessMode": "FIRESTORE_NATIVE"
   }
 }

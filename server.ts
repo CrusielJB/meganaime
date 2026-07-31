@@ -2017,9 +2017,11 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`megaAnime Server running on http://0.0.0.0:${PORT}`);
   });
+
+  return app;
 }
 
-startServer();
+export const app = startServer();
 
 function getSvgPlaceholder(title: string, isBanner: boolean = false): string {
   const cleanTitle = title || "Anime";
