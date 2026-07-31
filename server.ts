@@ -1673,7 +1673,12 @@ async function startServer() {
       // Stream the body using standard Node.js stream piping to handle backpressure and range requests
       if (upstream.body) {
         const { Readable } = await import("node:stream");
-        Readable.fromWeb(upstream.body as any).pipe(res);
+        const nodeStream = Readable.fromWeb(upstream.body as any);
+        nodeStream.on("error", (streamErr: any) => {
+          console.warn("Proxy stream aborted/timed out cleanly:", streamErr?.message || streamErr);
+          if (!res.writableEnded) res.end();
+        });
+        nodeStream.pipe(res);
       } else {
         res.end();
       }
