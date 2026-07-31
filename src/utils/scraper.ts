@@ -605,6 +605,10 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+  "180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
+  "consumet-180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
+  "the-exiled-heavy-knight-knows-how-to-game-the-system": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
+  "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "one-punch-man-3": "one-punch-man-3",
   "one-punch-man-season-3": "one-punch-man-3",
   "one-punch-man": "one-punch-man",
