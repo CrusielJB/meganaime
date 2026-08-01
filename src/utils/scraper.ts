@@ -605,6 +605,21 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+  "youjo-senki-1": "youjo-senki",
+  "your-name": "kimi-no-na-wa",
+  "your-name-e1": "kimi-no-na-wa",
+  "howls-moving-castle": "howl-no-ugoku-shiro",
+  "howls-moving-castle-e1": "howl-no-ugoku-shiro",
+  "my-neighbor-totoro": "tonari-no-totoro",
+  "my-neighbor-totoro-e1": "tonari-no-totoro",
+  "a-silent-voice": "koe-no-katachi",
+  "a-silent-voice-e1": "koe-no-katachi",
+  "demon-slayer-mugen-train-movie": "kimetsu-no-yaiba-movie-mugen-ressha-hen",
+  "demon-slayer-mugen-train-movie-e1": "kimetsu-no-yaiba-movie-mugen-ressha-hen",
+  "jujutsu-kaisen-0-movie": "jujutsu-kaisen-0-movie",
+  "jujutsu-kaisen-0-movie-e1": "jujutsu-kaisen-0-movie",
+  "suzume-movie": "suzume-no-tojimari",
+  "suzume-movie-e1": "suzume-no-tojimari",
   "196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "consumet-196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "the-frontier-lord-begins-with-zero-subjects": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
