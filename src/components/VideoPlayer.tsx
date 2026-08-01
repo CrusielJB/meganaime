@@ -1153,6 +1153,16 @@ export default function VideoPlayer({
                         setIsPlaying(!videoRef.current.paused);
                       }
                     }}
+                    onError={() => {
+                      console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Failing over...`);
+                      const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
+                      if (nextWorkingIdx !== -1 && servers.length > 1) {
+                        setActiveServerIdx(nextWorkingIdx);
+                      } else {
+                        setUseResolvedPlayer(false);
+                        setResolvedStreamUrl(activeServer.url);
+                      }
+                    }}
                   />
                   
                   {/* Center Play/Pause Animated Feedback */}
