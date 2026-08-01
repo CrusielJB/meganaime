@@ -1,7 +1,8 @@
 {
   "functions": {
     "source": ".",
-    "codebase": "default"
+    "codebase": "default",
+    "runtime": "nodejs20"
   },
   "hosting": {
     "public": "dist",
