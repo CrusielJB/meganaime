@@ -1,4 +1,4 @@
-import { Anime, Episode } from "../types";
+import { Anime, Episode, VideoServer } from "../types";
 import { getAnimesWithEpisodes, getAiringBaseCount } from "./animeDb";
 import { normalizeTitle, cleanVideoSuffixes, fuzzyMatch } from "./titleNormalizer";
 import dotenv from "dotenv";
@@ -1019,6 +1019,107 @@ async function scrapeEpisodeFromMonosChinos(
   return [];
 }
 
+async function scrapeEpisodeFromAnimeFLV(
+  episodeId: string,
+  animeId: string,
+  epNum: number,
+  isMovie: boolean,
+  matchedAnimeTitle?: string,
+  alTitles?: any
+): Promise<VideoServer[]> {
+  const servers: VideoServer[] = [];
+  try {
+    const slugCandidates: string[] = [];
+    if (MONOSCHINOS_SLUG_MAP[animeId]) slugCandidates.push(MONOSCHINOS_SLUG_MAP[animeId]);
+    if (matchedAnimeTitle) {
+      slugCandidates.push(matchedAnimeTitle.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    }
+    if (alTitles?.romaji) {
+      slugCandidates.push(alTitles.romaji.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    }
+
+    const uniqueSlugs = Array.from(new Set(slugCandidates.filter(Boolean)));
+
+    for (const slug of uniqueSlugs.slice(0, 3)) {
+      const epUrl = `https://animeflv.vc/ver/${slug}-${epNum}`;
+      const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+      if (res.ok) {
+        const html = await res.text();
+        const serverMatch = html.match(/var\s+videos\s*=\s*(\{[\s\S]*?\});/);
+        if (serverMatch) {
+          try {
+            const data = JSON.parse(serverMatch[1]);
+            const SUB = data.SUB || data.LAT || [];
+            SUB.forEach((item: any) => {
+              if (item.code) {
+                servers.push({
+                  name: `AnimeFLV (${item.title || item.server || "Stream"})`,
+                  url: item.code.startsWith("//") ? `https:${item.code}` : item.code
+                });
+              }
+            });
+          } catch(e) {}
+        }
+        if (servers.length > 0) break;
+      }
+    }
+  } catch (e) {
+    console.warn("AnimeFLV scraper error:", e);
+  }
+  return servers;
+}
+
+async function scrapeEpisodeFromAnimeID(
+  episodeId: string,
+  animeId: string,
+  epNum: number,
+  isMovie: boolean,
+  matchedAnimeTitle?: string,
+  alTitles?: any
+): Promise<VideoServer[]> {
+  const servers: VideoServer[] = [];
+  try {
+    const slugCandidates: string[] = [];
+    if (MONOSCHINOS_SLUG_MAP[animeId]) slugCandidates.push(MONOSCHINOS_SLUG_MAP[animeId]);
+    if (matchedAnimeTitle) {
+      slugCandidates.push(matchedAnimeTitle.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    }
+    if (alTitles?.romaji) {
+      slugCandidates.push(alTitles.romaji.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    }
+    if (alTitles?.english) {
+      slugCandidates.push(alTitles.english.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""));
+    }
+
+    const uniqueSlugs = Array.from(new Set(slugCandidates.filter(Boolean)));
+
+    for (const slug of uniqueSlugs.slice(0, 3)) {
+      const epUrl = `https://www.animeid.tv/v/${slug}-${epNum}`;
+      const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+      if (res.ok) {
+        const html = await res.text();
+        const serverRegex = /<li[^>]*data-video=["']([^"']+)["'][^>]*>(.*?)<\/li>/gi;
+        let match;
+        while ((match = serverRegex.exec(html)) !== null) {
+          const videoUrl = match[1];
+          const nameMatch = match[2].match(/class="name"[^>]*>([^<]+)</i) || match[2].match(/>([^<]+)</);
+          const serverName = nameMatch ? nameMatch[1].trim() : "AnimeID Stream";
+          if (videoUrl) {
+            servers.push({
+              name: `AnimeID (${serverName})`,
+              url: videoUrl.startsWith("//") ? `https:${videoUrl}` : videoUrl
+            });
+          }
+        }
+        if (servers.length > 0) break;
+      }
+    }
+  } catch (e) {
+    console.warn("AnimeID scraper error:", e);
+  }
+  return servers;
+}
+
 /**
  * Grabs video players/servers for a single episode.
  */
@@ -1831,21 +1932,25 @@ export class AnimeApiAggregator {
           matchedAnimeTitle = parsedTitle;
         }
 
-        // Try MonosChinos scraping
+        // Run MonosChinos, AnimeFLV, and AnimeID scrapers in PARALLEL
         try {
-          const mcServers = await scrapeEpisodeFromMonosChinos(
-            episodeId,
-            animeId,
-            epNum,
-            isMovie,
-            matchedAnimeTitle,
-            alTitles
-          );
-          if (mcServers && mcServers.length > 0) {
-            servers.push(...mcServers);
+          const [mcResult, flvResult, idResult] = await Promise.allSettled([
+            scrapeEpisodeFromMonosChinos(episodeId, animeId, epNum, isMovie, matchedAnimeTitle, alTitles),
+            scrapeEpisodeFromAnimeFLV(episodeId, animeId, epNum, isMovie, matchedAnimeTitle, alTitles),
+            scrapeEpisodeFromAnimeID(episodeId, animeId, epNum, isMovie, matchedAnimeTitle, alTitles)
+          ]);
+
+          if (mcResult.status === "fulfilled" && mcResult.value && mcResult.value.length > 0) {
+            servers.push(...mcResult.value);
           }
-        } catch (mcErr) {
-          console.warn("MonosChinos scraper failed:", mcErr);
+          if (flvResult.status === "fulfilled" && flvResult.value && flvResult.value.length > 0) {
+            servers.push(...flvResult.value);
+          }
+          if (idResult.status === "fulfilled" && idResult.value && idResult.value.length > 0) {
+            servers.push(...idResult.value);
+          }
+        } catch (scraperErr) {
+          console.warn("Parallel scrapers failed:", scraperErr);
         }
       } catch (err) {
         console.error("Local scraper fallback failed:", err);
