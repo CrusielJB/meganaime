@@ -2,7 +2,17 @@
   "functions": {
     "source": ".",
     "codebase": "default",
-    "runtime": "nodejs20"
+    "runtime": "nodejs20",
+    "ignore": [
+      "node_modules",
+      "node-v20*",
+      "node-v22*",
+      ".git",
+      ".antigravity",
+      "scratch",
+      "screenshot.png",
+      "firebase-debug.log"
+    ]
   },
   "hosting": {
     "public": "dist",
