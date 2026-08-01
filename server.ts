@@ -1870,7 +1870,7 @@ export async function createExpressApp() {
         });
       }
 
-      res.status(404).json({ error: "No direct stream found in embed page" });
+      res.json({ url: null, isHls: false });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to resolve embed link" });
     }
