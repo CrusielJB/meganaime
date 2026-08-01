@@ -605,6 +605,10 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+  "196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
+  "consumet-196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
+  "the-frontier-lord-begins-with-zero-subjects": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
+  "ryoumin-0-nin-start-no-henkyou-ryoushu-sama": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "consumet-180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "the-exiled-heavy-knight-knows-how-to-game-the-system": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
@@ -907,9 +911,15 @@ async function scrapeEpisodeFromMonosChinos(
           });
           
           if (isMovie) {
-            epUrlCandidates.push(`${domain}/ver/${slug}-pelicula`, `${domain}/ver/${slug}`, `${domain}/ver/${animeId}-pelicula`);
+            epUrlCandidates.push(`${domain}/ver/${slug}-pelicula`, `${domain}/ver/${slug}`, `${domain}/ver/${slug}-sub-espanol-pelicula`, `${domain}/ver/${animeId}-pelicula`);
           } else {
-            epUrlCandidates.push(`${domain}/ver/${slug}-episodio-${finalEpNum}`, `${domain}/ver/${slug}-${finalEpNum}`, `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`);
+            epUrlCandidates.push(
+              `${domain}/ver/${slug}-episodio-${finalEpNum}`,
+              `${domain}/ver/${slug}-sub-espanol-episodio-${finalEpNum}`,
+              `${domain}/ver/${slug}-${finalEpNum}`,
+              `${domain}/ver/${slug}-sub-espanol-${finalEpNum}`,
+              `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`
+            );
           }
 
           for (const candidateUrl of epUrlCandidates) {
