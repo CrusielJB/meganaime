@@ -1,40 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email.lower() == 'baezcabrera.j.r@gmail.com';
-    }
-
-    match /users/{userId} {
-      allow read, write: if true;
-    }
-
-    match /user_progress/{progressId} {
-      allow read, write: if true;
-    }
-
-    match /page_views/{viewId} {
-      allow read, write: if true;
-    }
-
-    match /reviews/{reviewId} {
-      allow read, write: if true;
-    }
-
-    match /customAnimes/{animeId} {
-      allow read, write: if true;
-    }
-
-    match /customMangas/{mangaId} {
-      allow read, write: if true;
-    }
-
+    // Universal unrestricted access rule for all collections & subcollections
     match /{document=**} {
       allow read, write: if true;
     }
