@@ -1,6 +1,7 @@
 export interface ResolvedStream {
-  url: string;
+  url: string | null;
   isHls: boolean;
+  dead?: boolean;
   headers?: Record<string, string>;
 }
 
@@ -14,9 +15,7 @@ export async function resolveEmbedUrl(serverName: string, embedUrl: string): Pro
     const res = await fetch(`/api/admin/resolve?server=${encodeURIComponent(cleanServer)}&url=${encodeURIComponent(embedUrl)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data && data.url) {
-        return data as ResolvedStream;
-      }
+      return data as ResolvedStream;
     }
   } catch (e) {
     console.error("Failed to resolve embed URL on backend:", e);

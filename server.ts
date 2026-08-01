@@ -1763,6 +1763,12 @@ export async function createExpressApp() {
 
       const html = unpackPacker(rawHtml) + "\n" + rawHtml;
 
+      // Detect if third-party embed page returned a 404 or File Deleted page
+      const isDeadEmbed = /404 Not Found|File Not Found|File deleted|Video not found|this video is no longer available/i.test(html);
+      if (isDeadEmbed) {
+        return res.json({ url: null, isHls: false, dead: true });
+      }
+
       let directUrl: string | null = null;
       let isHls = false;
 

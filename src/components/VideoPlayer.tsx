@@ -305,11 +305,21 @@ export default function VideoPlayer({
 
         if (!isMounted) return;
 
-        // Select the first server that successfully resolved to a direct stream
+        // 1. Select the first server that successfully resolved to a direct stream (and is NOT dead)
         for (const res of results) {
-          if (res.status === "fulfilled" && res.value.resolved && res.value.resolved.url) {
+          if (res.status === "fulfilled" && res.value.resolved && res.value.resolved.url && !res.value.resolved.dead) {
             const { idx } = res.value;
             console.log(`[Auto-Player] Server #${idx + 1} (${servers[idx].name}) resolved to direct media stream! Auto-selecting natively.`);
+            setActiveServerIdx(idx);
+            return;
+          }
+        }
+
+        // 2. If no direct stream, select the first ALIVE embed server (skipping dead 404 servers)
+        for (const res of results) {
+          if (res.status === "fulfilled" && res.value.resolved && !res.value.resolved.dead) {
+            const { idx } = res.value;
+            console.log(`[Auto-Player] Server #${idx + 1} (${servers[idx].name}) is an active embed! Auto-selecting.`);
             setActiveServerIdx(idx);
             return;
           }
