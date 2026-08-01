@@ -361,6 +361,15 @@ export default function VideoPlayer({
         const { resolveEmbedUrl } = await import("../utils/resolvers");
         const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
 
+        if (resolved && resolved.dead) {
+          console.warn(`[Auto-Player] Active server (${activeServer.name}) is dead/deleted! Auto-switching to next server...`);
+          const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
+          if (nextWorkingIdx !== -1 && servers.length > 1) {
+            setActiveServerIdx(nextWorkingIdx);
+            return;
+          }
+        }
+
         if (resolved && resolved.url) {
           setResolvedStreamUrl(resolved.url);
           setUseResolvedPlayer(true);
