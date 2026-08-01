@@ -1348,8 +1348,24 @@ export default function VideoPlayer({
               )}
             </div>
           ) : (
-            <div className="text-center p-6">
-              <span className="text-sm text-neutral-500">No se pudieron recuperar los reproductores de video. Intenta seleccionar otro servidor.</span>
+            <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 max-w-md mx-auto my-auto py-16">
+              <div className="h-16 w-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-xl shadow-rose-500/5 animate-pulse">
+                <Sparkles className="h-8 w-8" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-bold text-white tracking-wide">Próximamente / Servidores en Actualización</h3>
+                <p className="text-xs text-neutral-400 leading-relaxed">
+                  Este episodio se encuentra en proceso de emisión o actualización en los servidores de transmisión. Te invitamos a consultar nuevamente en breve o seleccionar otro episodio.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 pt-2">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition-all shadow-lg shadow-rose-600/20 cursor-pointer"
+                >
+                  Volver a la lista de episodios
+                </button>
+              </div>
             </div>
           )}
         </div>
