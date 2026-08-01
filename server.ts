@@ -20,9 +20,8 @@ const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
 // In-memory simulation of user storage (active session helper)
 const USERS_DB: Record<string, { username: string; email: string; favorites: string[] }> = {};
 
-async function startServer() {
+export async function createExpressApp() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // --- CUSTOM ADMIN DATABASE IMPLEMENTATION ---
   const customDbPath = path.join(process.cwd(), "src/utils/customAnimes.json");
@@ -2014,14 +2013,23 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`megaAnime Server running on http://0.0.0.0:${PORT}`);
-  });
-
   return app;
 }
 
-export const app = startServer();
+export const app = express();
+
+createExpressApp().then((configuredApp) => {
+  app.use(configuredApp);
+  const isDirectExecution = process.argv[1]?.endsWith("server.cjs") || process.argv[1]?.endsWith("server.ts");
+  if (isDirectExecution) {
+    const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+    configuredApp.listen(PORT, "0.0.0.0", () => {
+      console.log(`megaAnime Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
+}).catch((err) => {
+  console.error("Failed to initialize Express app:", err);
+});
 
 function getSvgPlaceholder(title: string, isBanner: boolean = false): string {
   const cleanTitle = title || "Anime";

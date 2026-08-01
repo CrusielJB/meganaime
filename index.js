@@ -1,12 +1,12 @@
-const { onRequest } = require("firebase-functions/v2/https");
-const { setGlobalOptions } = require("firebase-functions/v2");
+import { onRequest } from "firebase-functions/v2/https";
+import { setGlobalOptions } from "firebase-functions/v2";
 
 setGlobalOptions({ region: "us-central1" });
 
-// Load bundled Express server
-const expressApp = require("./dist/server.cjs");
+// Load Express server bundle
+import expressApp from "./dist/server.cjs";
 
-exports.api = onRequest({
+export const api = onRequest({
   memory: "512MiB",
   timeoutSeconds: 60,
   minInstances: 0
