@@ -291,19 +291,33 @@ export default function VideoPlayer({
         return;
       }
 
-      // 2. Asynchronously find which server resolves to a direct media stream for OUR custom player
-      const { resolveEmbedUrl } = await import("../utils/resolvers");
-      for (let i = 0; i < servers.length; i++) {
-        const s = servers[i];
-        if (!s || !s.url) continue;
-        try {
-          const resolved = await resolveEmbedUrl(s.name, s.url);
-          if (resolved && resolved.url && isMounted) {
-            console.log(`[Auto-Player] Server #${i + 1} (${s.name}) resolved to direct media stream! Auto-selecting for custom player.`);
-            setActiveServerIdx(i);
+      // 2. Scan ALL servers in PARALLEL to find the first one that resolves to a direct media stream
+      setIsResolving(true);
+      try {
+        const { resolveEmbedUrl } = await import("../utils/resolvers");
+        const results = await Promise.allSettled(
+          servers.map(async (s, idx) => {
+            if (!s || !s.url) return { idx, resolved: null };
+            const resolved = await resolveEmbedUrl(s.name, s.url);
+            return { idx, resolved };
+          })
+        );
+
+        if (!isMounted) return;
+
+        // Select the first server that successfully resolved to a direct stream
+        for (const res of results) {
+          if (res.status === "fulfilled" && res.value.resolved && res.value.resolved.url) {
+            const { idx } = res.value;
+            console.log(`[Auto-Player] Server #${idx + 1} (${servers[idx].name}) resolved to direct media stream! Auto-selecting natively.`);
+            setActiveServerIdx(idx);
             return;
           }
-        } catch (e) {}
+        }
+      } catch (e) {
+        console.error("Error in parallel server scan:", e);
+      } finally {
+        if (isMounted) setIsResolving(false);
       }
     };
 
