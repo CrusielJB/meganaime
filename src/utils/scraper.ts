@@ -1039,29 +1039,33 @@ async function scrapeEpisodeFromAnimeFLV(
     }
 
     const uniqueSlugs = Array.from(new Set(slugCandidates.filter(Boolean)));
+    const flvDomains = ["https://www3.animeflv.net", "https://animeflv.net"];
 
-    for (const slug of uniqueSlugs.slice(0, 3)) {
-      const epUrl = `https://animeflv.vc/ver/${slug}-${epNum}`;
-      const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
-      if (res.ok) {
-        const html = await res.text();
-        const serverMatch = html.match(/var\s+videos\s*=\s*(\{[\s\S]*?\});/);
-        if (serverMatch) {
-          try {
-            const data = JSON.parse(serverMatch[1]);
-            const SUB = data.SUB || data.LAT || [];
-            SUB.forEach((item: any) => {
-              if (item.code) {
-                servers.push({
-                  name: `AnimeFLV (${item.title || item.server || "Stream"})`,
-                  url: item.code.startsWith("//") ? `https:${item.code}` : item.code
-                });
-              }
-            });
-          } catch(e) {}
+    for (const domain of flvDomains) {
+      for (const slug of uniqueSlugs.slice(0, 4)) {
+        const epUrl = `${domain}/ver/${slug}-${epNum}`;
+        const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+        if (res.ok) {
+          const html = await res.text();
+          const serverMatch = html.match(/var\s+videos\s*=\s*(\{[\s\S]*?\});/);
+          if (serverMatch) {
+            try {
+              const data = JSON.parse(serverMatch[1]);
+              const SUB = data.SUB || data.LAT || [];
+              SUB.forEach((item: any) => {
+                if (item.code) {
+                  servers.push({
+                    name: `AnimeFLV (${item.title || item.server || "Stream"})`,
+                    url: item.code.startsWith("//") ? `https:${item.code}` : item.code
+                  });
+                }
+              });
+            } catch(e) {}
+          }
+          if (servers.length > 0) break;
         }
-        if (servers.length > 0) break;
       }
+      if (servers.length > 0) break;
     }
   } catch (e) {
     console.warn("AnimeFLV scraper error:", e);
@@ -1754,6 +1758,7 @@ export class AnimeApiAggregator {
 
   static async getStreamLinks(episodeId: string): Promise<{ name: string; url: string }[]> {
     const servers: { name: string; url: string }[] = [];
+    let alTitles: any = null;
     let animeId = episodeId;
     let epNum = 1;
     let isMovie = episodeId.toLowerCase().includes("movie") || episodeId.toLowerCase().includes("pelicula");
@@ -1904,7 +1909,6 @@ export class AnimeApiAggregator {
         }
 
         // 4. Fetch details to get all alternative titles (Romaji, English, etc.) for accurate matching
-        let alTitles: any = null;
         try {
           const lookupId = animeId.startsWith("consumet-") || animeId.startsWith("hianime-") 
             ? animeId 
@@ -1959,23 +1963,33 @@ export class AnimeApiAggregator {
 
     // ── Tier 2 Fallback: Query public streaming APIs (Gogoanime via ani.zip, AnimePahe) ──
     if (servers.length === 0) {
-      const searchTitle = matchedAnimeTitle || animeId.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
-      console.log(`All scrapers returned 0 servers. Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
-      try {
-        const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
-        const pubRes = await fetch(
-          `${baseUrl}/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (pubRes.ok) {
-          const pubData = await pubRes.json();
-          if (Array.isArray(pubData.servers) && pubData.servers.length > 0) {
-            servers.push(...pubData.servers);
-            console.log(`Public streaming APIs returned ${pubData.servers.length} server(s) for "${searchTitle}"`);
+      const titlesToTry: string[] = [];
+      if (alTitles?.english) titlesToTry.push(alTitles.english);
+      if (alTitles?.romaji) titlesToTry.push(alTitles.romaji);
+      if (matchedAnimeTitle) titlesToTry.push(matchedAnimeTitle);
+      titlesToTry.push(animeId.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()));
+
+      const uniqueTitles = Array.from(new Set(titlesToTry.filter(Boolean)));
+
+      for (const searchTitle of uniqueTitles) {
+        console.log(`Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
+        try {
+          const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
+          const pubRes = await fetch(
+            `${baseUrl}/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
+            { signal: AbortSignal.timeout(6000) }
+          );
+          if (pubRes.ok) {
+            const pubData = await pubRes.json();
+            if (Array.isArray(pubData.servers) && pubData.servers.length > 0) {
+              servers.push(...pubData.servers);
+              console.log(`Public streaming APIs returned ${pubData.servers.length} server(s) for "${searchTitle}"`);
+              break;
+            }
           }
+        } catch (e) {
+          console.warn("Public streaming API call failed:", e);
         }
-      } catch (e) {
-        console.warn("Public streaming API call failed:", e);
       }
     }
 
