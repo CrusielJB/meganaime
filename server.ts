@@ -1248,11 +1248,12 @@ export async function createExpressApp() {
 
       let cleanId = "";
       if (animeId) {
-        if (animeId.startsWith("consumet-") || animeId.startsWith("hianime-") || animeId.startsWith("anilist-")) {
-          cleanId = animeId.replace(/^(consumet-|hianime-|anilist-)/, "").replace(/-ep-\d+$/, "");
-        } else {
-          cleanId = animeId.replace(/-ep-\d+$/, "").replace(/-\d+$/, "");
+        let stripped = animeId.replace(/^(consumet-ep-|hianime-ep-|consumet-|hianime-|anilist-)/i, "");
+        stripped = stripped.replace(/-ep-\d+$/i, "").replace(/-episodio-\d+$/i, "").replace(/-capitulo-\d+$/i, "");
+        if (!/^\d+$/.test(stripped) && /-[0-9]+$/.test(stripped)) {
+          stripped = stripped.replace(/-[0-9]+$/, "");
         }
+        cleanId = stripped;
       }
       const isNumericId = /^\d+$/.test(cleanId);
       

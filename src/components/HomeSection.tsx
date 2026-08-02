@@ -139,16 +139,39 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
             const isMovie = progress.contentType === "movie" || progress.episodeId.toLowerCase().includes("movie") || progress.episodeId.toLowerCase().includes("pelicula");
             let sanitizedTitle = progress.animeTitle || "";
             const lowerTitle = sanitizedTitle.toLowerCase().trim();
-            if (!sanitizedTitle || lowerTitle === "consumet" || lowerTitle === "hianime" || lowerTitle === "undefined" || lowerTitle.startsWith("consumet-") || lowerTitle.startsWith("hianime-")) {
+            if (!sanitizedTitle || lowerTitle === "consumet" || lowerTitle === "hianime" || lowerTitle === "undefined" || lowerTitle.startsWith("consumet-") || lowerTitle.startsWith("hianime-") || /^\d+$/.test(sanitizedTitle.trim())) {
               sanitizedTitle = progress.animeId.replace(/^(consumet-|hianime-|gogoanime-)/g, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+            }
+
+            let resolvedCover = progress.animeCoverUrl || "";
+            const isCoverBad = !resolvedCover || resolvedCover.includes("photo-1578632767115-351597cf2477") || resolvedCover === "";
+            const isTitleNumeric = /^\d+$/.test(sanitizedTitle.trim()) || /^\d+$/.test((progress.animeTitle || "").trim());
+
+            if (isCoverBad || isTitleNumeric) {
+              try {
+                const res = await fetch(`/api/resolve-cover?title=${encodeURIComponent(sanitizedTitle)}&animeId=${encodeURIComponent(progress.animeId)}&type=ANIME`);
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.title) {
+                    sanitizedTitle = data.title;
+                    progress.animeTitle = data.title;
+                  }
+                  if (data.coverUrl) {
+                    resolvedCover = data.coverUrl;
+                    progress.animeCoverUrl = data.coverUrl;
+                  }
+                }
+              } catch (e) {
+                console.warn("Failed to hot-resolve cover in Seguir Viendo:", e);
+              }
             }
 
             anime = {
               id: progress.animeId,
               title: sanitizedTitle,
               synopsis: "",
-              coverUrl: progress.animeCoverUrl || "",
-              bannerUrl: progress.animeCoverUrl || "",
+              coverUrl: resolvedCover,
+              bannerUrl: resolvedCover,
               genres: isMovie ? ["Película"] : ["Anime"],
               status: "En emisión" as const,
               rating: 8.5,
