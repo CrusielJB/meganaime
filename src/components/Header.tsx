@@ -192,21 +192,21 @@ export default function Header({
 
 
           {currentUser ? (
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative flex-shrink-0" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center rounded-xl hover:opacity-90 p-1 transition cursor-pointer"
+                className="flex items-center justify-center rounded-full hover:opacity-90 transition cursor-pointer p-0.5"
                 title={profileName}
               >
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <img
                     src={avatarUrl}
                     alt={profileName}
-                    className="h-10 w-10 rounded-full object-cover border-2 border-rose-500/40 shadow-lg hover:scale-105 transition duration-200"
+                    className="h-11 w-11 sm:h-12 sm:w-12 rounded-full object-cover aspect-square flex-shrink-0 border-2 border-rose-500/60 shadow-lg hover:scale-105 transition duration-200"
                     referrerPolicy="no-referrer"
                   />
                   {activeProfile?.isChild && (
-                    <div className="absolute -bottom-1 -right-1 bg-amber-500 text-black text-[8px] font-black rounded-full h-4 w-4 flex items-center justify-center border border-black shadow">
+                    <div className="absolute -bottom-0.5 -right-0.5 bg-amber-500 text-black text-[9px] font-black rounded-full h-4.5 w-4.5 flex items-center justify-center border border-black shadow">
                       👶
                     </div>
                   )}
