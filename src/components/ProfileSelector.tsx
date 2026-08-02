@@ -18,12 +18,31 @@ interface ProfileSelectorProps {
 }
 
 export const PRESET_AVATARS = [
-  { name: "Guerrero de Fuego", url: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop" },
-  { name: "Ciber Punk", url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150&h=150&fit=crop" },
-  { name: "Maga Elfa", url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop" },
-  { name: "Ninja Legendario", url: "https://images.unsplash.com/photo-1541963463532-d68292c34b19?w=150&h=150&fit=crop" },
-  { name: "Idol Radiante", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" },
-  { name: "Samurái de Acero", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop" }
+  { name: "Satoru Gojo", url: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png" },
+  { name: "Monkey D. Luffy", url: "https://s4.anilist.co/file/anilistcdn/character/large/b40-MNypXsxSRb1R.png" },
+  { name: "Roronoa Zoro", url: "https://s4.anilist.co/file/anilistcdn/character/large/b62-S7oAeA9WInjV.png" },
+  { name: "Vegeta", url: "https://s4.anilist.co/file/anilistcdn/character/large/b913-NIFkKazWM8VO.png" },
+  { name: "Naruto Uzumaki", url: "https://s4.anilist.co/file/anilistcdn/character/large/b17-phjcWCkRuIhu.png" },
+  { name: "Sasuke Uchiha", url: "https://s4.anilist.co/file/anilistcdn/character/large/b13-SISLEw1oAD7a.png" },
+  { name: "Kakashi Hatake", url: "https://s4.anilist.co/file/anilistcdn/character/large/b85-mkVBh2yjxjmx.png" },
+  { name: "Nezuko Kamado", url: "https://s4.anilist.co/file/anilistcdn/character/large/b127518-NRlq1CQ1v1ro.png" },
+  { name: "Eren Yeager", url: "https://s4.anilist.co/file/anilistcdn/character/large/b40882-dsj7IP943WFF.jpg" },
+  { name: "Levi Ackerman", url: "https://s4.anilist.co/file/anilistcdn/character/large/b45627-CR68RyZmddGG.png" },
+  { name: "Mikasa Ackerman", url: "https://s4.anilist.co/file/anilistcdn/character/large/b40881-F3gr1PkreDvj.png" },
+  { name: "Denji / Chainsaw", url: "https://s4.anilist.co/file/anilistcdn/character/large/b130102-FO1VHNnEnLlB.png" },
+  { name: "Makima", url: "https://s4.anilist.co/file/anilistcdn/character/large/b137080-UHcynYNjb5ZU.png" },
+  { name: "Power", url: "https://s4.anilist.co/file/anilistcdn/character/large/b137079-6yLEUYR3bmpr.png" },
+  { name: "Frieren", url: "https://s4.anilist.co/file/anilistcdn/character/large/b176754-PCnpqIOkjhFk.png" },
+  { name: "Sung Jin-Woo", url: "https://s4.anilist.co/file/anilistcdn/character/large/b129928-BCEjVaP0AQSw.png" },
+  { name: "Anya Forger", url: "https://s4.anilist.co/file/anilistcdn/character/large/b138100-4Li0tWRCa5bQ.png" },
+  { name: "Loid Forger", url: "https://s4.anilist.co/file/anilistcdn/character/large/b138101-7NCB0Md8zA6G.png" },
+  { name: "Light Yagami", url: "https://s4.anilist.co/file/anilistcdn/character/large/b80-26EhwSsSqQ50.png" },
+  { name: "David Martinez (Cyberpunk)", url: "https://s4.anilist.co/file/anilistcdn/character/large/b284158-z1uGKC3IYVa1.png" },
+  { name: "Killua Zoldyck", url: "https://s4.anilist.co/file/anilistcdn/character/large/b27-Z5O02kQUydpT.jpg" },
+  { name: "Gintoki Sakata", url: "https://s4.anilist.co/file/anilistcdn/character/large/b672-cP5VPriN67xJ.png" },
+  { name: "Sailor Moon", url: "https://s4.anilist.co/file/anilistcdn/character/large/b2030-GQvVYPEYkXCy.jpg" },
+  { name: "Spike Spiegel", url: "https://s4.anilist.co/file/anilistcdn/character/large/b1-ChxaldmieFlQ.png" },
+  { name: "Pikachu (Gaming)", url: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" }
 ];
 
 export default function ProfileSelector({

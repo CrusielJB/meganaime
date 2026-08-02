@@ -89,7 +89,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   };
 
   const activeProfile = currentUser?.profiles?.find(p => p.id === currentUser.activeProfileId);
-  const userAvatar = activeProfile?.avatarUrl || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop";
+  const userAvatar = activeProfile?.avatarUrl || "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png";
   const username = activeProfile?.name || currentUser?.username || "Otaku Anónimo";
 
   const handlePostComment = async (e: React.FormEvent) => {

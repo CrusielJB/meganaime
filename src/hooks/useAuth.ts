@@ -30,7 +30,7 @@ export function useAuth() {
                 {
                   id: "default",
                   name: userData.username || fbUser.displayName || "Principal",
-                  avatarUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop",
+                  avatarUrl: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
                   favorites: userData.favorites || [],
                   history: userData.history || [],
                   isChild: false
@@ -59,7 +59,7 @@ export function useAuth() {
             const defaultProfile = {
               id: "default",
               name: fbUser.displayName || fbUser.email?.split("@")[0] || "Usuario",
-              avatarUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop",
+              avatarUrl: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
               favorites: [],
               history: [],
               isChild: false

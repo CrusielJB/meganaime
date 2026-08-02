@@ -105,7 +105,7 @@ export default function AnimeDetail({
       animeId: currentAnime.id,
       userId: currentUser.id,
       username: currentUser.username || currentUser.email.split("@")[0],
-      avatarUrl: currentUser.profiles?.find(p => p.id === currentUser.activeProfileId)?.avatarUrl || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&h=150&fit=crop",
+      avatarUrl: currentUser.profiles?.find(p => p.id === currentUser.activeProfileId)?.avatarUrl || "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
       comment: commentText,
       rating: newRating,
       createdAt: new Date().toISOString()

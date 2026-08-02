@@ -195,17 +195,14 @@ export default function Header({
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center space-x-2 rounded-xl hover:bg-white/5 p-1 transition"
+                className="flex items-center rounded-xl hover:opacity-90 p-1 transition cursor-pointer"
+                title={profileName}
               >
-                <div className="flex flex-col items-end hidden sm:flex leading-tight">
-                  <span className="text-[10px] text-neutral-400">Perfil activo</span>
-                  <span className="text-sm font-semibold text-neutral-100">{profileName}</span>
-                </div>
                 <div className="relative">
                   <img
                     src={avatarUrl}
                     alt={profileName}
-                    className="h-9 w-9 rounded-xl object-cover border border-rose-500/30"
+                    className="h-10 w-10 rounded-full object-cover border-2 border-rose-500/40 shadow-lg hover:scale-105 transition duration-200"
                     referrerPolicy="no-referrer"
                   />
                   {activeProfile?.isChild && (
@@ -214,7 +211,6 @@ export default function Header({
                     </div>
                   )}
                 </div>
-                <ChevronDown className="h-4 w-4 text-neutral-400 hidden sm:block" />
               </button>
 
               {/* Crunchyroll-style Dropdown */}
