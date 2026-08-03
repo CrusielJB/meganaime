@@ -143,49 +143,12 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
               sanitizedTitle = progress.animeId.replace(/^(consumet-|hianime-|gogoanime-)/g, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
             }
 
-            let resolvedCover = progress.animeCoverUrl || "";
-            const isCoverBad = !resolvedCover || resolvedCover.includes("photo-1578632767115-351597cf2477") || resolvedCover === "";
-            const isTitleNumeric = /^\d+$/.test(sanitizedTitle.trim()) || /^\d+$/.test((progress.animeTitle || "").trim());
-
-            if (isCoverBad || isTitleNumeric) {
-              try {
-                const res = await fetch(`/api/resolve-cover?title=${encodeURIComponent(sanitizedTitle)}&animeId=${encodeURIComponent(progress.animeId)}&type=ANIME`);
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.title) {
-                    sanitizedTitle = data.title;
-                    progress.animeTitle = data.title;
-                  }
-                  if (data.coverUrl) {
-                    resolvedCover = data.coverUrl;
-                    progress.animeCoverUrl = data.coverUrl;
-                  }
-                  if (data.title || data.coverUrl) {
-                    saveEpisodeProgress(
-                      progress.animeId,
-                      progress.episodeId,
-                      progress.episodeNumber,
-                      progress.progressSeconds,
-                      progress.durationSeconds,
-                      currentUser,
-                      true,
-                      progress.contentType || "anime",
-                      data.title || sanitizedTitle,
-                      data.coverUrl || resolvedCover
-                    ).catch(() => {});
-                  }
-                }
-              } catch (e) {
-                console.warn("Failed to hot-resolve cover in Seguir Viendo:", e);
-              }
-            }
-
             anime = {
               id: progress.animeId,
               title: sanitizedTitle,
               synopsis: "",
-              coverUrl: resolvedCover,
-              bannerUrl: resolvedCover,
+              coverUrl: progress.animeCoverUrl || "",
+              bannerUrl: progress.animeCoverUrl || "",
               genres: isMovie ? ["Película"] : ["Anime"],
               status: "En emisión" as const,
               rating: 8.5,
@@ -195,10 +158,47 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
               episodes: []
             };
           } else {
-            // ALWAYS use the local DB's authoritative title and cover
-            // This corrects stale localStorage data from before cover fixes
             progress.animeTitle = anime.title;
             progress.animeCoverUrl = anime.coverUrl;
+          }
+
+          // Unconditional Sanity Check & Self-Healing:
+          // If title is numeric (e.g. "187538") or cover is missing/generic, force hot-resolve via AniZip/AniList API
+          const isAnimeTitleNumeric = !anime.title || /^\d+$/.test(anime.title.trim()) || anime.title.toLowerCase() === "consumet" || anime.title.toLowerCase() === "hianime";
+          const isAnimeCoverBad = !anime.coverUrl || anime.coverUrl.includes("photo-1578632767115-351597cf2477") || anime.coverUrl === "";
+
+          if (isAnimeTitleNumeric || isAnimeCoverBad) {
+            try {
+              const res = await fetch(`/api/resolve-cover?title=${encodeURIComponent(anime.title || "")}&animeId=${encodeURIComponent(progress.animeId)}&type=ANIME`);
+              if (res.ok) {
+                const data = await res.json();
+                if (data.title && data.title !== anime.title) {
+                  anime.title = data.title;
+                  progress.animeTitle = data.title;
+                }
+                if (data.coverUrl && data.coverUrl !== anime.coverUrl) {
+                  anime.coverUrl = data.coverUrl;
+                  anime.bannerUrl = data.coverUrl;
+                  progress.animeCoverUrl = data.coverUrl;
+                }
+                if (data.title || data.coverUrl) {
+                  saveEpisodeProgress(
+                    progress.animeId,
+                    progress.episodeId,
+                    progress.episodeNumber,
+                    progress.progressSeconds,
+                    progress.durationSeconds,
+                    currentUser,
+                    true,
+                    progress.contentType || "anime",
+                    anime.title,
+                    anime.coverUrl
+                  ).catch(() => {});
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to hot-resolve cover in Seguir Viendo:", e);
+            }
           }
           
           return {
