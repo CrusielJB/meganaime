@@ -28,6 +28,7 @@ import { getProxyImageUrl, getAnimePlaceholder, recoverCoverImageInHotPath } fro
 import { getAnimesWithEpisodes } from "../utils/animeDb";
 import { getDownloadedEpisodeBlob } from "../utils/downloadDb";
 import CommentSection from "./CommentSection";
+import { resolveEmbedUrl } from "../utils/resolvers";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
@@ -294,7 +295,6 @@ export default function VideoPlayer({
       // 2. Scan ALL servers in PARALLEL to find the first one that resolves to a direct media stream
       setIsResolving(true);
       try {
-        const { resolveEmbedUrl } = await import("../utils/resolvers");
         const results = await Promise.allSettled(
           servers.map(async (s, idx) => {
             if (!s || !s.url) return { idx, resolved: null };
@@ -358,7 +358,6 @@ export default function VideoPlayer({
 
       setIsResolving(true);
       try {
-        const { resolveEmbedUrl } = await import("../utils/resolvers");
         const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
 
         if (resolved && resolved.dead) {

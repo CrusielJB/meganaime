@@ -20,7 +20,7 @@ import { TheatreMode } from "./components/TheatreMode";
 import ProfileSelector from "./components/ProfileSelector";
 import { getAnimesWithEpisodes } from "./utils/animeDb";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
-import { syncAllProgressFromFirestore } from "./utils/progress";
+import { syncAllProgressFromFirestore, getAllLocalProgress } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
 import SimulcastCalendar from "./components/SimulcastCalendar";
 
@@ -51,6 +51,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error", error, errorInfo);
+    // If it's a chunk loading error (common after new deployments), clear session cache and auto-reload once
+    if (error?.message?.includes("Failed to fetch dynamically imported module") || error?.message?.includes("Importing a module script failed")) {
+      const lastReload = safeSessionStorage.getItem("megaAnime_chunk_reload");
+      if (!lastReload || Date.now() - parseInt(lastReload, 10) > 10000) {
+        safeSessionStorage.setItem("megaAnime_chunk_reload", Date.now().toString());
+        window.location.reload();
+      }
+    }
   }
 
   render() {
@@ -63,19 +71,26 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             </div>
             <h1 className="text-2xl font-black text-white">¡Ups! Algo salió mal</h1>
             <p className="text-neutral-400 text-sm">
-              La aplicación ha encontrado un error crítico. Por favor, intenta recargar la página.
+              La aplicación ha detectado un cambio de versión o actualización. Haz clic abajo para restaurar la sesión limpia.
             </p>
             <div className="bg-black/50 p-4 rounded-xl border border-white/5 text-left overflow-auto max-h-40">
               <code className="text-xs text-rose-400 font-mono">
-                {this.state.error?.message}
+                {this.state.error?.message || "Error de versión de cliente React"}
               </code>
             </div>
-            <button 
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition"
-            >
-              Recargar aplicación
-            </button>
+            <div className="space-y-2">
+              <button 
+                onClick={() => {
+                  try {
+                    sessionStorage.clear();
+                  } catch (e) {}
+                  window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
+                }}
+                className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition shadow-lg shadow-rose-600/20"
+              >
+                Recargar y Actualizar Aplicación
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -203,7 +218,6 @@ function AppContent() {
     }
     // If still not found (API offline or returned bad data), reconstruct from saved progress metadata
     if (!found) {
-      const { getAllLocalProgress } = await import("./utils/progress");
       const allProgress = getAllLocalProgress(currentUser);
       const savedProgress = allProgress.find(p => p.animeId === animeId || p.episodeId === episodeId);
       if (savedProgress) {
