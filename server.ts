@@ -1899,41 +1899,43 @@ export async function createExpressApp() {
 
     if (!title) return res.status(400).json({ error: "Missing title" });
 
-    const servers: { name: string; url: string }[] = [];
-
-    // ── Source 1: Gogoanime via api.ani.zip ──
-    try {
-      const searchRes = await fetch(
-        `https://api.ani.zip/mappings?title=${encodeURIComponent(title)}`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      if (searchRes.ok) {
-        const data = await searchRes.json();
-        const gogoanimeId = data?.mappings?.gogoanime_id || data?.mappings?.animepahe_id;
-        if (gogoanimeId) {
-          const epId = isMovie ? `${gogoanimeId}-movie` : `${gogoanimeId}-episode-${epNum}`;
-          const streamRes = await fetch(
-            `https://api.ani.zip/stream?episode_id=${encodeURIComponent(epId)}`,
-            { signal: AbortSignal.timeout(5000) }
-          );
-          if (streamRes.ok) {
-            const streamData = await streamRes.json();
-            (streamData.sources || []).forEach((s: any) => {
-              if (s.url) servers.push({ name: `Gogoanime (${s.quality || "HD"})`, url: s.url });
-            });
+    // Run ALL 3 sources in PARALLEL (reduces worst-case from 26s to ~5s)
+    const [aniZipResult, animePaheResult, jikanResult] = await Promise.allSettled([
+      // ── Source 1: Gogoanime via api.ani.zip ──
+      (async () => {
+        const found: { name: string; url: string }[] = [];
+        const searchRes = await fetch(
+          `https://api.ani.zip/mappings?title=${encodeURIComponent(title)}`,
+          { signal: AbortSignal.timeout(3000) }
+        );
+        if (searchRes.ok) {
+          const data = await searchRes.json();
+          const gogoanimeId = data?.mappings?.gogoanime_id || data?.mappings?.animepahe_id;
+          if (gogoanimeId) {
+            const epId = isMovie ? `${gogoanimeId}-movie` : `${gogoanimeId}-episode-${epNum}`;
+            const streamRes = await fetch(
+              `https://api.ani.zip/stream?episode_id=${encodeURIComponent(epId)}`,
+              { signal: AbortSignal.timeout(3000) }
+            );
+            if (streamRes.ok) {
+              const streamData = await streamRes.json();
+              (streamData.sources || []).forEach((s: any) => {
+                if (s.url) found.push({ name: `Gogoanime (${s.quality || "HD"})`, url: s.url });
+              });
+            }
           }
         }
-      }
-    } catch(e) { console.warn("api.ani.zip failed:", e); }
+        return found;
+      })(),
 
-    // ── Source 2: AnimePahe search ──
-    if (servers.length === 0) {
-      try {
+      // ── Source 2: AnimePahe search ──
+      (async () => {
+        const found: { name: string; url: string }[] = [];
         const searchRes = await fetch(
           `https://animepahe.ru/api?m=search&q=${encodeURIComponent(title)}`,
           {
             headers: { "User-Agent": "Mozilla/5.0", "Cookie": "__ddg2_=lel" },
-            signal: AbortSignal.timeout(4000)
+            signal: AbortSignal.timeout(3000)
           }
         );
         if (searchRes.ok) {
@@ -1954,7 +1956,7 @@ export async function createExpressApp() {
               `https://animepahe.ru/api?m=episode&id=${first.session}&sort=episode_asc&page=1`,
               {
                 headers: { "User-Agent": "Mozilla/5.0", "Cookie": "__ddg2_=lel" },
-                signal: AbortSignal.timeout(4000)
+                signal: AbortSignal.timeout(3000)
               }
             );
             if (epListRes.ok) {
@@ -1971,26 +1973,26 @@ export async function createExpressApp() {
                       "Referer": "https://animepahe.ru",
                       "Cookie": "__ddg2_=lel"
                     },
-                    signal: AbortSignal.timeout(5000)
+                    signal: AbortSignal.timeout(3000)
                   }
                 );
                 if (playerRes.ok) {
                   const playerHtml = await playerRes.text();
                   const kwikMatches = [...playerHtml.matchAll(/href=["'](https:\/\/kwik\.cx[^"']+)["']/gi)];
                   for (const m of kwikMatches.slice(0, 3)) {
-                    servers.push({ name: `AnimePahe (Kwik)`, url: m[1] });
+                    found.push({ name: `AnimePahe (Kwik)`, url: m[1] });
                   }
                 }
               }
             }
           }
         }
-      } catch(e) { console.warn("AnimePahe search failed:", e); }
-    }
+        return found;
+      })(),
 
-    // ── Source 3: Jikan MAL search → YouTube trailer as guaranteed fallback ──
-    if (servers.length === 0) {
-      try {
+      // ── Source 3: Jikan MAL → YouTube trailer fallback ──
+      (async () => {
+        const found: { name: string; url: string }[] = [];
         const jikanRes = await fetch(
           `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`,
           { signal: AbortSignal.timeout(4000) }
@@ -1999,14 +2001,22 @@ export async function createExpressApp() {
           const jikanData = await jikanRes.json();
           const anime = jikanData?.data?.[0];
           if (anime?.trailer?.embed_url) {
-            servers.push({ name: "Tráiler Oficial (YouTube)", url: anime.trailer.embed_url });
+            found.push({ name: "Tráiler Oficial (YouTube)", url: anime.trailer.embed_url });
           }
         }
-      } catch(e) { console.warn("Jikan trailer fallback failed:", e); }
-    }
+        return found;
+      })()
+    ]);
+
+    // Collect results from all sources that succeeded
+    const servers: { name: string; url: string }[] = [];
+    if (aniZipResult.status === "fulfilled") servers.push(...aniZipResult.value);
+    if (animePaheResult.status === "fulfilled") servers.push(...animePaheResult.value);
+    if (servers.length === 0 && jikanResult.status === "fulfilled") servers.push(...jikanResult.value);
 
     res.json({ servers });
   });
+
 
   // Configure middleware (Vite Dev Server vs Static Production bundle)
   const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));

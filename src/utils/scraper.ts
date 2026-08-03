@@ -6,7 +6,7 @@ dotenv.config();
 
 const HIANIME_API_URL = process.env.HIANIME_API_URL || "http://localhost:4000";
 const CONSUMET_API_URL = process.env.CONSUMET_API_URL || "http://localhost:5000";
-const DST3V3_API_URL = process.env.DST3V3_API_URL || "http://localhost:8080";
+// DST3V3_API_URL removed — was declared but never used
 
 // In-memory cache for Kitsu image lookups to avoid redundant API calls and keep it incredibly fast
 const KITSU_IMAGE_CACHE: Record<string, { coverUrl: string; bannerUrl: string; synopsis?: string }> = {};
@@ -1027,7 +1027,6 @@ async function scrapeEpisodeFromAnimeFLV(
   matchedAnimeTitle?: string,
   alTitles?: any
 ): Promise<VideoServer[]> {
-  const servers: VideoServer[] = [];
   try {
     const slugCandidates: string[] = [];
     if (MONOSCHINOS_SLUG_MAP[animeId]) slugCandidates.push(MONOSCHINOS_SLUG_MAP[animeId]);
@@ -1041,36 +1040,43 @@ async function scrapeEpisodeFromAnimeFLV(
     const uniqueSlugs = Array.from(new Set(slugCandidates.filter(Boolean)));
     const flvDomains = ["https://www3.animeflv.net", "https://animeflv.net"];
 
-    for (const domain of flvDomains) {
-      for (const slug of uniqueSlugs.slice(0, 4)) {
-        const epUrl = `${domain}/ver/${slug}-${epNum}`;
+    // Build ALL URL candidates and try them in PARALLEL
+    const attempts = flvDomains.flatMap(domain =>
+      uniqueSlugs.slice(0, 4).map(slug => `${domain}/ver/${slug}-${epNum}`)
+    );
+
+    const results = await Promise.allSettled(
+      attempts.map(async (epUrl) => {
         const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
-        if (res.ok) {
-          const html = await res.text();
-          const serverMatch = html.match(/var\s+videos\s*=\s*(\{[\s\S]*?\});/);
-          if (serverMatch) {
-            try {
-              const data = JSON.parse(serverMatch[1]);
-              const SUB = data.SUB || data.LAT || [];
-              SUB.forEach((item: any) => {
-                if (item.code) {
-                  servers.push({
-                    name: `AnimeFLV (${item.title || item.server || "Stream"})`,
-                    url: item.code.startsWith("//") ? `https:${item.code}` : item.code
-                  });
-                }
-              });
-            } catch(e) {}
+        if (!res.ok) throw new Error(`${res.status}`);
+        const html = await res.text();
+        const serverMatch = html.match(/var\s+videos\s*=\s*(\{[\s\S]*?\});/);
+        if (!serverMatch) throw new Error("no videos");
+        const data = JSON.parse(serverMatch[1]);
+        const SUB = data.SUB || data.LAT || [];
+        const found: VideoServer[] = [];
+        SUB.forEach((item: any) => {
+          if (item.code) {
+            found.push({
+              name: `AnimeFLV (${item.title || item.server || "Stream"})`,
+              url: item.code.startsWith("//") ? `https:${item.code}` : item.code
+            });
           }
-          if (servers.length > 0) break;
-        }
-      }
-      if (servers.length > 0) break;
+        });
+        if (found.length === 0) throw new Error("empty");
+        return found;
+      })
+    );
+
+    // Return first successful result
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.length > 0) return r.value;
     }
+    return [];
   } catch (e) {
     console.warn("AnimeFLV scraper error:", e);
+    return [];
   }
-  return servers;
 }
 
 async function scrapeEpisodeFromAnimeID(
@@ -1081,7 +1087,6 @@ async function scrapeEpisodeFromAnimeID(
   matchedAnimeTitle?: string,
   alTitles?: any
 ): Promise<VideoServer[]> {
-  const servers: VideoServer[] = [];
   try {
     const slugCandidates: string[] = [];
     if (MONOSCHINOS_SLUG_MAP[animeId]) slugCandidates.push(MONOSCHINOS_SLUG_MAP[animeId]);
@@ -1097,31 +1102,40 @@ async function scrapeEpisodeFromAnimeID(
 
     const uniqueSlugs = Array.from(new Set(slugCandidates.filter(Boolean)));
 
-    for (const slug of uniqueSlugs.slice(0, 3)) {
-      const epUrl = `https://www.animeid.tv/v/${slug}-${epNum}`;
-      const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
-      if (res.ok) {
+    // Try ALL slugs in PARALLEL
+    const results = await Promise.allSettled(
+      uniqueSlugs.slice(0, 3).map(async (slug) => {
+        const epUrl = `https://www.animeid.tv/v/${slug}-${epNum}`;
+        const res = await fetch(epUrl, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+        if (!res.ok) throw new Error(`${res.status}`);
         const html = await res.text();
         const serverRegex = /<li[^>]*data-video=["']([^"']+)["'][^>]*>(.*?)<\/li>/gi;
+        const found: VideoServer[] = [];
         let match;
         while ((match = serverRegex.exec(html)) !== null) {
           const videoUrl = match[1];
           const nameMatch = match[2].match(/class="name"[^>]*>([^<]+)</i) || match[2].match(/>([^<]+)</);
           const serverName = nameMatch ? nameMatch[1].trim() : "AnimeID Stream";
           if (videoUrl) {
-            servers.push({
+            found.push({
               name: `AnimeID (${serverName})`,
               url: videoUrl.startsWith("//") ? `https:${videoUrl}` : videoUrl
             });
           }
         }
-        if (servers.length > 0) break;
-      }
+        if (found.length === 0) throw new Error("empty");
+        return found;
+      })
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.length > 0) return r.value;
     }
+    return [];
   } catch (e) {
     console.warn("AnimeID scraper error:", e);
+    return [];
   }
-  return servers;
 }
 
 /**
@@ -1612,7 +1626,7 @@ export class AnimeApiAggregator {
       // Try Consumet REST API
       try {
         const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/info/${cleanId}`, {
-          signal: AbortSignal.timeout(1500)
+          signal: AbortSignal.timeout(3000)
         });
         if (res.ok) {
           const item = await res.json();
@@ -1823,7 +1837,7 @@ export class AnimeApiAggregator {
       }
       try {
         const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/watch/${cleanId}`, {
-          signal: AbortSignal.timeout(1500)
+          signal: AbortSignal.timeout(3000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -1844,7 +1858,7 @@ export class AnimeApiAggregator {
       const cleanId = episodeId.replace("hianime-ep-", "");
       try {
         const res = await fetch(`${HIANIME_API_URL}/api/v1/anime/episode-srcs?id=${cleanId}`, {
-          signal: AbortSignal.timeout(1500)
+          signal: AbortSignal.timeout(3000)
         });
         if (res.ok) {
           const data = await res.json();
@@ -1892,8 +1906,12 @@ export class AnimeApiAggregator {
         // 2. Robust episodeId parsing for local fallback matching
         let parsedTitle = animeId.replace("consumet-", "").replace("hianime-", "").replace(/-/g, " ");
         if (!foundLocal) {
-          // Prioritize explicit episode tags over generic hyphens to avoid wrong cuts (e.g. matching -9 instead of -ep-9)
-          const epMatch = episodeId.match(/(?:-ep-|-e-|-episodio-|-capitulo-|-cap-|_)(?:s\d+)?(\d+)$/i) || episodeId.match(/-(\d+)$/i);
+          // Only match episode numbers if there's an explicit episode prefix (e.g. -ep-1, -episodio-1)
+          // Do NOT match generic -digits if episodeId is a provider/AniList ID like "consumet-1735" or "187538"
+          const explicitEpMatch = episodeId.match(/(?:-ep-|-e-|-episodio-|-capitulo-|-cap-|_)(?:s\d+)?(\d+)$/i);
+          const genericEpMatch = !/^(?:consumet|hianime)-\d+$/i.test(episodeId) && !/^\d+$/.test(episodeId) ? episodeId.match(/-(\d+)$/i) : null;
+          const epMatch = explicitEpMatch || genericEpMatch;
+
           if (epMatch) {
             epNum = parseInt(epMatch[1], 10) || 1;
             
@@ -2020,24 +2038,27 @@ export class AnimeApiAggregator {
 
       const uniqueTitles = Array.from(new Set(titlesToTry.filter(Boolean)));
 
-      for (const searchTitle of uniqueTitles) {
-        console.log(`Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
-        try {
+      // Try ALL title variants in PARALLEL
+      const pubResults = await Promise.allSettled(
+        uniqueTitles.map(async (searchTitle) => {
+          console.log(`Querying public streaming APIs for: "${searchTitle}" ep ${epNum}`);
           const baseUrl = typeof window !== "undefined" ? "" : "http://localhost:3000";
           const pubRes = await fetch(
             `${baseUrl}/api/public-streams?title=${encodeURIComponent(searchTitle)}&ep=${epNum}&movie=${isMovie ? "1" : "0"}`,
             { signal: AbortSignal.timeout(6000) }
           );
-          if (pubRes.ok) {
-            const pubData = await pubRes.json();
-            if (Array.isArray(pubData.servers) && pubData.servers.length > 0) {
-              servers.push(...pubData.servers);
-              console.log(`Public streaming APIs returned ${pubData.servers.length} server(s) for "${searchTitle}"`);
-              break;
-            }
-          }
-        } catch (e) {
-          console.warn("Public streaming API call failed:", e);
+          if (!pubRes.ok) throw new Error(`${pubRes.status}`);
+          const pubData = await pubRes.json();
+          if (!Array.isArray(pubData.servers) || pubData.servers.length === 0) throw new Error("empty");
+          console.log(`Public streaming APIs returned ${pubData.servers.length} server(s) for "${searchTitle}"`);
+          return pubData.servers;
+        })
+      );
+
+      for (const r of pubResults) {
+        if (r.status === "fulfilled" && r.value.length > 0) {
+          servers.push(...r.value);
+          break;
         }
       }
     }
