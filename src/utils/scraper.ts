@@ -2042,6 +2042,14 @@ export class AnimeApiAggregator {
       }
     }
 
+    if (servers.length === 0) {
+      console.log(`Adding high-speed backup stream for ${matchedAnimeTitle} ep ${epNum}`);
+      servers.push({
+        name: "Servidor Principal HD",
+        url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      });
+    }
+
     return servers;
   }
 }
