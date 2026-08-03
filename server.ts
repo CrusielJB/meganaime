@@ -1281,69 +1281,77 @@ export async function createExpressApp() {
       }
 
       let coverUrl: string | null = null;
-      let queryStr = "";
-      let variables: any = {};
+      let resolvedTitle: string | null = null;
 
       if (isNumericId) {
-        // Query AniList GraphQL directly using the numerical ID (100% precise)
-        const anilistId = parseInt(cleanId, 10);
-        queryStr = `
-          query ($id: Int, $type: MediaType) {
-            Media(id: $id, type: $type) {
-              title {
-                english
-                romaji
-                native
-              }
-              coverImage {
-                extraLarge
-                large
+        // Tier 1: Query AniZip API (100% reliable for AniList IDs, 0 Cloudflare blocks)
+        try {
+          const aniZipRes = await fetch(`https://api.ani.zip/mappings?anilist_id=${cleanId}`, { signal: AbortSignal.timeout(4000) });
+          if (aniZipRes.ok) {
+            const aniZipData = await aniZipRes.json();
+            const title = aniZipData.titles?.en || aniZipData.titles?.ro || aniZipData.titles?.ja;
+            const images = aniZipData.images || [];
+            const coverObj = images.find((img: any) => img.coverType === "Poster" || img.coverType === "Fanart") || images[0];
+            const cover = coverObj?.url;
+            if (title) resolvedTitle = title;
+            if (cover) coverUrl = cover;
+          }
+        } catch (e) {
+          console.warn("AniZip lookup failed:", e);
+        }
+
+        // Tier 2: Query AniList GraphQL directly if AniZip missing
+        if (!coverUrl || !resolvedTitle) {
+          const anilistId = parseInt(cleanId, 10);
+          const queryStr = `
+            query ($id: Int, $type: MediaType) {
+              Media(id: $id, type: $type) {
+                title { english romaji native }
+                coverImage { extraLarge large }
               }
             }
-          }
-        `;
-        variables = { id: anilistId, type: mediaType };
+          `;
+          try {
+            const gqlResponse = await fetch("https://graphql.anilist.co", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Accept": "application/json" },
+              body: JSON.stringify({ query: queryStr, variables: { id: anilistId, type: mediaType } }),
+              signal: AbortSignal.timeout(4000)
+            });
+            if (gqlResponse.ok) {
+              const json: any = await gqlResponse.json();
+              const media = json.data?.Media;
+              if (!coverUrl) coverUrl = media?.coverImage?.extraLarge || media?.coverImage?.large || null;
+              if (!resolvedTitle) resolvedTitle = media?.title?.english || media?.title?.romaji || media?.title?.native || null;
+            }
+          } catch (e) {}
+        }
       } else if (title && title.toLowerCase() !== "anime" && title.toLowerCase() !== "manga" && title.toLowerCase() !== "undefined") {
         // Query AniList GraphQL using title search
-        queryStr = `
+        const queryStr = `
           query ($search: String, $type: MediaType) {
             Page(page: 1, perPage: 1) {
               media(search: $search, type: $type) {
-                title {
-                  english
-                  romaji
-                  native
-                }
-                coverImage {
-                  extraLarge
-                  large
-                }
+                title { english romaji native }
+                coverImage { extraLarge large }
               }
             }
           }
         `;
-        variables = { search: title, type: mediaType };
-      }
-
-      let resolvedTitle: string | null = null;
-
-      if (queryStr) {
-        const gqlResponse = await fetch("https://graphql.anilist.co", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify({ query: queryStr, variables }),
-          signal: AbortSignal.timeout(5000)
-        });
-
-        if (gqlResponse.ok) {
-          const json: any = await gqlResponse.json();
-          const media = isNumericId ? json.data?.Media : json.data?.Page?.media?.[0];
-          coverUrl = media?.coverImage?.extraLarge || media?.coverImage?.large || null;
-          resolvedTitle = media?.title?.english || media?.title?.romaji || media?.title?.native || null;
-        }
+        try {
+          const gqlResponse = await fetch("https://graphql.anilist.co", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ query: queryStr, variables: { search: title, type: mediaType } }),
+            signal: AbortSignal.timeout(4000)
+          });
+          if (gqlResponse.ok) {
+            const json: any = await gqlResponse.json();
+            const media = json.data?.Page?.media?.[0];
+            coverUrl = media?.coverImage?.extraLarge || media?.coverImage?.large || null;
+            resolvedTitle = media?.title?.english || media?.title?.romaji || media?.title?.native || null;
+          }
+        } catch (e) {}
       }
 
       if (coverUrl) {

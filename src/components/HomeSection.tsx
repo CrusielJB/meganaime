@@ -3,7 +3,7 @@ import { TrendingUp, Sparkles, Clock, Loader2, Film, Play, Trash2, ChevronLeft, 
 import AnimeCard from "./AnimeCard";
 import Hero from "./Hero";
 import { Anime, User, Manga } from "../types";
-import { getAllLocalProgress, syncAllProgressFromFirestore, normalizeAnimeId } from "../utils/progress";
+import { getAllLocalProgress, syncAllProgressFromFirestore, normalizeAnimeId, saveEpisodeProgress } from "../utils/progress";
 import { safeLocalStorage } from "../utils/safeStorage";
 import { getAnimesWithEpisodes } from "../utils/animeDb";
 import { getAnimePlaceholder, getProxyImageUrl, recoverCoverImageInHotPath } from "../utils/imageUtils";
@@ -159,6 +159,20 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                   if (data.coverUrl) {
                     resolvedCover = data.coverUrl;
                     progress.animeCoverUrl = data.coverUrl;
+                  }
+                  if (data.title || data.coverUrl) {
+                    saveEpisodeProgress(
+                      progress.animeId,
+                      progress.episodeId,
+                      progress.episodeNumber,
+                      progress.progressSeconds,
+                      progress.durationSeconds,
+                      currentUser,
+                      true,
+                      progress.contentType || "anime",
+                      data.title || sanitizedTitle,
+                      data.coverUrl || resolvedCover
+                    ).catch(() => {});
                   }
                 }
               } catch (e) {
