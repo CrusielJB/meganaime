@@ -1348,31 +1348,134 @@ export class AnimeApiAggregator {
     return local.slice((page - 1) * 24, page * 24);
   }
 
+  static async searchMonosChinosDirect(query: string): Promise<Anime[]> {
+    try {
+      const url = `https://monoschinos2.com/buscar?q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+      if (res.ok) {
+        const html = await res.text();
+        const cardPattern = /href=["'](?:https?:\/\/[^/]+)?\/anime\/([^"'\s>]+)["'].*?<img[^>]+src=["']([^"']+)["'].*?(?:<h\d+[^>]*>|<div[^>]*class=["'][^"']*title[^"']*["'][^>]*>)(.*?)(?:<\/h\d+>|<\/div>)/gis;
+        const results: Anime[] = [];
+        let match;
+        while ((match = cardPattern.exec(html)) !== null) {
+          const slug = match[1].replace(/-sub-espanol$/, "");
+          const cover = match[2];
+          const title = match[3].replace(/<[^>]+>/g, "").trim();
+          if (slug && title) {
+            results.push({
+              id: slug,
+              title: title,
+              synopsis: `Disfruta de ${title} en alta definición directamente en Mega Anime.`,
+              coverUrl: cover,
+              bannerUrl: cover,
+              genres: ["Anime", "MonosChinos"],
+              status: "Finalizado",
+              rating: 8.8,
+              type: title.toLowerCase().includes("película") || title.toLowerCase().includes("movie") || slug.includes("pelicula") || slug.includes("movie") ? "Película" : "Anime",
+              episodesCount: 12,
+              year: 2025,
+              episodes: []
+            });
+          }
+        }
+        if (results.length > 0) return results;
+      }
+    } catch (e) {
+      console.warn("MonosChinos direct search failed:", e);
+    }
+    return [];
+  }
+
+  static async getMonosChinosMoviesDirect(): Promise<Anime[]> {
+    try {
+      const url = "https://monoschinos2.com/animes?categoria=pelicula";
+      const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+      if (res.ok) {
+        const html = await res.text();
+        const cardPattern = /href=["'](?:https?:\/\/[^/]+)?\/anime\/([^"'\s>]+)["'].*?<img[^>]+src=["']([^"']+)["'].*?(?:<h\d+[^>]*>|<div[^>]*class=["'][^"']*title[^"']*["'][^>]*>)(.*?)(?:<\/h\d+>|<\/div>)/gis;
+        const results: Anime[] = [];
+        let match;
+        while ((match = cardPattern.exec(html)) !== null) {
+          const slug = match[1].replace(/-sub-espanol$/, "");
+          const cover = match[2];
+          const title = match[3].replace(/<[^>]+>/g, "").trim();
+          if (slug && title) {
+            results.push({
+              id: slug,
+              title: title,
+              synopsis: `Disfruta de la película ${title} en alta definición directamente en Mega Anime.`,
+              coverUrl: cover,
+              bannerUrl: cover,
+              genres: ["Película", "MonosChinos"],
+              status: "Finalizado",
+              rating: 9.0,
+              type: "Película",
+              episodesCount: 1,
+              year: 2025,
+              episodes: []
+            });
+          }
+        }
+        if (results.length > 0) return results;
+      }
+    } catch (e) {
+      console.warn("MonosChinos direct movies failed:", e);
+    }
+    return [];
+  }
+
+  static async getMonosChinosRecentDirect(): Promise<Episode[]> {
+    try {
+      const res = await fetch("https://monoschinos2.com", { headers: HEADERS, signal: AbortSignal.timeout(3500) });
+      if (res.ok) {
+        const html = await res.text();
+        const verPattern = /href=["'](?:https?:\/\/[^/]+)?\/ver\/([^"'\s>]+)["'].*?<img[^>]+src=["']([^"']+)["'].*?(?:<h\d+[^>]*>|<div[^>]*class=["'][^"']*title[^"']*["'][^>]*>)(.*?)(?:<\/h\d+>|<\/div>)/gis;
+        const episodes: Episode[] = [];
+        let match;
+        while ((match = verPattern.exec(html)) !== null) {
+          const epSlug = match[1];
+          const cover = match[2];
+          const animeTitle = match[3].replace(/<[^>]+>/g, "").trim();
+          const epNumMatch = epSlug.match(/-episodio-(\d+)$/i) || epSlug.match(/-(\d+)$/i);
+          const epNum = epNumMatch ? parseInt(epNumMatch[1], 10) : 1;
+          const animeId = epSlug.replace(/-episodio-\d+$/i, "").replace(/-sub-espanol$/, "");
+
+          episodes.push({
+            id: epSlug,
+            title: `${animeTitle} - Episodio ${epNum}`,
+            number: epNum,
+            animeId: animeId,
+            animeTitle: animeTitle,
+            coverUrl: cover,
+            videoUrl: `/api/episode/${epSlug}`,
+            releaseDate: "Hoy"
+          });
+        }
+        if (episodes.length > 0) return episodes;
+      }
+    } catch (e) {
+      console.warn("MonosChinos direct recent episodes failed:", e);
+    }
+    return [];
+  }
+
   static async getTrending(): Promise<Anime[]> {
+    const mcCatalog = await AnimeApiAggregator.searchMonosChinosDirect("a");
+    if (mcCatalog.length > 0) return mcCatalog.slice(0, 15);
+
     try {
       const data = await queryAniListGraphQL({ page: 1, perPage: 15 });
       if (data && data.Page && data.Page.media) {
         return data.Page.media.map(mapAniListGraphQLMedia);
-      }
-    } catch (e) {
-      console.warn("AniList GraphQL getTrending failed, trying Consumet API...");
-    }
-
-    try {
-      const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/trending?page=1&perPage=15`, {
-        signal: AbortSignal.timeout(3000)
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.results && Array.isArray(json.results)) {
-          return json.results.map(mapConsumetAnime);
-        }
       }
     } catch (e) {}
     return getAnimesWithEpisodes().slice(0, 15);
   }
 
   static async getRecentEpisodes(): Promise<Episode[]> {
+    const mcRecent = await AnimeApiAggregator.getMonosChinosRecentDirect();
+    if (mcRecent.length > 0) return mcRecent;
+
     try {
       const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/recent-episodes?page=1&perPage=12`, {
         signal: AbortSignal.timeout(3000)
@@ -1393,108 +1496,22 @@ export class AnimeApiAggregator {
         }
       }
     } catch (e) {}
-
-    try {
-      const data = await queryAniListGraphQL({ page: 1, perPage: 12, status: "RELEASING" });
-      if (data && data.Page && data.Page.media) {
-        return data.Page.media.map((media: any) => {
-          const anime = mapAniListGraphQLMedia(media);
-          return {
-            id: `${anime.id}-ep-${anime.episodesCount}`,
-            title: `${anime.title} - Episodio ${anime.episodesCount}`,
-            number: anime.episodesCount,
-            animeId: anime.id,
-            animeTitle: anime.title,
-            coverUrl: anime.coverUrl,
-            videoUrl: `/api/episode/${anime.id}-ep-${anime.episodesCount}`,
-            releaseDate: "Hoy"
-          };
-        });
-      }
-    } catch (e) {}
-
     const localDb = getAnimesWithEpisodes();
     return generateMockRecentEpisodes(localDb).slice(0, 12);
   }
 
   static async search(query: string, page: number = 1, status?: string): Promise<Anime[]> {
+    const mcResults = await AnimeApiAggregator.searchMonosChinosDirect(query);
+    if (mcResults.length > 0) return mcResults;
+
     try {
-      const isGenre = [
-        "Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Romance", 
-        "Ciencia Ficción", "Recuentos de la vida", 
-        "Terror", "Sobrenatural", "Misterio", "Psicológico", 
-        "Deportes", "Mecha"
-      ].some(g => g.toLowerCase() === query.toLowerCase().trim());
-
-      const tagsList = ["Shounen", "Seinen", "Escolar", "Isekai"];
-      const isTag = tagsList.some(t => t.toLowerCase() === query.toLowerCase().trim());
-
-      const variables: any = { page, perPage: 24 };
-      if (isTag) {
-        variables.tag = mapSpanishGenreToEnglish(query.trim());
-      } else if (isGenre) {
-        variables.genre = mapSpanishGenreToEnglish(query.trim());
-      } else {
-        variables.search = query;
-      }
-      if (status) {
-        variables.status = status === "En emisión" ? "RELEASING" : "FINISHED";
-      }
-
+      const variables: any = { page, perPage: 24, search: query };
+      if (status) variables.status = status === "En emisión" ? "RELEASING" : "FINISHED";
       const data = await queryAniListGraphQL(variables);
       if (data && data.Page && data.Page.media) {
         return data.Page.media.map(mapAniListGraphQLMedia);
       }
-    } catch (e) {
-      console.warn("AniList GraphQL search failed, trying Consumet API...");
-    }
-
-    const isGenre = [
-      "Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Romance", 
-      "Ciencia Ficción", "Shounen", "Seinen", "Recuentos de la vida", 
-      "Terror", "Sobrenatural", "Misterio", "Psicológico", "Escolar", 
-      "Deportes", "Mecha", "Isekai"
-    ].some(g => g.toLowerCase() === query.toLowerCase().trim());
-
-    if (isGenre) {
-      const mappedG = mapSpanishGenreToEnglish(query.trim());
-      try {
-        const statusParam = status ? `&status=${status}` : "";
-        const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/advanced-search?genres=["${mappedG}"]&page=${page}&perPage=40${statusParam}`, {
-          signal: AbortSignal.timeout(4000)
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.results && Array.isArray(json.results)) {
-            return json.results.map(mapConsumetAnime);
-          }
-        }
-      } catch (e) {}
-    } else {
-      try {
-        const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/${encodeURIComponent(query)}?page=${page}`, {
-          signal: AbortSignal.timeout(4000)
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.results && Array.isArray(json.results)) {
-            return json.results.map(mapConsumetAnime);
-          }
-        }
-      } catch (e) {}
-
-      try {
-        const res = await fetch(`${HIANIME_API_URL}/api/v1/anime/search?q=${encodeURIComponent(query)}&page=${page}`, {
-          signal: AbortSignal.timeout(4000)
-        });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data?.animes && Array.isArray(json.data.animes)) {
-            return json.data.animes.map(mapHiAnime);
-          }
-        }
-      } catch (e) {}
-    }
+    } catch (e) {}
 
     const lower = query.toLowerCase().trim();
     return getAnimesWithEpisodes().filter(a => 
@@ -1505,33 +1522,16 @@ export class AnimeApiAggregator {
   }
 
   static async getMovies(genre?: string, page: number = 1): Promise<Anime[]> {
-    try {
-      const variables: any = { page, perPage: 24, format: "MOVIE" };
+    const mcMovies = await AnimeApiAggregator.getMonosChinosMoviesDirect();
+    if (mcMovies.length > 0) {
       if (genre && genre !== "Todas" && genre !== "Todos" && genre.toLowerCase().trim() !== "todos") {
-        variables.genre = mapSpanishGenreToEnglish(genre.trim());
+        const lower = genre.toLowerCase().trim();
+        const filtered = mcMovies.filter(m => m.genres.some(g => g.toLowerCase().includes(lower)) || m.title.toLowerCase().includes(lower));
+        if (filtered.length > 0) return filtered;
       }
-      const data = await queryAniListGraphQL(variables);
-      if (data && data.Page && data.Page.media) {
-        return data.Page.media.map(mapAniListGraphQLMedia);
-      }
-    } catch (e) {
-      console.warn("AniList GraphQL getMovies failed, trying Consumet API...");
+      return mcMovies;
     }
 
-    try {
-      let url = `${CONSUMET_API_URL}/meta/anilist/advanced-search?format=MOVIE&page=${page}&perPage=24`;
-      if (genre && genre !== "Todas" && genre !== "Todos" && genre.toLowerCase().trim() !== "todos") {
-        const engG = mapSpanishGenreToEnglish(genre.trim());
-        url += `&genres=["${engG}"]`;
-      }
-      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.results && Array.isArray(json.results)) {
-          return json.results.map(mapConsumetAnime);
-        }
-      }
-    } catch (e) {}
     const base = getAnimesWithEpisodes().filter(a => a.type === "Película");
     if (genre && genre !== "Todas" && genre !== "Todos") {
       const lower = genre.toLowerCase().trim();
