@@ -620,6 +620,10 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "jujutsu-kaisen-0-movie-e1": "jujutsu-kaisen-0-movie",
   "suzume-movie": "suzume-no-tojimari",
   "suzume-movie-e1": "suzume-no-tojimari",
+  "199748": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "consumet-199748": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "i-became-a-legend-after-my-10-year-long-last-stand": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "koko-wa-ore-ni-makasete-saki-ni-ike-to-ittekara-10-nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "consumet-196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "the-frontier-lord-begins-with-zero-subjects": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
@@ -907,7 +911,7 @@ async function scrapeEpisodeFromMonosChinos(
 
                 if (candidates.length > 0) {
                   candidates.sort((a, b) => b.score - a.score || a.slug.length - b.slug.length);
-                  if (candidates[0].score >= 0.8) {
+                  if (candidates[0].score >= 0.3) {
                     slug = candidates[0].slug;
                     break;
                   }
