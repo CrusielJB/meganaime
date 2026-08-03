@@ -222,7 +222,21 @@ export default function AnimeDetail({
 
   // Generate episodes list
   const episodeList = useMemo(() => {
-    const totalCount = currentAnime.episodesCount || (currentAnime.episodes && currentAnime.episodes.length) || 12;
+    const isAiring = currentAnime.status === "En emisión" || currentAnime.status === "RELEASING" || currentAnime.status === "Ongoing";
+    
+    let totalCount = currentAnime.episodesCount || (currentAnime.episodes && currentAnime.episodes.length) || 12;
+    
+    // For airing animes: strictly show ONLY episodes available to date (never future unreleased placeholder buttons)
+    if (isAiring) {
+      if (currentAnime.episodes && currentAnime.episodes.length > 0) {
+        totalCount = currentAnime.episodes.length;
+      } else if (currentAnime.episodesCount && currentAnime.episodesCount <= 50) {
+        totalCount = currentAnime.episodesCount;
+      } else {
+        totalCount = 1; // Default to 1 episode if newly premiered until more air
+      }
+    }
+
     const list: Episode[] = [];
     
     // Create a map of existing real episodes by number

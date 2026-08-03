@@ -1968,12 +1968,12 @@ export class AnimeApiAggregator {
           console.log(`Hot path lookup details for: ${lookupId}`);
           const details = await AnimeApiAggregator.getDetails(lookupId);
           if (details) {
-            if (!matchedAnimeTitle || matchedAnimeTitle === animeId) {
+            if (!matchedAnimeTitle || matchedAnimeTitle === animeId || /^\d+$/.test((matchedAnimeTitle || "").trim())) {
               matchedAnimeTitle = details.title;
             }
             alTitles = {
-              romaji: details.title_romaji,
-              english: details.title_english,
+              romaji: details.title_romaji || details.title,
+              english: details.title_english || details.title,
               native: details.title_native
             };
           }
