@@ -934,27 +934,27 @@ async function scrapeEpisodeFromMonosChinos(
           
           if (isMovie) {
             epUrlCandidates.push(
-              `${domain}/ver/${animeId}-episodio-1`,
-              `${domain}/ver/${animeId}-sub-espanol-episodio-1`,
               `${domain}/ver/${slug}-episodio-1`,
               `${domain}/ver/${slug}-sub-espanol-episodio-1`,
+              `${domain}/ver/${slug}-pelicula`,
+              `${domain}/ver/${slug}-sub-espanol-pelicula`,
+              `${domain}/ver/${slug}`,
+              `${domain}/ver/${slug}-sub-espanol`,
+              `${domain}/ver/${animeId}-episodio-1`,
+              `${domain}/ver/${animeId}-sub-espanol-episodio-1`,
               `${domain}/ver/${animeId}-pelicula`,
               `${domain}/ver/${animeId}-sub-espanol-pelicula`,
-              `${domain}/ver/${animeId}-sub-espanol`,
-              `${domain}/ver/${animeId}`,
-              `${domain}/ver/${slug}-pelicula`,
-              `${domain}/ver/${slug}`,
-              `${domain}/ver/${slug}-sub-espanol-pelicula`
+              `${domain}/ver/${animeId}`
             );
           } else {
             epUrlCandidates.push(
-              `${domain}/ver/${animeId}-episodio-${finalEpNum}`,
-              `${domain}/ver/${animeId}-sub-espanol-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-sub-espanol-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-${finalEpNum}`,
               `${domain}/ver/${slug}-sub-espanol-${finalEpNum}`,
               `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`,
+              `${domain}/ver/${animeId}-episodio-${finalEpNum}`,
+              `${domain}/ver/${animeId}-sub-espanol-episodio-${finalEpNum}`,
               `${domain}/ver/${animeId}-sub-espanol`,
               `${domain}/ver/${animeId}`,
               `${domain}/ver/${slug}-sub-espanol`,
@@ -965,22 +965,35 @@ async function scrapeEpisodeFromMonosChinos(
             if (ovaNumMatch) {
               const ovaNum = ovaNumMatch[1];
               epUrlCandidates.push(
-                `${domain}/ver/${animeId}-episodio-${ovaNum}`,
                 `${domain}/ver/${slug}-episodio-${ovaNum}`,
-                `${domain}/ver/${animeId}-sub-espanol-episodio-${ovaNum}`,
-                `${domain}/ver/${slug}-sub-espanol-episodio-${ovaNum}`
+                `${domain}/ver/${slug}-sub-espanol-episodio-${ovaNum}`,
+                `${domain}/ver/${animeId}-episodio-${ovaNum}`,
+                `${domain}/ver/${animeId}-sub-espanol-episodio-${ovaNum}`
               );
             }
           }
 
-          for (const candidateUrl of epUrlCandidates) {
-            const response = await fetch(candidateUrl, {
-              headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Referer": `${domain}/` },
-              signal: AbortSignal.timeout(3500)
-            });
-            if (response.ok) {
-              const html = await response.text();
-              return { html, domain, url: candidateUrl };
+          const uniqueCandidates = Array.from(new Set(epUrlCandidates));
+
+          const fetchResults = await Promise.allSettled(
+            uniqueCandidates.map(async (candidateUrl) => {
+              const response = await fetch(candidateUrl, {
+                headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "Referer": `${domain}/` },
+                signal: AbortSignal.timeout(3000)
+              });
+              if (response.ok) {
+                const html = await response.text();
+                if (html.includes("data-player=")) {
+                  return { html, domain, url: candidateUrl };
+                }
+              }
+              throw new Error(`Candidate failed: ${candidateUrl}`);
+            })
+          );
+
+          for (const res of fetchResults) {
+            if (res.status === "fulfilled" && res.value) {
+              return res.value;
             }
           }
         } catch (e) {
@@ -1864,6 +1877,20 @@ export class AnimeApiAggregator {
     let matchedAnimeTitle = "";
 
     const isConsumet = episodeId.startsWith("consumet-ep-") || (episodeId.startsWith("consumet-") && episodeId.includes("-ep-"));
+    // FAST PATH: If animeId or episodeId has an explicit MonosChinos slug mapping or direct slug, run MonosChinos scraper IMMEDIATELY!
+    const mappedSlug = MONOSCHINOS_SLUG_MAP[animeId] || MONOSCHINOS_SLUG_MAP[episodeId];
+    if (mappedSlug) {
+      try {
+        const mcDirect = await scrapeEpisodeFromMonosChinos(episodeId, animeId, epNum, isMovie, mappedSlug, null);
+        if (mcDirect && mcDirect.length > 0) {
+          servers.push(...mcDirect);
+          return servers;
+        }
+      } catch (e) {
+        console.warn("Fast path MonosChinos resolution failed:", e);
+      }
+    }
+
     if (isConsumet) {
       let cleanId = episodeId;
       if (episodeId.startsWith("consumet-ep-")) {
@@ -1873,7 +1900,7 @@ export class AnimeApiAggregator {
       }
       try {
         const res = await fetch(`${CONSUMET_API_URL}/meta/anilist/watch/${cleanId}`, {
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(1500)
         });
         if (res.ok) {
           const data = await res.json();
