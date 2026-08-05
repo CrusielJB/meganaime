@@ -1341,6 +1341,64 @@ function mapHiAnime(item: any): Anime {
   };
 }
 
+/**
+ * Scrapes episode video servers from TioAnime.
+ */
+export async function scrapeEpisodeFromTioAnime(
+  slug: string,
+  epNum: number = 1
+): Promise<Array<{ name: string; url: string }>> {
+  // Strip prefixes/suffixes that could break the URL: tioanime-, -pelicula, -sub-espanol, -ep-N, -episodio-N
+  const cleanSlug = slug
+    .replace(/^tioanime-/, "")
+    .replace(/-pelicula$/, "")
+    .replace(/-sub-espanol$/, "")
+    .replace(/-(?:ep|episodio)-\d+$/i, "");
+
+  // For movies try without episode number, for series try with epNum first
+  const isMovie = slug.includes("-pelicula") || slug.includes("movie") || slug.includes("pelicula");
+  const candidates = isMovie
+    ? [
+        `https://tioanime.com/ver/${cleanSlug}`,
+        `https://tioanime.com/ver/${cleanSlug}-1`
+      ]
+    : [
+        `https://tioanime.com/ver/${cleanSlug}-${epNum}`,
+        `https://tioanime.com/ver/${cleanSlug}-1`,
+        `https://tioanime.com/ver/${cleanSlug}`
+      ];
+
+  for (const cand of candidates) {
+    try {
+      const res = await fetch(cand, { headers: HEADERS, signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const html = await res.text();
+        const videoMatch = html.match(/var\s+videos\s*=\s*(\[[\s\S]*?\]);/i);
+        if (videoMatch) {
+          try {
+            const rawArray = eval(videoMatch[1]);
+            const servers: Array<{ name: string; url: string }> = [];
+            for (const item of rawArray) {
+              if (Array.isArray(item) && item.length >= 2) {
+                const sName = item[0];
+                const sUrl = item[1];
+                if (sUrl && !sUrl.includes("BigBuckBunny")) {
+                  servers.push({
+                    name: `🚀 ${sName} (SUB Español)`,
+                    url: sUrl
+                  });
+                }
+              }
+            }
+            if (servers.length > 0) return servers;
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+  }
+  return [];
+}
+
 export class AnimeApiAggregator {
   static async getAiring(page: number = 1): Promise<Anime[]> {
     const local = getAnimesWithEpisodes().filter(a => a.status === "En emisión");
@@ -1707,6 +1765,19 @@ export class AnimeApiAggregator {
       .replace(/-(?:ep|episodio)-\d+$/i, "")
       .replace(/^consumet-(?:ep-)?/, "")
       .replace(/^hianime-(?:ep-)?/, "");
+
+    if (episodeId.startsWith("tioanime-") || animeId.startsWith("tioanime-")) {
+      try {
+        // Pass the full raw episodeId (including -pelicula if present) so scrapeEpisodeFromTioAnime can detect movie
+        const tioSlug = (episodeId.startsWith("tioanime-") ? episodeId : animeId).replace(/^tioanime-/, "");
+        const tioDirect = await scrapeEpisodeFromTioAnime(tioSlug, epNum);
+        if (tioDirect && tioDirect.length > 0) {
+          return tioDirect;
+        }
+      } catch (e) {
+        console.warn("TioAnime direct resolution failed:", e);
+      }
+    }
 
     // FAST PATH: If animeId or cleanAnimeId has an explicit MonosChinos slug mapping, run MonosChinos scraper IMMEDIATELY!
     const mappedSlug = MONOSCHINOS_SLUG_MAP[animeId] || MONOSCHINOS_SLUG_MAP[cleanAnimeId] || MONOSCHINOS_SLUG_MAP[episodeId];

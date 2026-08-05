@@ -3356,6 +3356,3554 @@ export const MOCK_ANIMES: Anime[] = [
     "title_romaji": "Make Heroine ga Oosugiru!",
     "title_english": "Makeine: Too Many Losing Heroines!",
     "title_native": "負けヒロインが多すぎる！"
+  },
+  {
+    "id": "tioanime-boku-no-hero-academia-i-am-a-hero-too",
+    "title": "Boku no Hero Academia: I Am a Hero Too",
+    "synopsis": "Disfruta de Boku no Hero Academia: I Am a Hero Too en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4495.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4495.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "boku-no-hero-academia-i-am-a-hero-too"
+  },
+  {
+    "id": "tioanime-tensei-shitara-slime-datta-ken-movie-2-soukai-no-namidahen",
+    "title": "Tensei shitara Slime Datta Ken Movie 2: Soukai no Namida-hen",
+    "synopsis": "Disfruta de Tensei shitara Slime Datta Ken Movie 2: Soukai no Namida-hen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4494.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4494.jpg",
+    "genres": [
+      "Película",
+      "Acción",
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Película",
+    "episodesCount": 1,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "tensei-shitara-slime-datta-ken-movie-2-soukai-no-namidahen"
+  },
+  {
+    "id": "tioanime-kimetsu-no-yaiba-movie-1-mugenjouhen-akaza-sairai",
+    "title": "Kimetsu no Yaiba Movie 1: Mugenjou-hen - Akaza Sairai",
+    "synopsis": "Disfruta de Kimetsu no Yaiba Movie 1: Mugenjou-hen - Akaza Sairai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4493.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4493.jpg",
+    "genres": [
+      "Película",
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Película",
+    "episodesCount": 1,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "kimetsu-no-yaiba-movie-1-mugenjouhen-akaza-sairai"
+  },
+  {
+    "id": "tioanime-ansatsu-kyoushitsu-movie-minna-no-jikan",
+    "title": "Ansatsu Kyoushitsu Movie: Minna no Jikan",
+    "synopsis": "Disfruta de Ansatsu Kyoushitsu Movie: Minna no Jikan en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4492.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4492.jpg",
+    "genres": [
+      "Película"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Película",
+    "episodesCount": 1,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "ansatsu-kyoushitsu-movie-minna-no-jikan"
+  },
+  {
+    "id": "tioanime-nige-jouzu-no-wakagimi-2nd-season",
+    "title": "Nige Jouzu no Wakagimi 2nd Season",
+    "synopsis": "Disfruta de Nige Jouzu no Wakagimi 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4491.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4491.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "nige-jouzu-no-wakagimi-2nd-season"
+  },
+  {
+    "id": "tioanime-futsutsuka-na-akujo-dewa-gozaimasu-ga-suuguu-chouso-torikae-den",
+    "title": "Futsutsuka na Akujo dewa Gozaimasu ga: Suuguu Chouso Torikae Den",
+    "synopsis": "Disfruta de Futsutsuka na Akujo dewa Gozaimasu ga: Suuguu Chouso Torikae Den en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4490.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4490.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "futsutsuka-na-akujo-dewa-gozaimasu-ga-suuguu-chouso-torikae-den"
+  },
+  {
+    "id": "tioanime-hanaorisan-wa-tensei-shitemo-kenka-ga-shitai",
+    "title": "Hanaori-san wa Tensei shitemo Kenka ga Shitai",
+    "synopsis": "Disfruta de Hanaori-san wa Tensei shitemo Kenka ga Shitai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4489.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4489.jpg",
+    "genres": [
+      "Acción",
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "hanaorisan-wa-tensei-shitemo-kenka-ga-shitai"
+  },
+  {
+    "id": "tioanime-super-no-ura-de-yani-suu-futari",
+    "title": "Super no Ura de Yani Suu Futari",
+    "synopsis": "Disfruta de Super no Ura de Yani Suu Futari en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4487.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4487.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "super-no-ura-de-yani-suu-futari"
+  },
+  {
+    "id": "tioanime-mebius-dust",
+    "title": "Mebius Dust",
+    "synopsis": "Disfruta de Mebius Dust en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4486.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4486.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mebius-dust"
+  },
+  {
+    "id": "tioanime-ibitte-konai-gibo-to-gishi",
+    "title": "Ibitte Konai Gibo to Gishi",
+    "synopsis": "Disfruta de Ibitte Konai Gibo to Gishi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4481.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4481.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "ibitte-konai-gibo-to-gishi"
+  },
+  {
+    "id": "tioanime-youjo-senki-ii",
+    "title": "Youjo Senki II",
+    "synopsis": "Disfruta de Youjo Senki II en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4480.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4480.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "youjo-senki-ii"
+  },
+  {
+    "id": "tioanime-otome-game-sekai-wa-mob-ni-kibishii-sekai-desu-2",
+    "title": "Otome Game Sekai wa Mob ni Kibishii Sekai desu 2",
+    "synopsis": "Disfruta de Otome Game Sekai wa Mob ni Kibishii Sekai desu 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4483.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4483.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "otome-game-sekai-wa-mob-ni-kibishii-sekai-desu-2"
+  },
+  {
+    "id": "tioanime-clevatess-ii-majuu-no-ou-to-itsuwari-no-yuusha-denshou",
+    "title": "Clevatess II: Majuu no Ou to Itsuwari no Yuusha Denshou",
+    "synopsis": "Disfruta de Clevatess II: Majuu no Ou to Itsuwari no Yuusha Denshou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4479.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4479.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "clevatess-ii-majuu-no-ou-to-itsuwari-no-yuusha-denshou"
+  },
+  {
+    "id": "tioanime-thunder-3",
+    "title": "Thunder 3",
+    "synopsis": "Disfruta de Thunder 3 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4484.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4484.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "thunder-3"
+  },
+  {
+    "id": "tioanime-dogulwang",
+    "title": "Dogulwang",
+    "synopsis": "Disfruta de Dogulwang en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4485.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4485.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "dogulwang"
+  },
+  {
+    "id": "tioanime-katainaka-no-ossan-kensei-ni-naru-ii",
+    "title": "Katainaka no Ossan, Kensei ni Naru II",
+    "synopsis": "Disfruta de Katainaka no Ossan, Kensei ni Naru II en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4482.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4482.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "katainaka-no-ossan-kensei-ni-naru-ii"
+  },
+  {
+    "id": "tioanime-kimi-ga-shinu-made-koi-wo-shitai",
+    "title": "Kimi ga Shinu made Koi wo Shitai",
+    "synopsis": "Disfruta de Kimi ga Shinu made Koi wo Shitai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4475.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4475.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kimi-ga-shinu-made-koi-wo-shitai"
+  },
+  {
+    "id": "tioanime-koukaku-kidoutai-tv",
+    "title": "Koukaku Kidoutai (TV)",
+    "synopsis": "Disfruta de Koukaku Kidoutai (TV) en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4476.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4476.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "koukaku-kidoutai-tv"
+  },
+  {
+    "id": "tioanime-tefuda-ga-oome-no-victoria",
+    "title": "Tefuda ga Oome no Victoria",
+    "synopsis": "Disfruta de Tefuda ga Oome no Victoria en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4477.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4477.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tefuda-ga-oome-no-victoria"
+  },
+  {
+    "id": "tioanime-sora-wa-akai-kawa-no-hotori",
+    "title": "Sora wa Akai Kawa no Hotori",
+    "synopsis": "Disfruta de Sora wa Akai Kawa no Hotori en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4478.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4478.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "sora-wa-akai-kawa-no-hotori"
+  },
+  {
+    "id": "tioanime-taiari-deshita-ojousama-wa-kakutou-game-nante-shinai",
+    "title": "Tai-Ari deshita. Ojousama wa Kakutou Game nante Shinai",
+    "synopsis": "Disfruta de Tai-Ari deshita. Ojousama wa Kakutou Game nante Shinai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4474.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4474.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "taiari-deshita-ojousama-wa-kakutou-game-nante-shinai"
+  },
+  {
+    "id": "tioanime-saikyou-degarashi-ouji-no-anyaku-teii-arasoi",
+    "title": "Saikyou Degarashi Ouji no Anyaku Teii Arasoi",
+    "synopsis": "Disfruta de Saikyou Degarashi Ouji no Anyaku Teii Arasoi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4469.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4469.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "saikyou-degarashi-ouji-no-anyaku-teii-arasoi"
+  },
+  {
+    "id": "tioanime-tenkosaki",
+    "title": "Tenkosaki",
+    "synopsis": "Disfruta de Tenkosaki en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4471.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4471.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "tenkosaki"
+  },
+  {
+    "id": "tioanime-buchigire-reijou-wa-houfuku-wo-chikaimashita",
+    "title": "Buchigire Reijou wa Houfuku wo Chikaimashita.",
+    "synopsis": "Disfruta de Buchigire Reijou wa Houfuku wo Chikaimashita. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4470.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4470.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "buchigire-reijou-wa-houfuku-wo-chikaimashita"
+  },
+  {
+    "id": "tioanime-gaikotsu-kishisama-tadaima-isekai-e-odekakechuu-ii",
+    "title": "Gaikotsu Kishi-sama, Tadaima Isekai e Odekakechuu II",
+    "synopsis": "Disfruta de Gaikotsu Kishi-sama, Tadaima Isekai e Odekakechuu II en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4451.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4451.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "gaikotsu-kishisama-tadaima-isekai-e-odekakechuu-ii"
+  },
+  {
+    "id": "tioanime-toumei-na-yoru-ni-kakeru-kimi-to-me-ni-mienai-koi-wo-shita",
+    "title": "Toumei na Yoru ni Kakeru Kimi to, Me ni Mienai Koi wo Shita.",
+    "synopsis": "Disfruta de Toumei na Yoru ni Kakeru Kimi to, Me ni Mienai Koi wo Shita. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4468.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4468.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "toumei-na-yoru-ni-kakeru-kimi-to-me-ni-mienai-koi-wo-shita"
+  },
+  {
+    "id": "tioanime-grand-blue-season-3",
+    "title": "Grand Blue Season 3",
+    "synopsis": "Disfruta de Grand Blue Season 3 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4472.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4472.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "grand-blue-season-3"
+  },
+  {
+    "id": "tioanime-suterare-seijo-no-isekai-gohan-tabi-kakure-skill-de-camping-car-wo-shoukan-shimashita",
+    "title": "Suterare Seijo no Isekai Gohan Tabi: Kakure Skill de Camping Car wo Shoukan shimashita",
+    "synopsis": "Disfruta de Suterare Seijo no Isekai Gohan Tabi: Kakure Skill de Camping Car wo Shoukan shimashita en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4473.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4473.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "suterare-seijo-no-isekai-gohan-tabi-kakure-skill-de-camping-car-wo-shoukan-shimashita"
+  },
+  {
+    "id": "tioanime-sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
+    "title": "Sekai Saikyou no Kouei: Meikyuukoku no Shinjin Tansakusha",
+    "synopsis": "Disfruta de Sekai Saikyou no Kouei: Meikyuukoku no Shinjin Tansakusha en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4464.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4464.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha"
+  },
+  {
+    "id": "tioanime-nijusseiki-denki-mokuroku-eureka-evrika",
+    "title": "Nijusseiki Denki Mokuroku: Eureka Evrika",
+    "synopsis": "Disfruta de Nijusseiki Denki Mokuroku: Eureka Evrika en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4465.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4465.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "nijusseiki-denki-mokuroku-eureka-evrika"
+  },
+  {
+    "id": "tioanime-mushoku-tensei-iii-isekai-ittara-honki-dasu",
+    "title": "Mushoku Tensei III: Isekai Ittara Honki Dasu",
+    "synopsis": "Disfruta de Mushoku Tensei III: Isekai Ittara Honki Dasu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4450.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4450.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "mushoku-tensei-iii-isekai-ittara-honki-dasu"
+  },
+  {
+    "id": "tioanime-tetsunabe-no-jan",
+    "title": "Tetsunabe no Jan!",
+    "synopsis": "Disfruta de Tetsunabe no Jan! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4463.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4463.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "tetsunabe-no-jan"
+  },
+  {
+    "id": "tioanime-lets-go-kaikigumi",
+    "title": "Let's Go Kaiki-gumi",
+    "synopsis": "Disfruta de Let's Go Kaiki-gumi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4461.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4461.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "lets-go-kaikigumi"
+  },
+  {
+    "id": "tioanime-azur-lane-bisoku-zenshin-ni",
+    "title": "Azur Lane: Bisoku Zenshin! Ni!!",
+    "synopsis": "Disfruta de Azur Lane: Bisoku Zenshin! Ni!! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4467.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4467.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "azur-lane-bisoku-zenshin-ni"
+  },
+  {
+    "id": "tioanime-one-piece-heroines",
+    "title": "One Piece: Heroines",
+    "synopsis": "Disfruta de One Piece: Heroines en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4488.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4488.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "one-piece-heroines"
+  },
+  {
+    "id": "tioanime-sayonara-lara",
+    "title": "Sayonara Lara",
+    "synopsis": "Disfruta de Sayonara Lara en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4466.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4466.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "sayonara-lara"
+  },
+  {
+    "id": "tioanime-seihantai-na-kimi-to-boku-2nd-season",
+    "title": "Seihantai na Kimi to Boku 2nd Season",
+    "synopsis": "Disfruta de Seihantai na Kimi to Boku 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4462.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4462.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "seihantai-na-kimi-to-boku-2nd-season"
+  },
+  {
+    "id": "tioanime-oni-no-hanayome",
+    "title": "Oni no Hanayome",
+    "synopsis": "Disfruta de Oni no Hanayome en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4456.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4456.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "oni-no-hanayome"
+  },
+  {
+    "id": "tioanime-iwamotosenpai-no-suisen",
+    "title": "Iwamoto-senpai no Suisen",
+    "synopsis": "Disfruta de Iwamoto-senpai no Suisen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4453.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4453.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "iwamotosenpai-no-suisen"
+  },
+  {
+    "id": "tioanime-kimi-wo-aisuru-ki-wa-nai-to-itta-jiki-koushakusama-ga-nazeka-dekiai-shitekimasu",
+    "title": "\"Kimi wo Aisuru Ki wa Nai\" to Itta Jiki Koushaku-sama ga Nazeka Dekiai shitekimasu",
+    "synopsis": "Disfruta de \"Kimi wo Aisuru Ki wa Nai\" to Itta Jiki Koushaku-sama ga Nazeka Dekiai shitekimasu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4457.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4457.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kimi-wo-aisuru-ki-wa-nai-to-itta-jiki-koushakusama-ga-nazeka-dekiai-shitekimasu"
+  },
+  {
+    "id": "tioanime-mahou-shoujo-lyrical-nanoha-exceeds-gun-blaze-vengeance",
+    "title": "Mahou Shoujo Lyrical Nanoha EXCEEDS: Gun Blaze Vengeance",
+    "synopsis": "Disfruta de Mahou Shoujo Lyrical Nanoha EXCEEDS: Gun Blaze Vengeance en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4458.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4458.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "mahou-shoujo-lyrical-nanoha-exceeds-gun-blaze-vengeance"
+  },
+  {
+    "id": "tioanime-kabushikigaisha-magilumiere-2nd-season",
+    "title": "Kabushikigaisha Magi-Lumière 2nd Season",
+    "synopsis": "Disfruta de Kabushikigaisha Magi-Lumière 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4459.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4459.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "kabushikigaisha-magilumiere-2nd-season"
+  },
+  {
+    "id": "tioanime-black-torch",
+    "title": "Black Torch",
+    "synopsis": "Disfruta de Black Torch en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4452.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4452.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "black-torch"
+  },
+  {
+    "id": "tioanime-grow-up-show-himawari-no-circusdan",
+    "title": "Grow Up Show: Himawari no Circus-dan",
+    "synopsis": "Disfruta de Grow Up Show: Himawari no Circus-dan en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4454.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4454.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "grow-up-show-himawari-no-circusdan"
+  },
+  {
+    "id": "tioanime-saijo-no-osewa",
+    "title": "Saijo no Osewa",
+    "synopsis": "Disfruta de Saijo no Osewa en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4460.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4460.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "saijo-no-osewa"
+  },
+  {
+    "id": "tioanime-tenmaku-no-jaadugar",
+    "title": "Tenmaku no Jaadugar",
+    "synopsis": "Disfruta de Tenmaku no Jaadugar en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4455.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4455.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tenmaku-no-jaadugar"
+  },
+  {
+    "id": "tioanime-uchi-no-otoutodomo-ga-sumimasen",
+    "title": "Uchi no Otouto-domo ga Sumimasen",
+    "synopsis": "Disfruta de Uchi no Otouto-domo ga Sumimasen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4448.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4448.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "uchi-no-otoutodomo-ga-sumimasen"
+  },
+  {
+    "id": "tioanime-koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita",
+    "title": "Koko wa Ore ni Makasete Saki ni Ike to Itte kara 10-nen ga Tattara Densetsu ni Natteita.",
+    "synopsis": "Disfruta de Koko wa Ore ni Makasete Saki ni Ike to Itte kara 10-nen ga Tattara Densetsu ni Natteita. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4446.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4446.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita"
+  },
+  {
+    "id": "tioanime-kore-kaite-shine",
+    "title": "Kore Kaite Shine",
+    "synopsis": "Disfruta de Kore Kaite Shine en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4447.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4447.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kore-kaite-shine"
+  },
+  {
+    "id": "tioanime-ryoumin-0nin-start-no-henkyou-ryoushusama",
+    "title": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama",
+    "synopsis": "Disfruta de Ryoumin 0-nin Start no Henkyou Ryoushu-sama en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4445.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4445.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "ryoumin-0nin-start-no-henkyou-ryoushusama"
+  },
+  {
+    "id": "tioanime-hell-mode-yarikomizuki-no-gamer-wa-hai-settei-no-isekai-de-musou-suru-2nd-season",
+    "title": "Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru 2nd Season",
+    "synopsis": "Disfruta de Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4449.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4449.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "hell-mode-yarikomizuki-no-gamer-wa-hai-settei-no-isekai-de-musou-suru-2nd-season"
+  },
+  {
+    "id": "tioanime-bang-dream-yumemita",
+    "title": "BanG Dream! Yume∞Mita",
+    "synopsis": "Disfruta de BanG Dream! Yume∞Mita en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4441.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4441.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "bang-dream-yumemita"
+  },
+  {
+    "id": "tioanime-otome-kaijuu-carameliser",
+    "title": "Otome Kaijuu Caraméliser",
+    "synopsis": "Disfruta de Otome Kaijuu Caraméliser en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4444.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4444.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "otome-kaijuu-carameliser"
+  },
+  {
+    "id": "tioanime-reiwa-no-darasan",
+    "title": "Reiwa no Dara-san",
+    "synopsis": "Disfruta de Reiwa no Dara-san en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4440.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4440.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "reiwa-no-darasan"
+  },
+  {
+    "id": "tioanime-yani-neko",
+    "title": "Yani Neko",
+    "synopsis": "Disfruta de Yani Neko en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4442.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4442.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "yani-neko"
+  },
+  {
+    "id": "tioanime-bungou-stray-dogs-wan-2",
+    "title": "Bungou Stray Dogs Wan! 2",
+    "synopsis": "Disfruta de Bungou Stray Dogs Wan! 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4439.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4439.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "bungou-stray-dogs-wan-2"
+  },
+  {
+    "id": "tioanime-tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
+    "title": "Tsuihou sareta Tensei Juukishi wa Game Chishiki de Musou suru",
+    "synopsis": "Disfruta de Tsuihou sareta Tensei Juukishi wa Game Chishiki de Musou suru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4443.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4443.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru"
+  },
+  {
+    "id": "tioanime-hanazakari-no-kimitachi-e-2nd-season",
+    "title": "Hanazakari no Kimitachi e 2nd Season",
+    "synopsis": "Disfruta de Hanazakari no Kimitachi e 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4438.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4438.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "hanazakari-no-kimitachi-e-2nd-season"
+  },
+  {
+    "id": "tioanime-lv999-no-murabito",
+    "title": "Lv999 no Murabito",
+    "synopsis": "Disfruta de Lv999 no Murabito en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4437.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4437.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "lv999-no-murabito"
+  },
+  {
+    "id": "tioanime-mujikaku-seijo-wa-kyou-mo-muishiki-ni-chikara-wo-tare-nagasu",
+    "title": "Mujikaku Seijo wa Kyou mo Muishiki ni Chikara wo Tare Nagasu",
+    "synopsis": "Disfruta de Mujikaku Seijo wa Kyou mo Muishiki ni Chikara wo Tare Nagasu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4436.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4436.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mujikaku-seijo-wa-kyou-mo-muishiki-ni-chikara-wo-tare-nagasu"
+  },
+  {
+    "id": "tioanime-63347",
+    "title": "World Is Dancing",
+    "synopsis": "Disfruta de World Is Dancing en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4435.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4435.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "63347"
+  },
+  {
+    "id": "tioanime-neko-to-ryuu",
+    "title": "Neko to Ryuu",
+    "synopsis": "Disfruta de Neko to Ryuu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4434.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4434.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "neko-to-ryuu"
+  },
+  {
+    "id": "tioanime-rakudai-kenja-no-gakuin-musou-nidome-no-tensei-srank-cheat-majutsushi-boukenroku",
+    "title": "Rakudai Kenja no Gakuin Musou: Nidome no Tensei, S-Rank Cheat Majutsushi Boukenroku",
+    "synopsis": "Disfruta de Rakudai Kenja no Gakuin Musou: Nidome no Tensei, S-Rank Cheat Majutsushi Boukenroku en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4433.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4433.jpg",
+    "genres": [
+      "Acción",
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "rakudai-kenja-no-gakuin-musou-nidome-no-tensei-srank-cheat-majutsushi-boukenroku"
+  },
+  {
+    "id": "tioanime-heroine-seijo-iie-all-works-maid-desu-hokori",
+    "title": "Heroine? Seijo? Iie, All Works Maid desu (Hokori)!",
+    "synopsis": "Disfruta de Heroine? Seijo? Iie, All Works Maid desu (Hokori)! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4432.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4432.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "heroine-seijo-iie-all-works-maid-desu-hokori"
+  },
+  {
+    "id": "tioanime-kobayashisan-chi-no-maid-dragon-samishigariya-no-ryuu",
+    "title": "Kobayashi-san Chi no Maid Dragon: Samishigariya no Ryuu",
+    "synopsis": "Disfruta de Kobayashi-san Chi no Maid Dragon: Samishigariya no Ryuu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4431.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4431.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kobayashisan-chi-no-maid-dragon-samishigariya-no-ryuu"
+  },
+  {
+    "id": "tioanime-zombieland-saga-movie-yumeginga-paradise",
+    "title": "Zombieland Saga Movie: Yumeginga Paradise",
+    "synopsis": "Disfruta de Zombieland Saga Movie: Yumeginga Paradise en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4430.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4430.jpg",
+    "genres": [
+      "Película"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Película",
+    "episodesCount": 1,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "zombieland-saga-movie-yumeginga-paradise"
+  },
+  {
+    "id": "tioanime-dandelion",
+    "title": "Dandelion",
+    "synopsis": "Disfruta de Dandelion en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4429.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4429.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "dandelion"
+  },
+  {
+    "id": "tioanime-aishiteru-game-wo-owarasetai",
+    "title": "Aishiteru Game wo Owarasetai",
+    "synopsis": "Disfruta de Aishiteru Game wo Owarasetai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4428.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4428.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "aishiteru-game-wo-owarasetai"
+  },
+  {
+    "id": "tioanime-yozakurasan-chi-no-daisakusen-2nd-season",
+    "title": "Yozakura-san Chi no Daisakusen 2nd Season",
+    "synopsis": "Disfruta de Yozakura-san Chi no Daisakusen 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4427.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4427.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "yozakurasan-chi-no-daisakusen-2nd-season"
+  },
+  {
+    "id": "tioanime-tsue-to-tsurugi-no-wistoria-season-2",
+    "title": "Tsue to Tsurugi no Wistoria Season 2",
+    "synopsis": "Disfruta de Tsue to Tsurugi no Wistoria Season 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4425.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4425.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tsue-to-tsurugi-no-wistoria-season-2"
+  },
+  {
+    "id": "tioanime-kuroneko-to-majo-no-kyoushitsu",
+    "title": "Kuroneko to Majo no Kyoushitsu",
+    "synopsis": "Disfruta de Kuroneko to Majo no Kyoushitsu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4426.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4426.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kuroneko-to-majo-no-kyoushitsu"
+  },
+  {
+    "id": "tioanime-ichijouma-mankitsugurashi",
+    "title": "Ichijouma Mankitsugurashi!",
+    "synopsis": "Disfruta de Ichijouma Mankitsugurashi! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4424.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4424.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "ichijouma-mankitsugurashi"
+  },
+  {
+    "id": "tioanime-yowayowa-sensei",
+    "title": "Yowayowa Sensei",
+    "synopsis": "Disfruta de Yowayowa Sensei en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4422.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4422.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "yowayowa-sensei"
+  },
+  {
+    "id": "tioanime-kill-ao",
+    "title": "Kill Ao",
+    "synopsis": "Disfruta de Kill Ao en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4423.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4423.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kill-ao"
+  },
+  {
+    "id": "tioanime-hokuto-no-ken-fist-of-the-north-star",
+    "title": "Hokuto no Ken: Fist of the North Star",
+    "synopsis": "Disfruta de Hokuto no Ken: Fist of the North Star en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4421.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4421.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "hokuto-no-ken-fist-of-the-north-star"
+  },
+  {
+    "id": "tioanime-kamiina-botan-yoeru-sugata-wa-yuri-no-hana",
+    "title": "Kamiina Botan, Yoeru Sugata wa Yuri no Hana",
+    "synopsis": "Disfruta de Kamiina Botan, Yoeru Sugata wa Yuri no Hana en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4419.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4419.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kamiina-botan-yoeru-sugata-wa-yuri-no-hana"
+  },
+  {
+    "id": "tioanime-kami-no-shizuku",
+    "title": "Kami no Shizuku",
+    "synopsis": "Disfruta de Kami no Shizuku en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4420.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4420.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kami-no-shizuku"
+  },
+  {
+    "id": "tioanime-awajima-hyakkei",
+    "title": "Awajima Hyakkei",
+    "synopsis": "Disfruta de Awajima Hyakkei en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4417.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4417.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "awajima-hyakkei"
+  },
+  {
+    "id": "tioanime-marikachan-no-koukando-wa-bukkowareteiru",
+    "title": "Marika-chan no Koukando wa Bukkowareteiru",
+    "synopsis": "Disfruta de Marika-chan no Koukando wa Bukkowareteiru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4418.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4418.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "marikachan-no-koukando-wa-bukkowareteiru"
+  },
+  {
+    "id": "tioanime-himekishi-wa-barbaroi-no-yome",
+    "title": "Himekishi wa Barbaroi no Yome",
+    "synopsis": "Disfruta de Himekishi wa Barbaroi no Yome en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4415.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4415.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "himekishi-wa-barbaroi-no-yome"
+  },
+  {
+    "id": "tioanime-kujima-utaeba-ie-hororo",
+    "title": "Kujima Utaeba Ie Hororo",
+    "synopsis": "Disfruta de Kujima Utaeba Ie Hororo en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4416.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4416.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "kujima-utaeba-ie-hororo"
+  },
+  {
+    "id": "tioanime-otaku-ni-yasashii-gal-wa-inai",
+    "title": "Otaku ni Yasashii Gal wa Inai!?",
+    "synopsis": "Disfruta de Otaku ni Yasashii Gal wa Inai!? en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4413.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4413.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "otaku-ni-yasashii-gal-wa-inai"
+  },
+  {
+    "id": "tioanime-kanojo-okarishimasu-5th-season",
+    "title": "Kanojo, Okarishimasu 5th Season",
+    "synopsis": "Disfruta de Kanojo, Okarishimasu 5th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4414.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4414.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kanojo-okarishimasu-5th-season"
+  },
+  {
+    "id": "tioanime-rezero-kara-hajimeru-isekai-seikatsu-4th-season",
+    "title": "Re:Zero kara Hajimeru Isekai Seikatsu 4th Season",
+    "synopsis": "Disfruta de Re:Zero kara Hajimeru Isekai Seikatsu 4th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4412.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4412.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "rezero-kara-hajimeru-isekai-seikatsu-4th-season"
+  },
+  {
+    "id": "tioanime-marriagetoxin",
+    "title": "Marriagetoxin",
+    "synopsis": "Disfruta de Marriagetoxin en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4408.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4408.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "marriagetoxin"
+  },
+  {
+    "id": "tioanime-tadaima-ojamasaremasu",
+    "title": "Tadaima, Ojamasaremasu!",
+    "synopsis": "Disfruta de Tadaima, Ojamasaremasu! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4410.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4410.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "tadaima-ojamasaremasu"
+  },
+  {
+    "id": "tioanime-replica-datte-koi-wo-suru",
+    "title": "Replica datte, Koi wo Suru.",
+    "synopsis": "Disfruta de Replica datte, Koi wo Suru. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4407.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4407.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "replica-datte-koi-wo-suru"
+  },
+  {
+    "id": "tioanime-hidarikiki-no-eren",
+    "title": "Hidarikiki no Eren",
+    "synopsis": "Disfruta de Hidarikiki no Eren en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4409.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4409.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "hidarikiki-no-eren"
+  },
+  {
+    "id": "tioanime-megami-isekai-tensei-nani-ni-naritai-desu-ka-ore-yuusha-no-rokkotsu-de",
+    "title": "Megami \"Isekai Tensei Nani ni Naritai desu ka\" Ore \"Yuusha no Rokkotsu de\"",
+    "synopsis": "Disfruta de Megami \"Isekai Tensei Nani ni Naritai desu ka\" Ore \"Yuusha no Rokkotsu de\" en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4411.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4411.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "megami-isekai-tensei-nani-ni-naritai-desu-ka-ore-yuusha-no-rokkotsu-de"
+  },
+  {
+    "id": "tioanime-class-de-2banme-ni-kawaii-onnanoko-to-tomodachi-ni-natta",
+    "title": "Class de 2-banme ni Kawaii Onnanoko to Tomodachi ni Natta",
+    "synopsis": "Disfruta de Class de 2-banme ni Kawaii Onnanoko to Tomodachi ni Natta en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4406.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4406.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "class-de-2banme-ni-kawaii-onnanoko-to-tomodachi-ni-natta"
+  },
+  {
+    "id": "tioanime-lastame-s2",
+    "title": "LasTame S2",
+    "synopsis": "Disfruta de LasTame S2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4405.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4405.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "lastame-s2"
+  },
+  {
+    "id": "tioanime-isekai-nonbiri-nouka-2",
+    "title": "Isekai Nonbiri Nouka 2",
+    "synopsis": "Disfruta de Isekai Nonbiri Nouka 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4401.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4401.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "isekai-nonbiri-nouka-2"
+  },
+  {
+    "id": "tioanime-ponkotsu-fuuki-iin-to-skirttake-ga-futekisetsu-na-jk-no-hanashi",
+    "title": "Ponkotsu Fuuki Iin to Skirt-take ga Futekisetsu na JK no Hanashi",
+    "synopsis": "Disfruta de Ponkotsu Fuuki Iin to Skirt-take ga Futekisetsu na JK no Hanashi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4403.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4403.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "ponkotsu-fuuki-iin-to-skirttake-ga-futekisetsu-na-jk-no-hanashi"
+  },
+  {
+    "id": "tioanime-tongari-boushi-no-atelier",
+    "title": "Tongari Boushi no Atelier",
+    "synopsis": "Disfruta de Tongari Boushi no Atelier en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4402.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4402.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tongari-boushi-no-atelier"
+  },
+  {
+    "id": "tioanime-liar-game",
+    "title": "Liar Game",
+    "synopsis": "Disfruta de Liar Game en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4404.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4404.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "liar-game"
+  },
+  {
+    "id": "tioanime-jishou-akuyaku-reijou-na-konyakusha-no-kansatsu-kiroku",
+    "title": "Jishou Akuyaku Reijou na Konyakusha no Kansatsu Kiroku.",
+    "synopsis": "Disfruta de Jishou Akuyaku Reijou na Konyakusha no Kansatsu Kiroku. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4385.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4385.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "jishou-akuyaku-reijou-na-konyakusha-no-kansatsu-kiroku"
+  },
+  {
+    "id": "tioanime-nippon-sangoku",
+    "title": "Nippon Sangoku",
+    "synopsis": "Disfruta de Nippon Sangoku en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4398.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4398.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "nippon-sangoku"
+  },
+  {
+    "id": "tioanime-ingoku-danchi",
+    "title": "Ingoku Danchi",
+    "synopsis": "Disfruta de Ingoku Danchi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4400.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4400.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "ingoku-danchi"
+  },
+  {
+    "id": "tioanime-ghost-concert-missing-songs",
+    "title": "Ghost Concert: Missing Songs",
+    "synopsis": "Disfruta de Ghost Concert: Missing Songs en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4399.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4399.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "ghost-concert-missing-songs"
+  },
+  {
+    "id": "tioanime-diamond-no-ace-act-ii-second-season",
+    "title": "Diamond no Ace: Act II Second Season",
+    "synopsis": "Disfruta de Diamond no Ace: Act II Second Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4397.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4397.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "diamond-no-ace-act-ii-second-season"
+  },
+  {
+    "id": "tioanime-honzuki-no-gekokujou-shisho-ni-naru-tame-ni-wa-shudan-wo-erandeiraremasen-4th-season",
+    "title": "Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen 4th Season",
+    "synopsis": "Disfruta de Honzuki no Gekokujou: Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen 4th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4390.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4390.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "honzuki-no-gekokujou-shisho-ni-naru-tame-ni-wa-shudan-wo-erandeiraremasen-4th-season"
+  },
+  {
+    "id": "tioanime-mairimashita-irumakun-4th-season",
+    "title": "Mairimashita! Iruma-kun 4th Season",
+    "synopsis": "Disfruta de Mairimashita! Iruma-kun 4th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4389.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4389.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mairimashita-irumakun-4th-season"
+  },
+  {
+    "id": "tioanime-needy-girl-overdose",
+    "title": "Needy Girl Overdose",
+    "synopsis": "Disfruta de Needy Girl Overdose en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4394.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4394.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "needy-girl-overdose"
+  },
+  {
+    "id": "tioanime-yomi-no-tsugai",
+    "title": "Yomi no Tsugai",
+    "synopsis": "Disfruta de Yomi no Tsugai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4392.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4392.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "yomi-no-tsugai"
+  },
+  {
+    "id": "tioanime-akanebanashi",
+    "title": "Akane-banashi",
+    "synopsis": "Disfruta de Akane-banashi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4395.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4395.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "akanebanashi"
+  },
+  {
+    "id": "tioanime-kanansama-wa-akumade-choroi",
+    "title": "Kanan-sama wa Akumade Choroi",
+    "synopsis": "Disfruta de Kanan-sama wa Akumade Choroi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4391.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4391.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kanansama-wa-akumade-choroi"
+  },
+  {
+    "id": "tioanime-kami-no-niwatsuki-kusunokitei",
+    "title": "Kami no Niwatsuki Kusunoki-tei",
+    "synopsis": "Disfruta de Kami no Niwatsuki Kusunoki-tei en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4393.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4393.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kami-no-niwatsuki-kusunokitei"
+  },
+  {
+    "id": "tioanime-mao",
+    "title": "Mao (2026)",
+    "synopsis": "Disfruta de Mao (2026) en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4396.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4396.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mao"
+  },
+  {
+    "id": "tioanime-snowball-earth",
+    "title": "Snowball Earth",
+    "synopsis": "Disfruta de Snowball Earth en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4388.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4388.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "snowball-earth"
+  },
+  {
+    "id": "tioanime-tensei-shitara-slime-datta-ken-4th-season",
+    "title": "Tensei shitara Slime Datta Ken 4th Season",
+    "synopsis": "Disfruta de Tensei shitara Slime Datta Ken 4th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4387.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4387.jpg",
+    "genres": [
+      "Acción",
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "tensei-shitara-slime-datta-ken-4th-season"
+  },
+  {
+    "id": "tioanime-otonari-no-tenshisama-ni-itsunomanika-dame-ningen-ni-sareteita-ken-2",
+    "title": "Otonari no Tenshi-sama ni Itsunomanika Dame Ningen ni Sareteita Ken 2",
+    "synopsis": "Disfruta de Otonari no Tenshi-sama ni Itsunomanika Dame Ningen ni Sareteita Ken 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4386.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4386.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "otonari-no-tenshisama-ni-itsunomanika-dame-ningen-ni-sareteita-ken-2"
+  },
+  {
+    "id": "tioanime-mata-korosarete-shimatta-no-desu-ne-tanteisama",
+    "title": "Mata Korosarete Shimatta no desu ne, Tantei-sama",
+    "synopsis": "Disfruta de Mata Korosarete Shimatta no desu ne, Tantei-sama en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4382.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4382.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "mata-korosarete-shimatta-no-desu-ne-tanteisama"
+  },
+  {
+    "id": "tioanime-kirio-fanclub",
+    "title": "Kirio Fanclub",
+    "synopsis": "Disfruta de Kirio Fanclub en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4381.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4381.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kirio-fanclub"
+  },
+  {
+    "id": "tioanime-mamonogurai-no-boukensha-ore-dake-mamono-wo-kuratte-tsuyoku-naru",
+    "title": "Mamonogurai no Boukensha: Ore dake Mamono wo Kuratte Tsuyoku Naru",
+    "synopsis": "Disfruta de Mamonogurai no Boukensha: Ore dake Mamono wo Kuratte Tsuyoku Naru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4384.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4384.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mamonogurai-no-boukensha-ore-dake-mamono-wo-kuratte-tsuyoku-naru"
+  },
+  {
+    "id": "tioanime-reincarnation-no-kaben",
+    "title": "Reincarnation no Kaben",
+    "synopsis": "Disfruta de Reincarnation no Kaben en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4383.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4383.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "reincarnation-no-kaben"
+  },
+  {
+    "id": "tioanime-haibarakun-no-tsuyokute-seishun-new-game",
+    "title": "Haibara-kun no Tsuyokute Seishun New Game",
+    "synopsis": "Disfruta de Haibara-kun no Tsuyokute Seishun New Game en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4380.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4380.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "haibarakun-no-tsuyokute-seishun-new-game"
+  },
+  {
+    "id": "tioanime-koori-no-jouheki",
+    "title": "Koori no Jouheki",
+    "synopsis": "Disfruta de Koori no Jouheki en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4379.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4379.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "koori-no-jouheki"
+  },
+  {
+    "id": "tioanime-jidou-hanbaiki-ni-umarekawatta-ore-wa-meikyuu-wo-samayou-3rd-season",
+    "title": "Jidou Hanbaiki ni Umarekawatta Ore wa Meikyuu wo Samayou 3rd Season",
+    "synopsis": "Disfruta de Jidou Hanbaiki ni Umarekawatta Ore wa Meikyuu wo Samayou 3rd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4374.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4374.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "jidou-hanbaiki-ni-umarekawatta-ore-wa-meikyuu-wo-samayou-3rd-season"
+  },
+  {
+    "id": "tioanime-ganbare-nakamurakun",
+    "title": "Ganbare! Nakamura-kun!!",
+    "synopsis": "Disfruta de Ganbare! Nakamura-kun!! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4377.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4377.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "ganbare-nakamurakun"
+  },
+  {
+    "id": "tioanime-youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e-4th-season",
+    "title": "Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 4th Season",
+    "synopsis": "Disfruta de Youkoso Jitsuryoku Shijou Shugi no Kyoushitsu e 4th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4373.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4373.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e-4th-season"
+  },
+  {
+    "id": "tioanime-saikyou-no-ousama-nidome-no-jinsei-wa-nani-wo-suru-season-2",
+    "title": "Saikyou no Ousama, Nidome no Jinsei wa Nani wo Suru? Season 2",
+    "synopsis": "Disfruta de Saikyou no Ousama, Nidome no Jinsei wa Nani wo Suru? Season 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4376.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4376.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "saikyou-no-ousama-nidome-no-jinsei-wa-nani-wo-suru-season-2"
+  },
+  {
+    "id": "tioanime-nigashita-sakana-wa-ookikatta-ga-tsuriageta-sakana-ga-ookisugita-ken",
+    "title": "Nigashita Sakana wa Ookikatta ga Tsuriageta Sakana ga Ookisugita Ken",
+    "synopsis": "Disfruta de Nigashita Sakana wa Ookikatta ga Tsuriageta Sakana ga Ookisugita Ken en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4378.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4378.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "nigashita-sakana-wa-ookikatta-ga-tsuriageta-sakana-ga-ookisugita-ken"
+  },
+  {
+    "id": "tioanime-maidsan-wa-taberu-dake",
+    "title": "Maid-san wa Taberu dake",
+    "synopsis": "Disfruta de Maid-san wa Taberu dake en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4372.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4372.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "maidsan-wa-taberu-dake"
+  },
+  {
+    "id": "tioanime-saikyou-no-shokugyou-wa-yuusha-demo-kenja-demo-naku-kanteishi-kari-rashii-desu-yo",
+    "title": "Saikyou no Shokugyou wa Yuusha demo Kenja demo Naku Kanteishi (Kari) Rashii desu yo?",
+    "synopsis": "Disfruta de Saikyou no Shokugyou wa Yuusha demo Kenja demo Naku Kanteishi (Kari) Rashii desu yo? en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4371.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4371.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "saikyou-no-shokugyou-wa-yuusha-demo-kenja-demo-naku-kanteishi-kari-rashii-desu-yo"
+  },
+  {
+    "id": "tioanime-shunkashuutou-daikousha-haru-no-mai",
+    "title": "Shunkashuutou Daikousha: Haru no Mai",
+    "synopsis": "Disfruta de Shunkashuutou Daikousha: Haru no Mai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4370.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4370.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "shunkashuutou-daikousha-haru-no-mai"
+  },
+  {
+    "id": "tioanime-steel-ball-run-jojo-no-kimyou-na-bouken",
+    "title": "Steel Ball Run: JoJo no Kimyou na Bouken",
+    "synopsis": "Disfruta de Steel Ball Run: JoJo no Kimyou na Bouken en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4369.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4369.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "steel-ball-run-jojo-no-kimyou-na-bouken"
+  },
+  {
+    "id": "tioanime-niwatori-fighter",
+    "title": "Niwatori Fighter",
+    "synopsis": "Disfruta de Niwatori Fighter en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4368.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4368.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "niwatori-fighter"
+  },
+  {
+    "id": "tioanime-bakidou",
+    "title": "Baki-dou",
+    "synopsis": "Disfruta de Baki-dou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4367.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4367.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "bakidou"
+  },
+  {
+    "id": "tioanime-medalist-2nd-season",
+    "title": "Medalist 2nd Season",
+    "synopsis": "Disfruta de Medalist 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4366.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4366.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "medalist-2nd-season"
+  },
+  {
+    "id": "tioanime-sousou-no-frieren-2nd-season",
+    "title": "Sousou no Frieren 2nd Season",
+    "synopsis": "Disfruta de Sousou no Frieren 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4365.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4365.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "sousou-no-frieren-2nd-season"
+  },
+  {
+    "id": "tioanime-oshi-no-ko-3rd-season",
+    "title": "[Oshi no Ko] 3rd Season",
+    "synopsis": "Disfruta de [Oshi no Ko] 3rd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4364.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4364.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "oshi-no-ko-3rd-season"
+  },
+  {
+    "id": "tioanime-himesama-goumon-no-jikan-desu-2nd-season",
+    "title": "Himesama \"Goumon\" no Jikan desu 2nd Season",
+    "synopsis": "Disfruta de Himesama \"Goumon\" no Jikan desu 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4363.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4363.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "himesama-goumon-no-jikan-desu-2nd-season"
+  },
+  {
+    "id": "tioanime-akuyaku-reijou-wa-ringoku-no-outaishi-ni-dekiai-sareru",
+    "title": "Akuyaku Reijou wa Ringoku no Outaishi ni Dekiai sareru",
+    "synopsis": "Disfruta de Akuyaku Reijou wa Ringoku no Outaishi ni Dekiai sareru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4360.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4360.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "akuyaku-reijou-wa-ringoku-no-outaishi-ni-dekiai-sareru"
+  },
+  {
+    "id": "tioanime-seihantai-na-kimi-to-boku",
+    "title": "Seihantai na Kimi to Boku",
+    "synopsis": "Disfruta de Seihantai na Kimi to Boku en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4358.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4358.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "seihantai-na-kimi-to-boku"
+  },
+  {
+    "id": "tioanime-kayachan-wa-kowakunai",
+    "title": "Kaya-chan wa Kowakunai",
+    "synopsis": "Disfruta de Kaya-chan wa Kowakunai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4359.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4359.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kayachan-wa-kowakunai"
+  },
+  {
+    "id": "tioanime-hikuidori-ushuu-boro-tobigumi",
+    "title": "Hikuidori: Ushuu Boro Tobi-gumi",
+    "synopsis": "Disfruta de Hikuidori: Ushuu Boro Tobi-gumi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4362.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4362.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "hikuidori-ushuu-boro-tobigumi"
+  },
+  {
+    "id": "tioanime-uruwashi-no-yoi-no-tsuki",
+    "title": "Uruwashi no Yoi no Tsuki",
+    "synopsis": "Disfruta de Uruwashi no Yoi no Tsuki en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4357.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4357.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "uruwashi-no-yoi-no-tsuki"
+  },
+  {
+    "id": "tioanime-jigokuraku-2nd-season",
+    "title": "Jigokuraku 2nd Season",
+    "synopsis": "Disfruta de Jigokuraku 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4361.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4361.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "jigokuraku-2nd-season"
+  },
+  {
+    "id": "tioanime-jingai-kyoushitsu-no-ningengirai-kyoushi",
+    "title": "Jingai Kyoushitsu no Ningengirai Kyoushi",
+    "synopsis": "Disfruta de Jingai Kyoushitsu no Ningengirai Kyoushi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4355.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4355.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "jingai-kyoushitsu-no-ningengirai-kyoushi"
+  },
+  {
+    "id": "tioanime-trigun-stargaze",
+    "title": "Trigun Stargaze",
+    "synopsis": "Disfruta de Trigun Stargaze en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4353.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4353.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "trigun-stargaze"
+  },
+  {
+    "id": "tioanime-yuusha-no-kuzu",
+    "title": "Yuusha no Kuzu",
+    "synopsis": "Disfruta de Yuusha no Kuzu en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4356.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4356.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "yuusha-no-kuzu"
+  },
+  {
+    "id": "tioanime-dead-account",
+    "title": "Dead Account",
+    "synopsis": "Disfruta de Dead Account en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4354.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4354.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "dead-account"
+  },
+  {
+    "id": "tioanime-tensei-shitara-dragon-no-tamago-datta",
+    "title": "Tensei shitara Dragon no Tamago datta",
+    "synopsis": "Disfruta de Tensei shitara Dragon no Tamago datta en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4352.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4352.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "tensei-shitara-dragon-no-tamago-datta"
+  },
+  {
+    "id": "tioanime-android-wa-keiken-ninzuu-ni-hairimasu-ka",
+    "title": "Android wa Keiken Ninzuu ni Hairimasu ka??",
+    "synopsis": "Disfruta de Android wa Keiken Ninzuu ni Hairimasu ka?? en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4351.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4351.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "android-wa-keiken-ninzuu-ni-hairimasu-ka"
+  },
+  {
+    "id": "tioanime-hell-mode-yarikomizuki-no-gamer-wa-hai-settei-no-isekai-de-musou-suru",
+    "title": "Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru",
+    "synopsis": "Disfruta de Hell Mode: Yarikomizuki no Gamer wa Hai Settei no Isekai de Musou suru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4350.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4350.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "hell-mode-yarikomizuki-no-gamer-wa-hai-settei-no-isekai-de-musou-suru"
+  },
+  {
+    "id": "tioanime-dark-moon-tsuki-no-saidan",
+    "title": "Dark Moon: Tsuki no Saidan",
+    "synopsis": "Disfruta de Dark Moon: Tsuki no Saidan en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4349.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4349.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "dark-moon-tsuki-no-saidan"
+  },
+  {
+    "id": "tioanime-champignon-no-majo",
+    "title": "Champignon no Majo",
+    "synopsis": "Disfruta de Champignon no Majo en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4348.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4348.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "champignon-no-majo"
+  },
+  {
+    "id": "tioanime-jujutsu-kaisen-shimetsu-kaiyuu-zenpen",
+    "title": "Jujutsu Kaisen: Shimetsu Kaiyuu - Zenpen",
+    "synopsis": "Disfruta de Jujutsu Kaisen: Shimetsu Kaiyuu - Zenpen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4347.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4347.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "jujutsu-kaisen-shimetsu-kaiyuu-zenpen"
+  },
+  {
+    "id": "tioanime-mato-seihei-no-slave-2",
+    "title": "Mato Seihei no Slave 2",
+    "synopsis": "Disfruta de Mato Seihei no Slave 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4346.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4346.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "mato-seihei-no-slave-2"
+  },
+  {
+    "id": "tioanime-eris-no-seihai",
+    "title": "Eris no Seihai",
+    "synopsis": "Disfruta de Eris no Seihai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4344.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4344.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "eris-no-seihai"
+  },
+  {
+    "id": "tioanime-toumei-otoko-to-ningen-onna-sonouchi-fuufu-ni-naru-futari",
+    "title": "Toumei Otoko to Ningen Onna: Sonouchi Fuufu ni Naru Futari",
+    "synopsis": "Disfruta de Toumei Otoko to Ningen Onna: Sonouchi Fuufu ni Naru Futari en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4343.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4343.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "toumei-otoko-to-ningen-onna-sonouchi-fuufu-ni-naru-futari"
+  },
+  {
+    "id": "tioanime-omagoto",
+    "title": "Omagoto",
+    "synopsis": "Disfruta de Omagoto en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4345.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4345.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "omagoto"
+  },
+  {
+    "id": "tioanime-odayaka-kizoku-no-kyuuka-no-susume",
+    "title": "Odayaka Kizoku no Kyuuka no Susume.",
+    "synopsis": "Disfruta de Odayaka Kizoku no Kyuuka no Susume. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4342.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4342.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "odayaka-kizoku-no-kyuuka-no-susume"
+  },
+  {
+    "id": "tioanime-okiraku-ryoushu-no-tanoshii-ryouchi-bouei",
+    "title": "Okiraku Ryoushu no Tanoshii Ryouchi Bouei",
+    "synopsis": "Disfruta de Okiraku Ryoushu no Tanoshii Ryouchi Bouei en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4339.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4339.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "okiraku-ryoushu-no-tanoshii-ryouchi-bouei"
+  },
+  {
+    "id": "tioanime-shibou-yuugi-de-meshi-wo-kuu",
+    "title": "Shibou Yuugi de Meshi wo Kuu.",
+    "synopsis": "Disfruta de Shibou Yuugi de Meshi wo Kuu. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4341.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4341.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "shibou-yuugi-de-meshi-wo-kuu"
+  },
+  {
+    "id": "tioanime-29sai-dokushin-chuuken-boukensha-no-nichijou",
+    "title": "29-sai Dokushin Chuuken Boukensha no Nichijou",
+    "synopsis": "Disfruta de 29-sai Dokushin Chuuken Boukensha no Nichijou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4340.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4340.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "29sai-dokushin-chuuken-boukensha-no-nichijou"
+  },
+  {
+    "id": "tioanime-isekai-no-sata-wa-shachiku-shidai",
+    "title": "Isekai no Sata wa Shachiku Shidai",
+    "synopsis": "Disfruta de Isekai no Sata wa Shachiku Shidai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4334.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4334.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "isekai-no-sata-wa-shachiku-shidai"
+  },
+  {
+    "id": "tioanime-yoroi-shin-den-samurai-troopers",
+    "title": "Yoroi Shin Den Samurai Troopers",
+    "synopsis": "Disfruta de Yoroi Shin Den Samurai Troopers en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4337.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4337.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "yoroi-shin-den-samurai-troopers"
+  },
+  {
+    "id": "tioanime-yuusha-party-ni-kawaii-ko-ga-ita-node-kokuhaku-shitemita",
+    "title": "Yuusha Party ni Kawaii Ko ga Ita node, Kokuhaku shitemita.",
+    "synopsis": "Disfruta de Yuusha Party ni Kawaii Ko ga Ita node, Kokuhaku shitemita. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4335.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4335.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "yuusha-party-ni-kawaii-ko-ga-ita-node-kokuhaku-shitemita"
+  },
+  {
+    "id": "tioanime-mayonaka-heart-tune",
+    "title": "Mayonaka Heart Tune",
+    "synopsis": "Disfruta de Mayonaka Heart Tune en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4333.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4333.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "mayonaka-heart-tune"
+  },
+  {
+    "id": "tioanime-arne-no-jikenbo",
+    "title": "Arne no Jikenbo",
+    "synopsis": "Disfruta de Arne no Jikenbo en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4338.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4338.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "arne-no-jikenbo"
+  },
+  {
+    "id": "tioanime-maou-no-musume-wa-yasashisugiru",
+    "title": "Maou no Musume wa Yasashisugiru!!",
+    "synopsis": "Disfruta de Maou no Musume wa Yasashisugiru!! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4332.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4332.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "maou-no-musume-wa-yasashisugiru"
+  },
+  {
+    "id": "tioanime-darwin-jihen",
+    "title": "Darwin Jihen",
+    "synopsis": "Disfruta de Darwin Jihen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4336.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4336.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "darwin-jihen"
+  },
+  {
+    "id": "tioanime-osananajimi-to-wa-love-comedy-ni-naranai",
+    "title": "Osananajimi to wa Love Comedy ni Naranai",
+    "synopsis": "Disfruta de Osananajimi to wa Love Comedy ni Naranai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4331.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4331.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "osananajimi-to-wa-love-comedy-ni-naranai"
+  },
+  {
+    "id": "tioanime-vigilante-boku-no-hero-academia-illegals-2nd-season",
+    "title": "Vigilante: Boku no Hero Academia Illegals 2nd Season",
+    "synopsis": "Disfruta de Vigilante: Boku no Hero Academia Illegals 2nd Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4329.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4329.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "vigilante-boku-no-hero-academia-illegals-2nd-season"
+  },
+  {
+    "id": "tioanime-golden-kamuy-saishuushou",
+    "title": "Golden Kamuy 5th Season",
+    "synopsis": "Disfruta de Golden Kamuy 5th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4330.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4330.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "golden-kamuy-saishuushou"
+  },
+  {
+    "id": "tioanime-kirei-ni-shitemoraemasu-ka",
+    "title": "Kirei ni Shitemoraemasu ka.",
+    "synopsis": "Disfruta de Kirei ni Shitemoraemasu ka. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4328.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4328.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "kirei-ni-shitemoraemasu-ka"
+  },
+  {
+    "id": "tioanime-kizoku-tensei-megumareta-umare-kara-saikyou-no-chikara-wo-eru",
+    "title": "Kizoku Tensei: Megumareta Umare kara Saikyou no Chikara wo Eru",
+    "synopsis": "Disfruta de Kizoku Tensei: Megumareta Umare kara Saikyou no Chikara wo Eru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4325.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4325.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kizoku-tensei-megumareta-umare-kara-saikyou-no-chikara-wo-eru"
+  },
+  {
+    "id": "tioanime-hanazakari-no-kimitachi-e",
+    "title": "Hanazakari no Kimitachi e",
+    "synopsis": "Disfruta de Hanazakari no Kimitachi e en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4323.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4323.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "hanazakari-no-kimitachi-e"
+  },
+  {
+    "id": "tioanime-goumon-baitokun-no-nichijou",
+    "title": "Goumon Baito-kun no Nichijou",
+    "synopsis": "Disfruta de Goumon Baito-kun no Nichijou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4327.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4327.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "goumon-baitokun-no-nichijou"
+  },
+  {
+    "id": "tioanime-majutsushi-kunon-wa-mieteiru",
+    "title": "Majutsushi Kunon wa Mieteiru",
+    "synopsis": "Disfruta de Majutsushi Kunon wa Mieteiru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4324.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4324.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "majutsushi-kunon-wa-mieteiru"
+  },
+  {
+    "id": "tioanime-ikoku-nikki",
+    "title": "Ikoku Nikki",
+    "synopsis": "Disfruta de Ikoku Nikki en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4326.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4326.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "ikoku-nikki"
+  },
+  {
+    "id": "tioanime-yuushakei-ni-shosu-choubatsu-yuusha-9004tai-keimu-kiroku",
+    "title": "Yuusha-kei ni Shosu: Choubatsu Yuusha 9004-tai Keimu Kiroku",
+    "synopsis": "Disfruta de Yuusha-kei ni Shosu: Choubatsu Yuusha 9004-tai Keimu Kiroku en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4322.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4322.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "yuushakei-ni-shosu-choubatsu-yuusha-9004tai-keimu-kiroku"
+  },
+  {
+    "id": "tioanime-tamonkun-ima-docchi",
+    "title": "Tamon-kun Ima Docchi!?",
+    "synopsis": "Disfruta de Tamon-kun Ima Docchi!? en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4320.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4320.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tamonkun-ima-docchi"
+  },
+  {
+    "id": "tioanime-yuusha-party-wo-oidasareta-kiyoubinbou",
+    "title": "Yuusha Party wo Oidasareta Kiyoubinbou",
+    "synopsis": "Disfruta de Yuusha Party wo Oidasareta Kiyoubinbou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4321.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4321.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "yuusha-party-wo-oidasareta-kiyoubinbou"
+  },
+  {
+    "id": "tioanime-kaguyasama-wa-kokurasetai-otona-e-no-kaidan",
+    "title": "Kaguya-sama wa Kokurasetai: Otona e no Kaidan",
+    "synopsis": "Disfruta de Kaguya-sama wa Kokurasetai: Otona e no Kaidan en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4319.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4319.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "kaguyasama-wa-kokurasetai-otona-e-no-kaidan"
+  },
+  {
+    "id": "tioanime-ao-no-miburo-serizawa-ansatsuhen",
+    "title": "Ao no Miburo: Serizawa Ansatsu-hen",
+    "synopsis": "Disfruta de Ao no Miburo: Serizawa Ansatsu-hen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4318.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4318.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "ao-no-miburo-serizawa-ansatsuhen"
+  },
+  {
+    "id": "tioanime-chainsaw-man-movie-rezehen",
+    "title": "Chainsaw Man Movie: Reze-hen",
+    "synopsis": "Disfruta de Chainsaw Man Movie: Reze-hen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4317.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4317.jpg",
+    "genres": [
+      "Película"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Película",
+    "episodesCount": 1,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "chainsaw-man-movie-rezehen"
+  },
+  {
+    "id": "tioanime-love-live-nijigasaki-gakuen-school-idol-doukoukai-kanketsuhen",
+    "title": "Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen",
+    "synopsis": "Disfruta de Love Live! Nijigasaki Gakuen School Idol Doukoukai: Kanketsu-hen en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4315.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4315.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "love-live-nijigasaki-gakuen-school-idol-doukoukai-kanketsuhen"
+  },
+  {
+    "id": "tioanime-disney-twistedwonderland-the-animation-episode-of-heartslabyul",
+    "title": "Disney Twisted-Wonderland The Animation: Episode of Heartslabyul",
+    "synopsis": "Disfruta de Disney Twisted-Wonderland The Animation: Episode of Heartslabyul en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4314.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4314.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "disney-twistedwonderland-the-animation-episode-of-heartslabyul"
+  },
+  {
+    "id": "tioanime-kimi-to-koete-koi-ni-naru",
+    "title": "Kimi to Koete Koi ni Naru",
+    "synopsis": "Disfruta de Kimi to Koete Koi ni Naru en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4313.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4313.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kimi-to-koete-koi-ni-naru"
+  },
+  {
+    "id": "tioanime-isekai-quartet-3",
+    "title": "Isekai Quartet 3",
+    "synopsis": "Disfruta de Isekai Quartet 3 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4312.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4312.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "isekai-quartet-3"
+  },
+  {
+    "id": "tioanime-chanto-suenai-kyuuketsukichan",
+    "title": "Chanto Suenai Kyuuketsuki-chan",
+    "synopsis": "Disfruta de Chanto Suenai Kyuuketsuki-chan en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4311.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4311.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "chanto-suenai-kyuuketsukichan"
+  },
+  {
+    "id": "tioanime-gnosia",
+    "title": "Gnosia",
+    "synopsis": "Disfruta de Gnosia en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4310.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4310.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "gnosia"
+  },
+  {
+    "id": "tioanime-tensei-akujo-no-kuro-rekishi",
+    "title": "Tensei Akujo no Kuro Rekishi",
+    "synopsis": "Disfruta de Tensei Akujo no Kuro Rekishi en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4308.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4308.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "tensei-akujo-no-kuro-rekishi"
+  },
+  {
+    "id": "tioanime-wandance",
+    "title": "Wandance",
+    "synopsis": "Disfruta de Wandance en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4307.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4307.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.8,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "wandance"
+  },
+  {
+    "id": "tioanime-ninja-to-gokudou",
+    "title": "Ninja to Gokudou",
+    "synopsis": "Disfruta de Ninja to Gokudou en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4305.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4305.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "ninja-to-gokudou"
+  },
+  {
+    "id": "tioanime-chitosekun-wa-ramune-bin-no-naka",
+    "title": "Chitose-kun wa Ramune Bin no Naka",
+    "synopsis": "Disfruta de Chitose-kun wa Ramune Bin no Naka en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4304.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4304.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "chitosekun-wa-ramune-bin-no-naka"
+  },
+  {
+    "id": "tioanime-tondemo-skill-de-isekai-hourou-meshi-2",
+    "title": "Tondemo Skill de Isekai Hourou Meshi 2",
+    "synopsis": "Disfruta de Tondemo Skill de Isekai Hourou Meshi 2 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4306.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4306.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 9.1,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "tondemo-skill-de-isekai-hourou-meshi-2"
+  },
+  {
+    "id": "tioanime-3nen-zgumi-ginpachisensei",
+    "title": "3-nen Z-gumi Ginpachi-sensei",
+    "synopsis": "Disfruta de 3-nen Z-gumi Ginpachi-sensei en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4302.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4302.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "3nen-zgumi-ginpachisensei"
+  },
+  {
+    "id": "tioanime-ansatsusha-de-aru-ore-no-status-ga-yuusha-yori-mo-akiraka-ni-tsuyoi-no-da-ga",
+    "title": "Ansatsusha de Aru Ore no Status ga Yuusha yori mo Akiraka ni Tsuyoi no da ga",
+    "synopsis": "Disfruta de Ansatsusha de Aru Ore no Status ga Yuusha yori mo Akiraka ni Tsuyoi no da ga en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4303.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4303.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "ansatsusha-de-aru-ore-no-status-ga-yuusha-yori-mo-akiraka-ni-tsuyoi-no-da-ga"
+  },
+  {
+    "id": "tioanime-debu-to-love-to-ayamachi-to",
+    "title": "Debu to Love to Ayamachi to!",
+    "synopsis": "Disfruta de Debu to Love to Ayamachi to! en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4301.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4301.jpg",
+    "genres": [
+      "Romance"
+    ],
+    "status": "Finalizado",
+    "rating": 9.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "debu-to-love-to-ayamachi-to"
+  },
+  {
+    "id": "tioanime-egao-no-taenai-shokuba-desu",
+    "title": "Egao no Taenai Shokuba desu.",
+    "synopsis": "Disfruta de Egao no Taenai Shokuba desu. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4300.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4300.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 9.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "egao-no-taenai-shokuba-desu"
+  },
+  {
+    "id": "tioanime-sawaranaide-kotesashikun",
+    "title": "Sawaranaide Kotesashi-kun",
+    "synopsis": "Disfruta de Sawaranaide Kotesashi-kun en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4297.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4297.jpg",
+    "genres": [
+      "Acción"
+    ],
+    "status": "Finalizado",
+    "rating": 9.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "sawaranaide-kotesashikun"
+  },
+  {
+    "id": "tioanime-kikaijikake-no-marie",
+    "title": "Kikaijikake no Marie",
+    "synopsis": "Disfruta de Kikaijikake no Marie en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4293.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4293.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.2,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "kikaijikake-no-marie"
+  },
+  {
+    "id": "tioanime-almachan-wa-kazoku-ni-naritai",
+    "title": "Alma-chan wa Kazoku ni Naritai",
+    "synopsis": "Disfruta de Alma-chan wa Kazoku ni Naritai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4294.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4294.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.3,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "almachan-wa-kazoku-ni-naritai"
+  },
+  {
+    "id": "tioanime-one-punch-man-3",
+    "title": "One Punch Man 3",
+    "synopsis": "Disfruta de One Punch Man 3 en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4296.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4296.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.4,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "one-punch-man-3"
+  },
+  {
+    "id": "tioanime-chichi-wa-eiyuu-haha-wa-seirei-musume-no-watashi-wa-tenseisha",
+    "title": "Chichi wa Eiyuu, Haha wa Seirei, Musume no Watashi wa Tenseisha.",
+    "synopsis": "Disfruta de Chichi wa Eiyuu, Haha wa Seirei, Musume no Watashi wa Tenseisha. en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4295.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4295.jpg",
+    "genres": [
+      "Fantasía"
+    ],
+    "status": "Finalizado",
+    "rating": 8.5,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2024,
+    "episodes": [],
+    "external_id": "chichi-wa-eiyuu-haha-wa-seirei-musume-no-watashi-wa-tenseisha"
+  },
+  {
+    "id": "tioanime-kingdom-6th-season",
+    "title": "Kingdom 6th Season",
+    "synopsis": "Disfruta de Kingdom 6th Season en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4290.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4290.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.6,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2025,
+    "episodes": [],
+    "external_id": "kingdom-6th-season"
+  },
+  {
+    "id": "tioanime-toujima-tanzaburou-wa-kamen-rider-ni-naritai",
+    "title": "Toujima Tanzaburou wa Kamen Rider ni Naritai",
+    "synopsis": "Disfruta de Toujima Tanzaburou wa Kamen Rider ni Naritai en HD en Mega Anime con reproductores rápidos y servidores en español.",
+    "coverUrl": "https://tioanime.com/uploads/portadas/4289.jpg",
+    "bannerUrl": "https://tioanime.com/uploads/portadas/4289.jpg",
+    "genres": [
+      "Acción",
+      "Aventura"
+    ],
+    "status": "Finalizado",
+    "rating": 8.7,
+    "type": "Anime",
+    "episodesCount": 12,
+    "year": 2026,
+    "episodes": [],
+    "external_id": "toujima-tanzaburou-wa-kamen-rider-ni-naritai"
   }
 ];
 
