@@ -625,7 +625,8 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "i-became-a-legend-after-my-10-year-long-last-stand": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "koko-wa-ore-ni-makasete-saki-ni-ike-to-ittekara-10-nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "one-piece-pelicula-gigantes": "one-piece-film-red",
-  "one-piece-pelicula-gigantes-e1": "one-piece-film-red",
+  "black-torch": "black-torch-sub-espanol",
+  "black-torch-sub-espanol": "black-torch-sub-espanol",
   "dandadan": "dandadan",
   "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season": "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season",
   "kono-subarashii-sekai-ni-shukufuku-wo-3": "kono-subarashii-sekai-ni-shukufuku-wo-3",
@@ -803,7 +804,7 @@ export async function verifyVideoServers(servers: Array<{ name: string; url: str
 /**
  * Scrapes episode video servers from MonosChinos.
  */
-async function scrapeEpisodeFromMonosChinos(
+export async function scrapeEpisodeFromMonosChinos(
   id: string,
   animeId: string,
   finalEpNum: number,
@@ -926,6 +927,7 @@ async function scrapeEpisodeFromMonosChinos(
           if (!slug) slug = animeId;
 
           const epUrlCandidates: string[] = [];
+          const baseSlug = slug.replace(/-sub-espanol$/i, "");
           const slugSeason = slug.replace(/-(\d+)$/, (m, p1) => {
             const n = parseInt(p1);
             const ord = ["", "st", "nd", "rd", "th"][n] || "th";
@@ -934,41 +936,45 @@ async function scrapeEpisodeFromMonosChinos(
           
           if (isMovie) {
             epUrlCandidates.push(
+              `${domain}/ver/${baseSlug}-episodio-1`,
               `${domain}/ver/${slug}-episodio-1`,
               `${domain}/ver/${slug}-sub-espanol-episodio-1`,
+              `${domain}/ver/${baseSlug}-pelicula`,
               `${domain}/ver/${slug}-pelicula`,
-              `${domain}/ver/${slug}-sub-espanol-pelicula`,
+              `${domain}/ver/${baseSlug}`,
               `${domain}/ver/${slug}`,
-              `${domain}/ver/${slug}-sub-espanol`,
               `${domain}/ver/${animeId}-episodio-1`,
-              `${domain}/ver/${animeId}-sub-espanol-episodio-1`,
               `${domain}/ver/${animeId}-pelicula`,
-              `${domain}/ver/${animeId}-sub-espanol-pelicula`,
               `${domain}/ver/${animeId}`
             );
           } else {
             epUrlCandidates.push(
+              `${domain}/ver/${baseSlug}-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-sub-espanol-episodio-${finalEpNum}`,
+              `${domain}/ver/${baseSlug}-${finalEpNum}`,
               `${domain}/ver/${slug}-${finalEpNum}`,
-              `${domain}/ver/${slug}-sub-espanol-${finalEpNum}`,
               `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`,
               `${domain}/ver/${animeId}-episodio-${finalEpNum}`,
-              `${domain}/ver/${animeId}-sub-espanol-episodio-${finalEpNum}`,
-              `${domain}/ver/${animeId}-sub-espanol`,
-              `${domain}/ver/${animeId}`,
-              `${domain}/ver/${slug}-sub-espanol`,
+              `${domain}/ver/${baseSlug}`,
               `${domain}/ver/${slug}`
             );
+
+            if (finalEpNum > 1) {
+              epUrlCandidates.push(
+                `${domain}/ver/${baseSlug}-episodio-1`,
+                `${domain}/ver/${slug}-episodio-1`,
+                `${domain}/ver/${slug}-sub-espanol-episodio-1`
+              );
+            }
 
             const ovaNumMatch = (animeId + " " + slug).match(/-(\d+)(?:-[a-z0-9-]+)?$/i);
             if (ovaNumMatch) {
               const ovaNum = ovaNumMatch[1];
               epUrlCandidates.push(
+                `${domain}/ver/${baseSlug}-episodio-${ovaNum}`,
                 `${domain}/ver/${slug}-episodio-${ovaNum}`,
-                `${domain}/ver/${slug}-sub-espanol-episodio-${ovaNum}`,
-                `${domain}/ver/${animeId}-episodio-${ovaNum}`,
-                `${domain}/ver/${animeId}-sub-espanol-episodio-${ovaNum}`
+                `${domain}/ver/${animeId}-episodio-${ovaNum}`
               );
             }
           }
@@ -1002,14 +1008,13 @@ async function scrapeEpisodeFromMonosChinos(
         return null;
       }));
 
-      const successful = results.find(r => r !== null);
+      let successful = results.find(r => r !== null);
       if (successful) {
         const { html, domain, url: activeUrlUsed } = successful;
         const servers: Array<{ name: string; url: string }> = [];
-        const playerAttrRegex = /data-player=["']([^"']+)["']/gi;
-        let playerMatch;
+        const playerMatches = Array.from(html.matchAll(/data-player=["']([^"']+)["']/gi));
         let serverIndex = 1;
-        while ((playerMatch = playerAttrRegex.exec(html)) !== null) {
+        for (const playerMatch of playerMatches) {
           try {
             const rawBase64 = playerMatch[1];
             const decodedUrl = Buffer.from(rawBase64, "base64").toString("utf-8").trim();
@@ -1877,11 +1882,21 @@ export class AnimeApiAggregator {
     let matchedAnimeTitle = "";
 
     const isConsumet = episodeId.startsWith("consumet-ep-") || (episodeId.startsWith("consumet-") && episodeId.includes("-ep-"));
-    // FAST PATH: If animeId or episodeId has an explicit MonosChinos slug mapping or direct slug, run MonosChinos scraper IMMEDIATELY!
-    const mappedSlug = MONOSCHINOS_SLUG_MAP[animeId] || MONOSCHINOS_SLUG_MAP[episodeId];
+    let epMatch = episodeId.match(/-(?:ep|episodio)-(\d+)$/i);
+    if (epMatch) {
+      epNum = parseInt(epMatch[1], 10);
+    }
+
+    let cleanAnimeId = episodeId
+      .replace(/-(?:ep|episodio)-\d+$/i, "")
+      .replace(/^consumet-(?:ep-)?/, "")
+      .replace(/^hianime-(?:ep-)?/, "");
+
+    // FAST PATH: If animeId or cleanAnimeId has an explicit MonosChinos slug mapping, run MonosChinos scraper IMMEDIATELY!
+    const mappedSlug = MONOSCHINOS_SLUG_MAP[animeId] || MONOSCHINOS_SLUG_MAP[cleanAnimeId] || MONOSCHINOS_SLUG_MAP[episodeId];
     if (mappedSlug) {
       try {
-        const mcDirect = await scrapeEpisodeFromMonosChinos(episodeId, animeId, epNum, isMovie, mappedSlug, null);
+        const mcDirect = await scrapeEpisodeFromMonosChinos(episodeId, mappedSlug, epNum, isMovie, mappedSlug, null);
         if (mcDirect && mcDirect.length > 0) {
           servers.push(...mcDirect);
           return servers;
