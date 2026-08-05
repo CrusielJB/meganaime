@@ -1132,8 +1132,8 @@ export function getAvailableEpisodesCountForAiring(anime: Anime): number {
     return Math.min(1 + weeks, 24);
   }
 
-  // Fallback to configured count directly to avoid dynamic multiplication
-  return anime.episodesCount;
+  // For airing animes without explicit schedule override, limit available episodes to 5 (released to date)
+  return Math.min(5, anime.episodesCount || 5);
 }
 
 // Dynamically generate episodes for all mock animes so they are fully populated and interactive

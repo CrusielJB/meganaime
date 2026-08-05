@@ -2273,6 +2273,8 @@ export function mapAniListGraphQLMedia(media: any): Anime {
     const nextEp = media.nextAiringEpisode?.episode;
     if (nextEp !== undefined && nextEp !== null) {
       episodesCount = Math.max(1, nextEp - 1);
+    } else {
+      episodesCount = Math.min(5, episodesCount);
     }
   }
 
