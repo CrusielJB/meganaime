@@ -925,7 +925,17 @@ export async function scrapeEpisodeFromMonosChinos(
             }
           }
 
-          if (!slug) slug = animeId;
+          if (!slug && (matchedAnimeTitle || alTitles?.romaji || alTitles?.english)) {
+            const titleToSlug = alTitles?.romaji || alTitles?.english || matchedAnimeTitle || "";
+            slug = titleToSlug
+              .toLowerCase()
+              .replace(/season \d+/gi, "")
+              .replace(/temporada \d+/gi, "")
+              .replace(/[:.\-()\[\]]/g, " ")
+              .replace(/\s+/g, "-")
+              .replace(/^-|-$/g, "");
+          }
+          if (!slug) slug = animeId.replace(/^consumet-(?:ep-)?/, "").replace(/-(?:ep|episodio)-\d+$/i, "");
 
           const epUrlCandidates: string[] = [];
           const baseSlug = slug.replace(/-sub-espanol$/i, "");
@@ -2064,8 +2074,9 @@ export class AnimeApiAggregator {
           
           console.log(`Hot path lookup details for: ${lookupId}`);
           const details = await AnimeApiAggregator.getDetails(lookupId);
-          if (details) {
-            if (!matchedAnimeTitle || matchedAnimeTitle === animeId || /^\d+$/.test((matchedAnimeTitle || "").trim())) {
+          const isPlaceholderTitle = !matchedAnimeTitle || matchedAnimeTitle === animeId || /^\d+/.test((matchedAnimeTitle || "").trim());
+          if (details && details.title_romaji && !/^\d+$/.test(details.title_romaji.trim()) && !details.title_romaji.toLowerCase().startsWith("consumet")) {
+            if (isPlaceholderTitle) {
               matchedAnimeTitle = details.title;
             }
             alTitles = {
@@ -2073,6 +2084,27 @@ export class AnimeApiAggregator {
               english: details.title_english || details.title,
               native: details.title_native
             };
+          }
+          
+          const numericId = animeId.replace(/^consumet-/, "").replace(/-(?:ep|episodio)-\d+$/i, "").replace(/-pelicula$/i, "").replace(/-e\d+$/i, "");
+          const isInvalidAlTitles = !alTitles || !alTitles.romaji || /^\d+$/.test(alTitles.romaji.trim()) || alTitles.romaji.toLowerCase().startsWith("consumet");
+          if (isInvalidAlTitles && /^\d+$/.test(numericId)) {
+            try {
+              const alData = await queryAniListGraphQL({ id: parseInt(numericId, 10) });
+              const media = alData?.Page?.media?.[0];
+              if (media) {
+                const romaji = media.title?.romaji || media.title?.english || media.title?.native;
+                const english = media.title?.english || romaji;
+                matchedAnimeTitle = romaji;
+                alTitles = {
+                  romaji,
+                  english,
+                  native: media.title?.native
+                };
+              }
+            } catch (alErr) {
+              // Ignore fallback error
+            }
           }
         } catch (e) {
           console.warn("Hot path title retrieval failed:", e);
