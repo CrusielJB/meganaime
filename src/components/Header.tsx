@@ -67,8 +67,8 @@ export default function Header({
           onClick={() => setActiveTab("inicio")} 
           className="flex cursor-pointer items-center space-x-2 transition hover:opacity-90"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-600 via-orange-500 to-amber-400 shadow-lg shadow-rose-500/20">
-            <Play className="h-5 w-5 fill-white text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-pink-400 shadow-lg shadow-pink-500/30 border border-pink-400/20">
+            <Play className="h-5 w-5 fill-black text-black ml-0.5" />
           </div>
           <span className="bg-gradient-to-r from-white via-neutral-100 to-rose-400 bg-clip-text text-xl font-black tracking-tight text-transparent">
             mega<span className="text-rose-500">Anime</span>

@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Vibrant Pink Gradient -->
+    <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b8d" />
+      <stop offset="50%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    <linearGradient id="topOverlay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Pink Squircle Background -->
+  <rect width="512" height="512" rx="128" ry="128" fill="url(#pinkGrad)" />
+  <rect width="512" height="512" rx="128" ry="128" fill="url(#topOverlay)" />
+
+  <!-- Solid Black Play Triangle -->
+  <path d="M 204 144 C 188 134 168 144 168 164 L 168 348 C 168 368 188 378 204 368 L 364 274 C 379 265 379 247 364 238 Z" fill="#0a0a0a" />
+</svg>

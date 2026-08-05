@@ -624,6 +624,22 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "consumet-199748": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "i-became-a-legend-after-my-10-year-long-last-stand": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "koko-wa-ore-ni-makasete-saki-ni-ike-to-ittekara-10-nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "one-piece-pelicula-gigantes": "one-piece-film-red",
+  "one-piece-pelicula-gigantes-e1": "one-piece-film-red",
+  "dandadan": "dandadan",
+  "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season": "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season",
+  "kono-subarashii-sekai-ni-shukufuku-wo-3": "kono-subarashii-sekai-ni-shukufuku-wo-3",
+  "wistoria-wand-sword": "tsue-to-tsurugi-no-wistoria",
+  "blue-lock-vs-u-20-japan": "blue-lock-2nd-season",
+  "tokidoki-bosotto-russia-go-de-dereru-tonari-no-alya-san": "tokidoki-bosotto-russia-go-de-dereru-tonari-no-alya-san",
+  "boku-no-kokoro-no-yabai-yatsu-2nd-season": "boku-no-kokoro-no-yabai-yatsu-season-2",
+  "youjo-senki-2": "youjo-senki",
+  "solo-leveling-2": "solo-leveling-2nd-season",
+  "chainsaw-man-2": "chainsaw-man-movie-reze-hen",
+  "jujutsu-kaisen-tv-3": "jujutsu-kaisen-3rd-season",
+  "kimetsu-no-yaiba-mugen-jou": "gekijoban-kimetsu-no-yaiba-mugenjo-hen",
+  "spirited-away": "sen-to-chihiro-no-kamikakushi",
+  "spirited-away-e1": "sen-to-chihiro-no-kamikakushi",
   "196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "consumet-196218": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
   "the-frontier-lord-begins-with-zero-subjects": "ryoumin-0-nin-start-no-henkyou-ryoushu-sama",
@@ -666,7 +682,6 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "consumet-182205": "that-time-i-got-reincarnated-as-a-slime-s4",
   "consumet-139498": "tensei-shitara-slime-datta-ken-movie-guren-no-kizuna-hen",
   "consumet-161802": "tensei-shitara-slime-datta-ken-coleus-no-yume",
-  "one-piece-pelicula-gigantes": "one-piece-film-red",
   "one-piece-film-red": "one-piece-film-red",
   "50594": "one-piece-film-red",
   "bleach-sennen-kessen-hen-3": "bleach-sennen-kessen-hen-3",
@@ -709,23 +724,11 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "death-note": "death-note",
   "horimiya": "horimiya",
   "cyberpunk-edgerunners": "cyberpunk-edgerunners",
-  "dandadan": "dandadan",
   "bleach-sennen-kessen-hen-soukatsu-hen": "bleach-sennen-kessen-hen",
-  "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season": "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season",
-  "kono-subarashii-sekai-ni-shukufuku-wo-3": "kono-subarashii-sekai-ni-shukufuku-wo-3",
-  "wistoria-wand-sword": "wistoria-wand-and-sword",
-  "blue-lock-vs-u-20-japan": "blue-lock-2nd-season",
   "wind-breaker": "wind-breaker",
-  "tokidoki-bosotto-russia-go-de-dereru-tonari-no-alya-san": "tokidoki-bosotto-roshia-go-de-dereru-tonari-no-alya-san",
   "mashle-shinka-no-kami-shiken-hen": "mashle-2nd-season",
-  "boku-no-kokoro-no-yabai-yatsu-2nd-season": "boku-no-kokoro-no-yabai-yatsu-2nd-season",
-  "youjo-senki-2": "youjo-senki-ii",
   "youjo-senki-ii": "youjo-senki-ii",
   "youjo-senki-temporada-2": "youjo-senki-ii",
-  "solo-leveling-2": "ore-dake-level-up-na-ken-2nd-season",
-  "chainsaw-man-2": "chainsaw-man-2nd-season",
-  "jujutsu-kaisen-tv-3": "jujutsu-kaisen-3rd-season",
-  "kimetsu-no-yaiba-mugen-jou": "kimetsu-no-yaiba-mugen-jou",
   "naruto-shippuden": "naruto-shippuden",
   "dragon-ball-daima": "dragon-ball-daima",
   "bleach-sennen-kessen-hen": "bleach-sennen-kessen-hen",
@@ -930,15 +933,44 @@ async function scrapeEpisodeFromMonosChinos(
           });
           
           if (isMovie) {
-            epUrlCandidates.push(`${domain}/ver/${slug}-pelicula`, `${domain}/ver/${slug}`, `${domain}/ver/${slug}-sub-espanol-pelicula`, `${domain}/ver/${animeId}-pelicula`);
+            epUrlCandidates.push(
+              `${domain}/ver/${animeId}-episodio-1`,
+              `${domain}/ver/${animeId}-sub-espanol-episodio-1`,
+              `${domain}/ver/${slug}-episodio-1`,
+              `${domain}/ver/${slug}-sub-espanol-episodio-1`,
+              `${domain}/ver/${animeId}-pelicula`,
+              `${domain}/ver/${animeId}-sub-espanol-pelicula`,
+              `${domain}/ver/${animeId}-sub-espanol`,
+              `${domain}/ver/${animeId}`,
+              `${domain}/ver/${slug}-pelicula`,
+              `${domain}/ver/${slug}`,
+              `${domain}/ver/${slug}-sub-espanol-pelicula`
+            );
           } else {
             epUrlCandidates.push(
+              `${domain}/ver/${animeId}-episodio-${finalEpNum}`,
+              `${domain}/ver/${animeId}-sub-espanol-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-sub-espanol-episodio-${finalEpNum}`,
               `${domain}/ver/${slug}-${finalEpNum}`,
               `${domain}/ver/${slug}-sub-espanol-${finalEpNum}`,
-              `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`
+              `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`,
+              `${domain}/ver/${animeId}-sub-espanol`,
+              `${domain}/ver/${animeId}`,
+              `${domain}/ver/${slug}-sub-espanol`,
+              `${domain}/ver/${slug}`
             );
+
+            const ovaNumMatch = (animeId + " " + slug).match(/-(\d+)(?:-[a-z0-9-]+)?$/i);
+            if (ovaNumMatch) {
+              const ovaNum = ovaNumMatch[1];
+              epUrlCandidates.push(
+                `${domain}/ver/${animeId}-episodio-${ovaNum}`,
+                `${domain}/ver/${slug}-episodio-${ovaNum}`,
+                `${domain}/ver/${animeId}-sub-espanol-episodio-${ovaNum}`,
+                `${domain}/ver/${slug}-sub-espanol-episodio-${ovaNum}`
+              );
+            }
           }
 
           for (const candidateUrl of epUrlCandidates) {
@@ -1953,8 +1985,8 @@ export class AnimeApiAggregator {
               isMovie = matchByExtId.type === "Película";
               matchedAnimeTitle = matchByExtId.title;
               foundLocal = true;
-            } else {
-              // 3. Cross-reference search & Fuzzy matching (Confidence Threshold >= 85%)
+            } else if (/^\d+$/.test(cleanExternalId)) {
+              // 3. Cross-reference search & Fuzzy matching for numeric IDs (Confidence Threshold >= 85%)
               let bestMatch: any = null;
               let highestScore = 0;
               
