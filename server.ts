@@ -9,7 +9,12 @@ import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRep
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
-import { MOCK_ANIMES } from "./src/utils/animeDb";
+import { MOCK_ANIMES, getAnimesWithEpisodes } from "./src/utils/animeDb";
+
+// Local catalog — loaded once at startup from dist/catalog.json
+let LOCAL_CATALOG = getAnimesWithEpisodes();
+console.log(`[Catalog] Loaded ${LOCAL_CATALOG.length} titles from local catalog.`);
+
 import cron from "node-cron";
 import NodeCache from "node-cache";
 import { fuzzyMatch } from "./src/utils/titleNormalizer";
@@ -336,89 +341,96 @@ export async function createExpressApp() {
   // 1. Get Home Screen lists (Seasonal, Popular, Episodes)
   app.get("/api/home", async (req, res) => {
     const page = parseInt(req.query.page as string, 10) || 1;
-    const cacheKey = `home_data_p${page}`;
+    const cacheKey = `home_data_local_p${page}`;
     const cachedData = apiCache.get(cacheKey);
     if (cachedData) return res.json(cachedData);
 
     try {
-      const data = await scrapeHome(page);
-      
-      // Inject custom animes and their episodes
-      if (data && data.success) {
-        GLOBAL_CUSTOM_ANIMES = readCustomDb();
-        if (GLOBAL_CUSTOM_ANIMES.length > 0) {
-          // Put custom animes in seasonal list
-          data.seasonal = [...GLOBAL_CUSTOM_ANIMES, ...(data.seasonal || [])];
-          
-          // Generate recent episodes for home section
-          const customEps: any[] = [];
-          GLOBAL_CUSTOM_ANIMES.forEach(anime => {
-            const count = anime.episodesCount || 0;
-            if (count > 0) {
-              const lastEpNum = count;
-              customEps.push({
-                id: `${anime.id}-${lastEpNum}`,
-                title: `${anime.title} - Episodio ${lastEpNum}`,
-                number: lastEpNum,
-                animeId: anime.id,
-                animeTitle: anime.title,
-                coverUrl: anime.coverUrl,
-                videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                videoServers: [
-                  { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
-                ]
-              });
-            }
-          });
-          data.episodes = [...customEps, ...(data.episodes || [])];
-        }
-      }
+      const catalog = LOCAL_CATALOG;
+      const PAGE_SIZE = 24;
+      const offset = (page - 1) * PAGE_SIZE;
 
-      apiCache.set(cacheKey, data, 1800); // 30 mins
+      // Seasonal: currently airing
+      const seasonal = catalog.filter(a => a.status === "En emisión");
+      // Trending: rest of catalog sorted by rating desc
+      const trending = [...catalog].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      // Recent episodes: top 20 series latest episodes
+      const episodes = trending.slice(0, 20).map(a => ({
+        id: `${a.id}-ep-${a.episodesCount || 1}`,
+        title: a.type === "Película" ? a.title : `${a.title} - Episodio ${a.episodesCount || 1}`,
+        number: a.episodesCount || 1,
+        animeId: a.id,
+        animeTitle: a.title,
+        coverUrl: a.coverUrl,
+        videoUrl: `/api/episode/${a.id}-ep-${a.episodesCount || 1}`
+      }));
+
+      const totalPages = Math.ceil(trending.length / PAGE_SIZE);
+      const data = {
+        success: true,
+        seasonal: seasonal.slice(0, 24),
+        trending: trending.slice(offset, offset + PAGE_SIZE),
+        episodes,
+        totalPages
+      };
+
+      apiCache.set(cacheKey, data, 3600);
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to load home page" });
     }
   });
 
-  // 2. Search for animes
+  // 2. Search for animes — local catalog only
   app.get("/api/search", async (req, res) => {
-    const q = req.query.q as string;
+    const q = (req.query.q as string || "").toLowerCase().trim();
+    const type = (req.query.type as string || "").toLowerCase();
+    const genre = (req.query.genre as string || "").toLowerCase();
     const page = parseInt(req.query.page as string, 10) || 1;
-    
-    const cacheKey = `search_${(q || 'airing').toLowerCase()}_p${page}`;
-    const cachedData = apiCache.get(cacheKey);
-    if (cachedData) return res.json(cachedData);
+    const PAGE_SIZE = 24;
 
-    try {
-      let data;
-      if (q) {
-        data = await scrapeSearch(q, page);
-        
-        // Match in custom DB
-        GLOBAL_CUSTOM_ANIMES = readCustomDb();
-        const lowercaseQ = q.toLowerCase();
-        const matchedCustom = GLOBAL_CUSTOM_ANIMES.filter(a => 
-          a.title.toLowerCase().includes(lowercaseQ) || 
-          a.synopsis.toLowerCase().includes(lowercaseQ) ||
-          a.genres.some(g => g.toLowerCase().includes(lowercaseQ))
-        );
-        data = [...matchedCustom, ...data];
-      } else {
-        // "Todos" filter - fetch releasing (airing) for pages 1-4, then popular completed shows for page 5+
-        if (page <= 4) {
-          data = await AnimeApiAggregator.getAiring(page);
-          GLOBAL_CUSTOM_ANIMES = readCustomDb();
-          data = [...GLOBAL_CUSTOM_ANIMES, ...data];
-        } else {
-          data = await AnimeApiAggregator.getFinished(page - 4);
-        }
-      }
-      apiCache.set(cacheKey, data, 3600); // 1 hour
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Search failed" });
+    const cacheKey = `search_local_${q}_${type}_${genre}_p${page}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    let results = LOCAL_CATALOG;
+
+    // Filter by search query
+    if (q) {
+      results = results.filter(a =>
+        a.title.toLowerCase().includes(q) ||
+        (a.synopsis || "").toLowerCase().includes(q) ||
+        (a.genres || []).some((g: string) => g.toLowerCase().includes(q))
+      );
     }
+
+    // Filter by type
+    if (type && type !== "todos") {
+      if (type === "pelicula" || type === "película") {
+        results = results.filter(a => a.type === "Película");
+      } else if (type === "ova") {
+        results = results.filter(a => a.type === "OVA");
+      } else if (type === "anime") {
+        results = results.filter(a => a.type === "Anime");
+      }
+    }
+
+    // Filter by genre
+    if (genre) {
+      results = results.filter(a =>
+        (a.genres || []).some((g: string) => g.toLowerCase().includes(genre))
+      );
+    }
+
+    // Sort: query matches by rating desc, browse by title
+    results = [...results].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    const total = results.length;
+    const paged = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    const data = { results: paged, total, page, totalPages: Math.ceil(total / PAGE_SIZE) };
+    apiCache.set(cacheKey, data, 3600);
+    res.json(data);
   });
 
   // 2b. Search suggestions (autocomplete)
@@ -846,21 +858,24 @@ export async function createExpressApp() {
     }
   });
 
-  // 5b. Get movies (with optional category/genre filter)
+  // 5b. Get movies — local catalog only
   app.get("/api/movies", async (req, res) => {
-    const genre = req.query.genre as string;
+    const genre = (req.query.genre as string || "").toLowerCase();
     const page = parseInt(req.query.page as string, 10) || 1;
-    const cacheKey = `movies_${genre || 'all'}_p${page}`;
-    const cachedData = apiCache.get(cacheKey);
-    if (cachedData) return res.json(cachedData);
+    const cacheKey = `movies_local_${genre || 'all'}_p${page}`;
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
 
-    try {
-      const data = await fetchAniListMovies(genre, page);
-      apiCache.set(cacheKey, data, 21600); // 6 hours
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch movies" });
+    let movies = LOCAL_CATALOG.filter(a => a.type === "Película");
+    if (genre) {
+      movies = movies.filter(a =>
+        (a.genres || []).some((g: string) => g.toLowerCase().includes(genre))
+      );
     }
+    movies = [...movies].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    apiCache.set(cacheKey, movies, 3600);
+    res.json(movies);
   });
 
   // 6. User Authentication: Login

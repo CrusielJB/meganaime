@@ -22,7 +22,7 @@ import { getAnimesWithEpisodes } from "./utils/animeDb";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
 import { syncAllProgressFromFirestore, getAllLocalProgress } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
-import SimulcastCalendar from "./components/SimulcastCalendar";
+
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -395,13 +395,6 @@ function AppContent() {
           />
         )}
 
-        {activeTab === "calendario" && (
-          <SimulcastCalendar
-            animes={[...seasonalAnimes, ...trendingAnimes, ...movies]}
-            onSelectAnime={handleSelectAnime}
-            onPlayEpisode={(animeId, epId) => handleResumeEpisode(animeId, epId)}
-          />
-        )}
 
         {activeTab === "favoritos" && (
           <FavoriteSection

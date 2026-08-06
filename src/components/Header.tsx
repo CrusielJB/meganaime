@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Search, Heart, LogIn, LogOut, User, Compass, Tv, Film, BookOpen, ChevronDown, Plus, Download, Calendar, KeyRound } from "lucide-react";
+import { Play, Search, Heart, LogIn, LogOut, User, Compass, Tv, Film, BookOpen, ChevronDown, Plus, Download, KeyRound } from "lucide-react";
 import { User as UserType } from "../types";
 
 interface HeaderProps {
@@ -88,17 +88,7 @@ export default function Header({
             <Tv className="h-4 w-4" />
             <span>Inicio</span>
           </button>
-          <button
-            onClick={() => setActiveTab("calendario")}
-            className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              activeTab === "calendario"
-                ? "bg-rose-500/10 text-rose-400"
-                : "text-neutral-400 hover:bg-white/5 hover:text-white"
-            }`}
-          >
-            <Calendar className="h-4 w-4" />
-            <span>Calendario</span>
-          </button>
+
           <button
             onClick={() => setActiveTab("peliculas")}
             className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
