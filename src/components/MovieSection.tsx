@@ -74,7 +74,25 @@ export const MovieSection: React.FC<MovieSectionProps> = ({
   // Filter movies for grid display when category is selected
   const filteredMovies = useMemo(() => {
     if (!activeCategory) return movies;
-    return movies.filter(m => m.genres.some(g => g.toLowerCase() === activeCategory.toLowerCase()));
+    const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const genreNorm = normalize(activeCategory);
+
+    return movies.filter(m => {
+      const titleLower = m.title.toLowerCase();
+      const synLower = (m.synopsis || "").toLowerCase();
+      const matches = (m.genres || []).some(g => {
+        const gNorm = normalize(g);
+        return gNorm === genreNorm || gNorm.includes(genreNorm) || genreNorm.includes(gNorm);
+      });
+      if (matches) return true;
+
+      // Fallback keyword matching for genres not explicitly tagged
+      if ((genreNorm.includes("shonen") || genreNorm.includes("shounen")) && (titleLower.includes("hero") || titleLower.includes("piece") || titleLower.includes("yaiba"))) return true;
+      if (genreNorm.includes("seinen") && (titleLower.includes("berserk") || synLower.includes("adulto"))) return true;
+      if (genreNorm.includes("isekai") && (titleLower.includes("isekai") || titleLower.includes("tensei") || synLower.includes("otro mundo"))) return true;
+
+      return false;
+    });
   }, [movies, activeCategory]);
 
   const totalPages = Math.ceil(filteredMovies.length / moviesPerPage) || 1;

@@ -406,9 +406,25 @@ export async function createExpressApp() {
 
     // Filter by genre
     if (genre) {
-      results = results.filter(a =>
-        (a.genres || []).some((g: string) => g.toLowerCase() === genre || g.toLowerCase().includes(genre))
-      );
+      const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      const genreNorm = normalize(genre);
+      results = results.filter(a => {
+        const titleLower = a.title.toLowerCase();
+        const synLower = (a.synopsis || "").toLowerCase();
+        const matchesGenre = (a.genres || []).some((g: string) => {
+          const gNorm = normalize(g);
+          return gNorm === genreNorm || gNorm.includes(genreNorm) || genreNorm.includes(gNorm);
+        });
+        if (matchesGenre) return true;
+
+        // Fallback keyword matching for genres not explicitly tagged in source data
+        if ((genreNorm.includes("shonen") || genreNorm.includes("shounen")) && (titleLower.includes("hero") || titleLower.includes("piece") || titleLower.includes("naruto") || titleLower.includes("bleach") || titleLower.includes("yaiba"))) return true;
+        if (genreNorm.includes("seinen") && (titleLower.includes("berserk") || titleLower.includes("vinland") || titleLower.includes("monster") || synLower.includes("adulto") || synLower.includes("oscuro"))) return true;
+        if (genreNorm.includes("isekai") && (titleLower.includes("isekai") || titleLower.includes("tensei") || titleLower.includes("reencarnac") || synLower.includes("otro mundo"))) return true;
+        if (genreNorm.includes("escolar") && (titleLower.includes("gakuen") || titleLower.includes("school") || titleLower.includes("academia") || synLower.includes("escuela") || synLower.includes("estudiante"))) return true;
+
+        return false;
+      });
     }
 
     // Filter by type
