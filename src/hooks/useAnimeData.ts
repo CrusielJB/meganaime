@@ -23,7 +23,7 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
     async function loadHome() {
       setLoadingHome(true);
       try {
-        const res = await fetch("/api/home?page=1");
+        const res = await fetch("/api/home?page=1", { signal: AbortSignal.timeout(8000) });
         const data = await res.json();
         if (data && data.success && Array.isArray(data.trending) && data.trending.length > 0) {
           setEpisodes(data.episodes || []);
@@ -39,7 +39,7 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
           setTrendingAnimes(localDb.slice(0, 15));
         }
 
-        const moviesRes = await fetch("/api/movies");
+        const moviesRes = await fetch("/api/movies", { signal: AbortSignal.timeout(8000) });
         if (moviesRes.ok) {
           const moviesData = await moviesRes.json();
           if (Array.isArray(moviesData) && moviesData.length > 0) {
