@@ -21,12 +21,14 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
   onToggleFavorite,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState("todos");
   const [searchResults, setSearchResults] = useState<Anime[]>([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryResults, setCategoryResults] = useState<Anime[]>([]);
   const [loadingCategory, setLoadingCategory] = useState(false);
   const [categoryPage, setCategoryPage] = useState(1);
+  const [categoryTotalPages, setCategoryTotalPages] = useState(1);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -41,7 +43,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
       try {
         const res = await fetch(`/api/suggestions?q=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
-        setSuggestions(data);
+        setSuggestions(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Suggestions fetch failed:", err);
       }
@@ -52,7 +54,7 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
 
   // Handle Search
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && searchType === "todos") {
       setSearchResults([]);
       return;
     }
@@ -61,18 +63,24 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
       setLoadingSearch(true);
       setShowSuggestions(false); // Hide suggestions when full search starts
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`);
+        const params = new URLSearchParams();
+        if (searchQuery.trim()) params.set("q", searchQuery.trim());
+        if (searchType !== "todos") params.set("type", searchType);
+
+        const res = await fetch(`/api/search?${params.toString()}`);
         const data = await res.json();
-        setSearchResults(data);
+        const items = Array.isArray(data) ? data : (data.results || []);
+        setSearchResults(items);
       } catch (err) {
         console.error("Search failed:", err);
+        setSearchResults([]);
       } finally {
         setLoadingSearch(false);
       }
-    }, 600);
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, searchType]);
 
   const handleSuggestionClick = (title: string) => {
     setSearchQuery(title);
@@ -89,18 +97,27 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
     async function loadCategoryResults() {
       setLoadingCategory(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(activeCategory)}&page=${categoryPage}`);
+        const params = new URLSearchParams();
+        params.set("genre", activeCategory!);
+        if (searchType !== "todos") params.set("type", searchType);
+        params.set("page", String(categoryPage));
+
+        const res = await fetch(`/api/search?${params.toString()}`);
         const data = await res.json();
-        setCategoryResults(data);
+        const items = Array.isArray(data) ? data : (data.results || []);
+        const pages = data.totalPages || 1;
+        setCategoryResults(items);
+        setCategoryTotalPages(pages);
       } catch (err) {
         console.error("Failed to load category data:", err);
+        setCategoryResults([]);
       } finally {
         setLoadingCategory(false);
       }
     }
 
     loadCategoryResults();
-  }, [activeCategory, categoryPage]);
+  }, [activeCategory, searchType, categoryPage]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -212,12 +229,17 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
               categories={[]}
               activeCategory={activeCategory}
               onSelectCategory={setActiveCategory}
+              activeType={searchType}
+              onSelectType={setSearchType}
               loading={loadingCategory}
               results={categoryResults}
               currentPage={categoryPage}
-              totalPages={100}
+              totalPages={categoryTotalPages}
               onPageChange={setCategoryPage}
-              onSelectAnime={onSelectAnime}
+              onSelectAnime={(animeId) => {
+                const found = categoryResults.find(a => a.id === animeId);
+                if (found) onSelectAnime(found);
+              }}
               favorites={localFavorites}
               onToggleFavorite={onToggleFavorite}
             />

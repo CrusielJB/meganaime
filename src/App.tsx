@@ -158,10 +158,13 @@ function AppContent() {
   const {
     activeCategory,
     setActiveCategory,
+    activeType,
+    setActiveType,
     categoryResults,
     loadingCategory,
     categoryPage,
-    setCategoryPage
+    setCategoryPage,
+    totalPages: categoryTotalPages
   } = useCategoryData(activeTab);
 
   // Profile Selector flow - Netflix/Crunchyroll style
@@ -384,10 +387,12 @@ function AppContent() {
             categories={categories}
             activeCategory={activeCategory}
             onSelectCategory={setActiveCategory}
+            activeType={activeType}
+            onSelectType={setActiveType}
             loading={loadingCategory}
             results={categoryResults}
             currentPage={categoryPage}
-            totalPages={activeCategory ? 100 : 15}
+            totalPages={categoryTotalPages}
             onPageChange={setCategoryPage}
             onSelectAnime={handleSelectAnime}
             favorites={localFavorites}

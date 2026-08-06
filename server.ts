@@ -381,11 +381,11 @@ export async function createExpressApp() {
     }
   });
 
-  // 2. Search for animes — local catalog only
+  // 2. Search & Browse animes — local catalog with Airing First -> Year Desc -> Rating Desc sorting
   app.get("/api/search", async (req, res) => {
     const q = (req.query.q as string || "").toLowerCase().trim();
-    const type = (req.query.type as string || "").toLowerCase();
-    const genre = (req.query.genre as string || "").toLowerCase();
+    const type = (req.query.type as string || "").toLowerCase().trim();
+    const genre = (req.query.genre as string || "").toLowerCase().trim();
     const page = parseInt(req.query.page as string, 10) || 1;
     const PAGE_SIZE = 24;
 
@@ -395,7 +395,7 @@ export async function createExpressApp() {
 
     let results = LOCAL_CATALOG;
 
-    // Filter by search query
+    // Filter by search query (title, synopsis, genres)
     if (q) {
       results = results.filter(a =>
         a.title.toLowerCase().includes(q) ||
@@ -404,31 +404,44 @@ export async function createExpressApp() {
       );
     }
 
+    // Filter by genre
+    if (genre) {
+      results = results.filter(a =>
+        (a.genres || []).some((g: string) => g.toLowerCase() === genre || g.toLowerCase().includes(genre))
+      );
+    }
+
     // Filter by type
     if (type && type !== "todos") {
-      if (type === "pelicula" || type === "película") {
+      if (type === "pelicula" || type === "película" || type === "peliculas" || type === "películas") {
         results = results.filter(a => a.type === "Película");
-      } else if (type === "ova") {
+      } else if (type === "ova" || type === "ovas") {
         results = results.filter(a => a.type === "OVA");
-      } else if (type === "anime") {
+      } else if (type === "anime" || type === "animes" || type === "tv") {
         results = results.filter(a => a.type === "Anime");
       }
     }
 
-    // Filter by genre
-    if (genre) {
-      results = results.filter(a =>
-        (a.genres || []).some((g: string) => g.toLowerCase().includes(genre))
-      );
-    }
-
-    // Sort: query matches by rating desc, browse by title
-    results = [...results].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    // Sorting: 1. Airing ("En emisión") first -> 2. Year Descending -> 3. Rating Descending
+    results = [...results].sort((a, b) => {
+      const isAiringA = a.status === "En emisión" ? 1 : 0;
+      const isAiringB = b.status === "En emisión" ? 1 : 0;
+      if (isAiringA !== isAiringB) {
+        return isAiringB - isAiringA;
+      }
+      const yearA = a.year || 0;
+      const yearB = b.year || 0;
+      if (yearA !== yearB) {
+        return yearB - yearA;
+      }
+      return (b.rating || 0) - (a.rating || 0);
+    });
 
     const total = results.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     const paged = results.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    const data = { results: paged, total, page, totalPages: Math.ceil(total / PAGE_SIZE) };
+    const data = { results: paged, total, page, totalPages };
     apiCache.set(cacheKey, data, 3600);
     res.json(data);
   });
