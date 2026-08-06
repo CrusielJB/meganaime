@@ -1011,33 +1011,6 @@ export default function VideoPlayer({
           </div>
         </div>
 
-        {/* Quick Server Switcher Pills (Header) */}
-        {servers.length > 1 && (
-          <div className="hidden md:flex items-center space-x-1.5 bg-neutral-900/90 border border-white/10 rounded-xl p-1 max-w-md overflow-x-auto">
-            {servers.map((srv, idx) => {
-              const isSelected = idx === activeServerIdx;
-              const srvName = (srv.name || "Servidor").replace("🚀 ", "").replace(" (SUB Español)", "");
-              return (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setActiveServerIdx(idx);
-                    setUseResolvedPlayer(false);
-                    setVideoError(null);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    isSelected
-                      ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
-                      : "text-neutral-400 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {srvName}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* Action controls (Immersive Toggle / Close) */}
         <div className="flex items-center space-x-2">
           {/* Immersive Servers & Info Toggle Button */}
@@ -1075,35 +1048,6 @@ export default function VideoPlayer({
             </div>
           ) : activeServer ? (
             <div className="w-full h-full flex items-center justify-center bg-black relative">
-              {/* Floating Quick Server Bar for Mobile & Compact screens */}
-              {servers.length > 1 && (
-                <div className="md:hidden absolute top-2 left-2 right-2 z-30 flex items-center gap-1 overflow-x-auto p-1 bg-black/80 backdrop-blur-md rounded-xl border border-white/10">
-                  <span className="text-[10px] font-bold text-rose-400 px-2 flex items-center gap-1">
-                    <Server className="h-3 w-3" /> Opción:
-                  </span>
-                  {servers.map((srv, idx) => {
-                    const isSelected = idx === activeServerIdx;
-                    const srvName = (srv.name || "Servidor").replace("🚀 ", "").replace(" (SUB Español)", "");
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setActiveServerIdx(idx);
-                          setUseResolvedPlayer(false);
-                          setVideoError(null);
-                        }}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                          isSelected
-                            ? "bg-rose-500 text-white"
-                            : "text-neutral-300 hover:bg-white/10"
-                        }`}
-                      >
-                        {srvName}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
 
               {isResolving ? (
                 <div className="flex flex-col items-center justify-center space-y-4 text-center p-6">

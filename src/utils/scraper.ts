@@ -1390,7 +1390,24 @@ export async function scrapeEpisodeFromTioAnime(
                 }
               }
             }
-            if (servers.length > 0) return servers;
+            if (servers.length > 0) {
+              // Prioritize clean & fast servers: Direct MP4/M3U8 > Mega > Okru > YourUpload > Voe
+              servers.sort((a, b) => {
+                const score = (s: { name: string; url: string }) => {
+                  const u = s.url.toLowerCase();
+                  const n = s.name.toLowerCase();
+                  if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 100;
+                  if (u.includes("mega.nz") || n.includes("mega")) return 90;
+                  if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 80;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 70;
+                  if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 60;
+                  if (u.includes("my.mail.ru") || n.includes("maru")) return 50;
+                  return 10;
+                };
+                return score(b) - score(a);
+              });
+              return servers;
+            }
           } catch (e) {}
         }
       }
