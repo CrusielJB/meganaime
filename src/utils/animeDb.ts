@@ -52,7 +52,7 @@ export function getAvailableEpisodesCountForAiring(anime: Anime): number {
   if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
     return anime.airedEpisodesCount;
   }
-  if (anime.id === "one-piece") return 1115;
+  if (anime.id.includes("one-piece")) return 1172;
   if (anime.id === "mushoku-tensei-3") {
     const start = new Date("2026-07-04T08:00:00-04:00");
     const diff = Date.now() - start.getTime();

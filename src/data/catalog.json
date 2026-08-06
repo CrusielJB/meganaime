@@ -75777,18 +75777,21 @@
   {
     "id": "tioanime-one-piece-tv",
     "title": "One Piece",
-    "synopsis": "Disfruta de One Piece en HD con sub en español directamente en Mega Anime.",
+    "synopsis": "Monkey D. Luffy se niega a permitir que nadie o nada se interponga en su camino para convertirse en el Rey de los Piratas. Zarpa en una búsqueda épica por las aguas del Grand Line y más allá para encontrar el tesoro legendario: el One Piece.",
     "coverUrl": "https://tioanime.com/uploads/portadas/7.jpg",
     "bannerUrl": "https://tioanime.com/uploads/portadas/7.jpg",
     "genres": [
       "Acción",
-      "Aventura"
+      "Aventura",
+      "Fantasía",
+      "Comedia",
+      "Shounen"
     ],
-    "status": "Finalizado",
-    "rating": 9.2,
+    "status": "En emisión",
+    "rating": 9.9,
     "type": "Anime",
-    "episodesCount": 12,
-    "year": 2020,
+    "episodesCount": 1172,
+    "year": 1999,
     "episodes": [],
     "external_id": "one-piece-tv"
   },
