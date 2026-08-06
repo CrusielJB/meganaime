@@ -7,16 +7,41 @@ export function useAnimeNavigation() {
   const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null);
 
   const handleSelectAnime = useCallback(async (anime: Anime) => {
-    setSelectedAnime(anime);
+    const isMovie = anime.type === "Película";
+    const isOVA = anime.type === "OVA";
+    const count = isMovie ? 1 : isOVA ? 1 : (anime.episodesCount || 12);
+
+    const fallbackEpisodes: Episode[] = Array.from({ length: count }, (_, i) => ({
+      id: `${anime.id}-ep-${i + 1}`,
+      title: isMovie ? anime.title : isOVA ? `${anime.title} - OVA ${i + 1}` : `${anime.title} - Episodio ${i + 1}`,
+      number: i + 1,
+      animeId: anime.id,
+      animeTitle: anime.title,
+      coverUrl: anime.coverUrl,
+      videoUrl: `/api/episode/${anime.id}-ep-${i + 1}`
+    }));
+
+    const baseAnime: Anime = {
+      ...anime,
+      episodes: Array.isArray(anime.episodes) && anime.episodes.length > 0 ? anime.episodes : fallbackEpisodes
+    };
+
+    setSelectedAnime(baseAnime);
+
     try {
       const res = await fetch(`/api/anime/${anime.id}`);
       const freshDetails = await res.json();
       if (freshDetails && !freshDetails.error) {
         setSelectedAnime(prev => {
           if (!prev || prev.id !== anime.id) return prev;
+          const freshEps = Array.isArray(freshDetails.episodes) && freshDetails.episodes.length > 0
+            ? freshDetails.episodes
+            : baseAnime.episodes;
+
           return {
-            ...anime,
+            ...baseAnime,
             ...freshDetails,
+            episodes: freshEps,
             title: anime.title || freshDetails.title,
             coverUrl: anime.coverUrl || freshDetails.coverUrl,
             bannerUrl: anime.bannerUrl || freshDetails.bannerUrl,
@@ -30,8 +55,8 @@ export function useAnimeNavigation() {
   }, []);
 
   const handleNavigateEpisode = useCallback((direction: "prev" | "next") => {
-    if (!selectedAnime || !activeEpisodeId) return;
-    
+    if (!selectedAnime || !selectedAnime.episodes || !Array.isArray(selectedAnime.episodes) || !activeEpisodeId) return;
+
     const currentIndex = selectedAnime.episodes.findIndex(e => e.id === activeEpisodeId);
     if (currentIndex === -1) return;
 
@@ -42,12 +67,11 @@ export function useAnimeNavigation() {
     }
   }, [selectedAnime, activeEpisodeId]);
 
-  const currentEpIndex = selectedAnime && activeEpisodeId 
-    ? selectedAnime.episodes.findIndex(e => e.id === activeEpisodeId) 
-    : -1;
-  
+  const episodesList = selectedAnime && Array.isArray(selectedAnime.episodes) ? selectedAnime.episodes : [];
+  const currentEpIndex = activeEpisodeId ? episodesList.findIndex(e => e.id === activeEpisodeId) : -1;
+
   const hasPrevEpisode = currentEpIndex > 0;
-  const hasNextEpisode = selectedAnime ? currentEpIndex < selectedAnime.episodes.length - 1 : false;
+  const hasNextEpisode = episodesList.length > 0 && currentEpIndex >= 0 && currentEpIndex < episodesList.length - 1;
 
   return {
     selectedAnime,
@@ -62,3 +86,4 @@ export function useAnimeNavigation() {
     hasNextEpisode
   };
 }
+

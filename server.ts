@@ -5,7 +5,7 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 import { parse as parseUrl } from "url";
-import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
+import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, scrapeEpisodeFromTioAnime, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
@@ -497,11 +497,32 @@ export async function createExpressApp() {
     if (cachedData) return res.json(cachedData);
 
     try {
-      // Check custom DB first
+      // Check local catalog first
+      const catalogItem = LOCAL_CATALOG.find(a => a.id === id || a.id.replace(/^tioanime-/, "") === id);
+      if (catalogItem) {
+        const isMovie = catalogItem.type === "Película";
+        const isOVA = catalogItem.type === "OVA";
+        const count = isMovie ? 1 : isOVA ? 1 : (catalogItem.episodesCount || 12);
+        
+        const episodes = Array.from({ length: count }, (_, i) => ({
+          id: `${catalogItem.id}-ep-${i + 1}`,
+          title: isMovie ? catalogItem.title : isOVA ? `${catalogItem.title} - OVA ${i + 1}` : `${catalogItem.title} - Episodio ${i + 1}`,
+          number: i + 1,
+          animeId: catalogItem.id,
+          animeTitle: catalogItem.title,
+          coverUrl: catalogItem.coverUrl,
+          videoUrl: `/api/episode/${catalogItem.id}-ep-${i + 1}`
+        }));
+
+        const fullAnime = { ...catalogItem, episodes };
+        apiCache.set(cacheKey, fullAnime, 7200);
+        return res.json(fullAnime);
+      }
+
+      // Check custom DB second
       GLOBAL_CUSTOM_ANIMES = readCustomDb();
       const custom = GLOBAL_CUSTOM_ANIMES.find(a => a.id === id);
       if (custom) {
-        // If custom anime episodes are not populated, generate them dynamically
         const episodes = [];
         for (let i = 1; i <= custom.episodesCount; i++) {
           episodes.push({
@@ -539,11 +560,33 @@ export async function createExpressApp() {
     if (cached) return res.json(cached);
 
     try {
-      // Check custom DB first
+      // Check TioAnime catalog episode path
+      const tioMatch = id.match(/^(?:tioanime-)?(.+?)-(?:ep|episodio)-(\d+)$/i);
+      if (tioMatch) {
+        const rawSlug = tioMatch[1];
+        const epNum = parseInt(tioMatch[2], 10);
+        const servers = await scrapeEpisodeFromTioAnime(rawSlug, epNum);
+        if (servers && servers.length > 0) {
+          const catalogItem = LOCAL_CATALOG.find(a => a.id === `tioanime-${rawSlug}` || a.id.includes(rawSlug));
+          const epData = {
+            id,
+            title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
+            number: epNum,
+            animeId: catalogItem ? catalogItem.id : `tioanime-${rawSlug}`,
+            animeTitle: catalogItem ? catalogItem.title : rawSlug,
+            coverUrl: catalogItem ? catalogItem.coverUrl : "",
+            videoServers: servers,
+            videoUrl: servers[0]?.url || ""
+          };
+          apiCache.set(cacheKey, epData, 7200);
+          return res.json(epData);
+        }
+      }
+
+      // Check custom DB second
       GLOBAL_CUSTOM_ANIMES = readCustomDb();
       let foundCustomEp: any = null;
       for (const anime of GLOBAL_CUSTOM_ANIMES) {
-        // If episode ID matches custom anime ID pattern
         if (id.startsWith(anime.id + "-")) {
           const parts = id.split("-");
           const epNum = parseInt(parts[parts.length - 1], 10);
@@ -572,9 +615,9 @@ export async function createExpressApp() {
       const hasRealServers = freshData && freshData.videoServers && freshData.videoServers.length > 2;
       
       if (hasRealServers) {
-        apiCache.set(cacheKey, freshData, 86400); // cache for 24 hours
+        apiCache.set(cacheKey, freshData, 86400);
       } else {
-        apiCache.set(cacheKey, freshData, 5); // cache for only 5 seconds
+        apiCache.set(cacheKey, freshData, 5);
       }
       res.json(freshData);
     } catch (error: any) {
