@@ -1929,16 +1929,40 @@ export async function createExpressApp() {
 
       // ── VOE.sx ──
       if (!directUrl && (serverName.includes("voe") || embedUrl.includes("voe") || html.includes("voe"))) {
-        const m = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
-               || html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
-               || html.match(/(https?:\/\/[^"'`\s\\]+\.m3u8\b[^"'`\s]*)/i);
-        if (m) { directUrl = m[1]; isHls = true; }
+        const redirectMatch = html.match(/window\.location\.href\s*=\s*['"]([^'"]+)['"]/i);
+        if (redirectMatch && redirectMatch[1] && !redirectMatch[1].includes("permanentToken")) {
+          try {
+            const voeRes = await fetch(redirectMatch[1], {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Referer": embedUrl
+              },
+              signal: AbortSignal.timeout(4000)
+            });
+            if (voeRes.ok) {
+              const voeHtml = await voeRes.text();
+              const m = voeHtml.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+                     || voeHtml.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+                     || voeHtml.match(/(https?:\/\/[^"'`\s\\]+\.m3u8\b[^"'`\s]*)/i);
+              if (m) { directUrl = m[1]; isHls = true; }
+            }
+          } catch(e) {}
+        }
+        if (!directUrl) {
+          const m = html.match(/['"]hls['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+                 || html.match(/['"]file['"]\s*:\s*['"](https?:\/\/[^'"]+)['"]/i)
+                 || html.match(/(https?:\/\/[^"'`\s\\]+\.m3u8\b[^"'`\s]*)/i);
+          if (m) { directUrl = m[1]; isHls = true; }
+        }
       }
 
       // ── YourUpload / uqload ──
-      if (!directUrl && (serverName.includes("upload") || serverName.includes("uq"))) {
-        const m = html.match(/sources\s*:\s*\[[\s\S]*?["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i);
-        if (m) { directUrl = m[1]; }
+      if (!directUrl && (serverName.includes("upload") || serverName.includes("yourupload") || embedUrl.includes("yourupload") || html.includes("yourupload"))) {
+        const m = html.match(/jwplayer\([^)]+\)\.setup\(\{\s*file\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
+               || html.match(/file\s*:\s*["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
+               || html.match(/sources\s*:\s*\[[\s\S]*?["'](https?:\/\/[^"']+\.mp4[^"']*)["']/i)
+               || html.match(/(https?:\/\/[^"'`\s\\]+\.mp4\b[^"'`\s]*)/i);
+        if (m && !m[1].includes(".js") && !m[1].includes(".css")) { directUrl = m[1]; isHls = false; }
       }
 
       // ── StreamTape ──

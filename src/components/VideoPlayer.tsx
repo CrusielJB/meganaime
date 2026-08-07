@@ -333,7 +333,7 @@ export default function VideoPlayer({
 
     findAndSelectCustomPlayerServer();
     return () => { isMounted = false; };
-  }, [episodeData]);
+  }, [episodeId, servers.length]);
 
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
@@ -1013,23 +1013,6 @@ export default function VideoPlayer({
 
         {/* Action controls (Immersive Toggle / Close) */}
         <div className="flex items-center space-x-2">
-          {/* Discrete Switch Server Button if multiple servers exist */}
-          {servers.length > 1 && (
-            <button
-              onClick={() => {
-                setActiveServerIdx(prev => (prev + 1) % servers.length);
-                setUseResolvedPlayer(false);
-                setVideoError(null);
-              }}
-              className="flex h-10 px-3.5 items-center justify-center gap-2 rounded-xl text-xs font-bold bg-white/5 border border-white/10 text-neutral-300 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-white transition cursor-pointer"
-              title="Haz clic aquí si el servidor actual está caído o da error para cambiar automáticamente al siguiente"
-            >
-              <RotateCcw className="h-4 w-4 text-rose-400" />
-              <span className="hidden sm:inline">Probar otro servidor ({activeServerIdx + 1}/{servers.length})</span>
-              <span className="sm:hidden">Servidor {activeServerIdx + 1}/{servers.length}</span>
-            </button>
-          )}
-
           {/* Immersive Servers & Info Toggle Button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
