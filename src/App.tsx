@@ -83,10 +83,16 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 onClick={() => {
                   try {
                     sessionStorage.clear();
+                    localStorage.clear();
+                    if ('caches' in window) {
+                      caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                      });
+                    }
                   } catch (e) {}
-                  window.location.href = window.location.origin + window.location.pathname + "?v=" + Date.now();
+                  window.location.href = window.location.origin;
                 }}
-                className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition shadow-lg shadow-rose-600/20"
+                className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition shadow-lg shadow-rose-600/20 cursor-pointer"
               >
                 Recargar y Actualizar Aplicación
               </button>

@@ -301,17 +301,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
     return trendingAnimes.slice(0, 10);
   }, [trendingAnimes]);
 
-  if (loading && trendingAnimes.length === 0) {
-    return (
-      <div className="flex h-96 w-full items-center justify-center">
-        <div className="flex flex-col items-center space-y-3">
-          <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
-          <span className="text-sm text-neutral-400 font-medium">Sincronizando con los servidores de anime...</span>
-        </div>
-      </div>
-    );
-  }
-
   // Netflix recommendation engine: "Porque viste X..." (Registered Users Only)
   const becauseYouWatchedData = useMemo(() => {
     if (!currentUser || !continueWatching || continueWatching.length === 0) return null;
@@ -338,6 +327,17 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
       animes: uniqueRecs
     };
   }, [currentUser, continueWatching, trendingAnimes, seasonalAnimes, movies]);
+
+  if (loading && trendingAnimes.length === 0) {
+    return (
+      <div className="flex h-96 w-full items-center justify-center">
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="h-10 w-10 animate-spin text-rose-500" />
+          <span className="text-sm text-neutral-400 font-medium">Sincronizando con los servidores de anime...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-14 animate-fade-in pb-16">
