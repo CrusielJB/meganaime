@@ -1344,6 +1344,28 @@ function mapHiAnime(item: any): Anime {
 /**
  * Scrapes episode video servers from TioAnime.
  */
+export async function getRealAiredEpCount(slug: string): Promise<number | null> {
+  const cleanSlug = slug
+    .replace(/^tioanime-/, "")
+    .replace(/-pelicula$/, "")
+    .replace(/-sub-espanol$/, "")
+    .replace(/-(?:ep|episodio)-\d+$/i, "");
+  try {
+    const res = await fetch(`https://tioanime.com/anime/${cleanSlug}`, { headers: HEADERS, signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const html = await res.text();
+      const match = html.match(/var\s+episodes\s*=\s*(\[[\s\S]*?\]);/i);
+      if (match) {
+        const epList = JSON.parse(match[1]);
+        if (Array.isArray(epList)) {
+          return epList.length;
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
 export async function scrapeEpisodeFromTioAnime(
   slug: string,
   epNum: number = 1

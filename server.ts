@@ -5,7 +5,7 @@ import fs from "fs";
 import http from "http";
 import https from "https";
 import { parse as parseUrl } from "url";
-import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, scrapeEpisodeFromTioAnime, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
+import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, scrapeEpisodeFromTioAnime, getRealAiredEpCount, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
@@ -519,7 +519,26 @@ export async function createExpressApp() {
       if (catalogItem) {
         const isMovie = catalogItem.type === "Película";
         const isOVA = catalogItem.type === "OVA";
-        const count = isMovie ? 1 : isOVA ? 1 : (catalogItem.episodesCount || 12);
+        let count = isMovie ? 1 : isOVA ? 1 : (catalogItem.episodesCount || 12);
+
+        // For Airing animes ("En emisión"), fetch real-time aired count so unaired episodes never appear
+        if (catalogItem.status === "En emisión" && !isMovie && !isOVA) {
+          const rawSlug = catalogItem.id.replace(/^tioanime-/, "");
+          const cachedCountKey = `aired_count_${rawSlug}`;
+          const cachedCount = apiCache.get<number>(cachedCountKey);
+          if (cachedCount) {
+            count = cachedCount;
+          } else {
+            try {
+              const liveCount = await getRealAiredEpCount(rawSlug);
+              if (liveCount && liveCount > 0) {
+                count = liveCount;
+                catalogItem.episodesCount = liveCount;
+                apiCache.set(cachedCountKey, liveCount, 3600);
+              }
+            } catch (e) {}
+          }
+        }
         
         const episodes = Array.from({ length: count }, (_, i) => ({
           id: `${catalogItem.id}-ep-${i + 1}`,
@@ -531,7 +550,7 @@ export async function createExpressApp() {
           videoUrl: `/api/episode/${catalogItem.id}-ep-${i + 1}`
         }));
 
-        const fullAnime = { ...catalogItem, episodes };
+        const fullAnime = { ...catalogItem, episodesCount: count, episodes };
         apiCache.set(cacheKey, fullAnime, 7200);
         return res.json(fullAnime);
       }
