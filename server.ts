@@ -17,6 +17,7 @@ console.log(`[Catalog] Loaded ${LOCAL_CATALOG.length} titles from local catalog.
 
 import cron from "node-cron";
 import NodeCache from "node-cache";
+import nodemailer from "nodemailer";
 import { fuzzyMatch } from "./src/utils/titleNormalizer";
 
 // Initialize cache: check every 2 minutes for expired items
@@ -24,6 +25,18 @@ const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
 
 // In-memory simulation of user storage (active session helper)
 const USERS_DB: Record<string, { username: string; email: string; favorites: string[] }> = {};
+
+// 6-Digit Email OTP verification store: Record<email, { code: string; attemptsLeft: number; expiresAt: number }>
+const OTP_STORE: Record<string, { code: string; attemptsLeft: number; expiresAt: number }> = {};
+
+// Transporter for 6-digit OTP verification emails
+const emailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER || "baezcabrera.j.r@gmail.com",
+    pass: process.env.SMTP_PASS || ""
+  }
+});
 
 export async function createExpressApp() {
   const app = express();
@@ -335,6 +348,120 @@ export async function createExpressApp() {
 
   // Body parsers
   app.use(express.json());
+
+  // ── 0. OTP Email Verification Endpoints for Registration ──
+  app.post("/api/auth/send-otp", async (req, res) => {
+    const email = (req.body?.email as string || "").toLowerCase().trim();
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Dirección de correo electrónico inválida." });
+    }
+
+    // Generate random 6-digit OTP code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+    OTP_STORE[email] = {
+      code,
+      attemptsLeft: 3,
+      expiresAt
+    };
+
+    console.log(`[OTP Engine] 🔒 Generated 6-Digit OTP for ${email}: [ ${code} ] (Expires in 10m, Max 3 attempts)`);
+
+    const htmlMessage = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; background-color: #0a0a0a; color: #ffffff; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #f43f5e; font-size: 28px; font-weight: 900; margin: 0;">mega<span style="color: #ffffff;">Anime</span></h1>
+          <p style="color: #a3a3a3; font-size: 13px; margin-top: 6px;">Código de Verificación de Registro</p>
+        </div>
+        <div style="background-color: #171717; padding: 24px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+          <p style="color: #d4d4d4; font-size: 14px; margin-bottom: 16px;">Introduce el siguiente código de <strong>6 dígitos</strong> para completar tu registro:</p>
+          <div style="font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #f43f5e; background-color: #000000; padding: 16px 24px; border-radius: 12px; display: inline-block; border: 1px solid #f43f5e; font-family: monospace;">
+            ${code}
+          </div>
+          <p style="color: #737373; font-size: 11px; margin-top: 16px;">Este código expirará en 10 minutos. Tienes un máximo de <strong>3 intentos</strong> para introducirlo correctamente.</p>
+        </div>
+        <p style="color: #525252; font-size: 10px; text-align: center; margin-top: 24px;">Si no solicitaste este registro en megaAnime, puedes ignorar este mensaje.</p>
+      </div>
+    `;
+
+    try {
+      if (process.env.SMTP_PASS) {
+        await emailTransporter.sendMail({
+          from: '"megaAnime Seguridad" <baezcabrera.j.r@gmail.com>',
+          to: email,
+          subject: `${code} es tu código de verificación | megaAnime`,
+          html: htmlMessage
+        });
+      }
+    } catch (e: any) {
+      console.warn(`[OTP Engine] Email dispatch warning for ${email}:`, e.message || e);
+    }
+
+    res.json({
+      success: true,
+      message: `Código enviado a ${email}`,
+      debugCode: process.env.NODE_ENV !== "production" ? code : undefined
+    });
+  });
+
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    const email = (req.body?.email as string || "").toLowerCase().trim();
+    const code = (req.body?.code as string || "").trim();
+
+    if (!email || !code) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos (email, code)." });
+    }
+
+    const record = OTP_STORE[email];
+
+    if (!record) {
+      return res.status(400).json({
+        error: "No hay ninguna solicitud de verificación activa para este correo. Por favor inicia el registro nuevamente.",
+        expired: true
+      });
+    }
+
+    // Check 10-minute expiration
+    if (Date.now() > record.expiresAt) {
+      delete OTP_STORE[email];
+      return res.status(400).json({
+        error: "El código de 6 dígitos ha expirado (límite 10 minutos). Por favor solicita uno nuevo.",
+        expired: true
+      });
+    }
+
+    // Validate 6-digit OTP code
+    if (record.code !== code) {
+      record.attemptsLeft -= 1;
+
+      if (record.attemptsLeft <= 0) {
+        // STRICT RULE: 3 failed attempts cancels registration immediately!
+        delete OTP_STORE[email];
+        console.warn(`[OTP Engine] ❌ Max failed attempts (3/3) reached for ${email}. OTP session destroyed.`);
+        return res.status(400).json({
+          error: "⚠️ Has alcanzado el límite máximo de 3 intentos fallidos. Por seguridad, el registro ha sido cancelado y debes empezar de nuevo.",
+          maxAttemptsExceeded: true,
+          attemptsLeft: 0
+        });
+      }
+
+      console.warn(`[OTP Engine] ⚠️ Incorrect OTP for ${email}. Submitted: ${code}, Correct: ${record.code}. Remaining attempts: ${record.attemptsLeft}`);
+      return res.status(400).json({
+        error: `Código incorrecto. Te ${record.attemptsLeft === 1 ? 'queda' : 'quedan'} ${record.attemptsLeft} ${record.attemptsLeft === 1 ? 'intento' : 'intentos'}.`,
+        maxAttemptsExceeded: false,
+        attemptsLeft: record.attemptsLeft
+      });
+    }
+
+    // SUCCESS: OTP verified! Delete record to prevent reuse.
+    delete OTP_STORE[email];
+    console.log(`[OTP Engine] ✅ OTP verified successfully for ${email}`);
+    return res.json({
+      success: true,
+      message: "Correo verificado correctamente."
+    });
+  });
 
   // --- API ROUTES ---
 
