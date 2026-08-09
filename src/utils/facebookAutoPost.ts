@@ -43,6 +43,7 @@ function savePostedId(episodeId: string) {
 
 /**
  * Formats an engaging, high-converting Facebook post in Spanish with hashtags and direct links.
+ * Web link is clean: https://megaanime.net
  */
 export function generateFacebookPostCaption(item: {
   animeTitle: string;
@@ -56,6 +57,9 @@ export function generateFacebookPostCaption(item: {
   const genresText = item.genres && item.genres.length > 0 ? item.genres.slice(0, 3).join(", ") : "Anime";
   const hashtagAnime = item.animeTitle.replace(/[^a-zA-Z0-9]/g, "");
 
+  // Clean Web URL strictly https://megaanime.net
+  const cleanWebUrl = "https://megaanime.net";
+
   return `🔥 ¡NUEVO ESTRENO DISPONIBLE EN megaAnime! 🔥
 
 🎬 Anime: ${item.animeTitle}
@@ -65,7 +69,7 @@ export function generateFacebookPostCaption(item: {
 🍿 ¡Disfrútalo ahora mismo en FULL HD, sin anuncios molestos y con la mejor velocidad de reproducción!
 
 🌐 Ver en la Web:
-${item.webUrl}
+${cleanWebUrl}
 
 📱 Descargar App para Android:
 ${item.androidUrl}
@@ -74,15 +78,15 @@ ${item.androidUrl}
 }
 
 /**
- * Posts a new release photo + text directly to the official Facebook Page via Meta Graph API.
+ * Posts a new release photo + text directly to the official Facebook Page (and linked Groups) via Meta Graph API.
  */
 export async function postNewReleaseToFacebook(
   payload: FacebookPostPayload
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
   const pageId = process.env.FACEBOOK_PAGE_ID || "1375353446122077";
   const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "EAAPY6fJZB22ABSCkBRNDTaALhaLA5xUKDOW02qfT6q838T0mjwk7LZCOyZC4d1jYoAhV7ZCist1lVVpdlWGBbu15L4P9YZCki9D4UYZAFYlG6y5eHo6NDBdvHFxHx6D9IgDdUkcBthE8srQtv9b3W1aRHjtWIZAX7IHEo9CxdEeHMBpQWIacZAyBDNBekI7jttTjDo8U";
-  const domain = process.env.WEB_APP_URL || "https://megaanime.net";
-  const androidUrl = process.env.ANDROID_APP_URL || `${domain}/download/android`;
+  const domain = "https://megaanime.net";
+  const androidUrl = `${domain}/download/android`;
 
   if (!pageId || !pageToken) {
     console.log(`[FB Auto-Post] Skipped for "${payload.animeTitle}" Ep ${payload.episodeNumber} (FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN missing in .env)`);
@@ -109,13 +113,12 @@ export async function postNewReleaseToFacebook(
     }
   }
 
-  const webUrl = `${domain}?anime=${encodeURIComponent(payload.animeId)}&ep=${encodeURIComponent(payload.episodeId)}`;
   const caption = generateFacebookPostCaption({
     animeTitle: payload.animeTitle,
     episodeNumber: payload.episodeNumber,
     genres: payload.genres,
     isMovie: payload.isMovie,
-    webUrl,
+    webUrl: domain,
     androidUrl
   });
 
@@ -165,6 +168,8 @@ export async function postNewReleaseToFacebook(
       }
     }
 
+    let postId: string | undefined;
+
     if (imgBlob && imgBlob.size > 500) {
       const formData = new FormData();
       formData.append("source", imgBlob, "cover.jpg");
@@ -179,36 +184,60 @@ export async function postNewReleaseToFacebook(
 
       const data = await response.json();
       if (response.ok && (data.id || data.post_id)) {
-        const postId = data.id || data.post_id;
+        postId = data.id || data.post_id;
         savePostedId(payload.episodeId);
         console.log(`[FB Auto-Post] 🎉 Publicación de foto exitosa en Facebook! Post ID: ${postId}`);
-        return { success: true, postId };
       }
     }
 
     // Fallback: Feed post with link if photo binary was unavailable
-    console.log(`[FB Auto-Post] Photo binary unavailable, publishing feed link post to Facebook Page...`);
-    const feedUrl = `https://graph.facebook.com/v19.0/${pageId}/feed`;
-    const feedRes = await fetch(feedUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: caption,
-        link: webUrl,
-        access_token: pageToken
-      })
-    });
+    if (!postId) {
+      console.log(`[FB Auto-Post] Photo binary unavailable, publishing feed link post to Facebook Page...`);
+      const feedUrl = `https://graph.facebook.com/v19.0/${pageId}/feed`;
+      const feedRes = await fetch(feedUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: caption,
+          link: domain,
+          access_token: pageToken
+        })
+      });
 
-    const feedData = await feedRes.json();
-    if (feedRes.ok && (feedData.id || feedData.post_id)) {
-      const postId = feedData.id || feedData.post_id;
-      savePostedId(payload.episodeId);
-      console.log(`[FB Auto-Post] 🎉 Publicación de enlace exitosa en Facebook! Post ID: ${postId}`);
-      return { success: true, postId };
-    } else {
-      const errorMsg = feedData.error?.message || JSON.stringify(feedData);
-      return { success: false, error: errorMsg };
+      const feedData = await feedRes.json();
+      if (feedRes.ok && (feedData.id || feedData.post_id)) {
+        postId = feedData.id || feedData.post_id;
+        savePostedId(payload.episodeId);
+        console.log(`[FB Auto-Post] 🎉 Publicación de enlace exitosa en Facebook! Post ID: ${postId}`);
+      } else {
+        const errorMsg = feedData.error?.message || JSON.stringify(feedData);
+        return { success: false, error: errorMsg };
+      }
     }
+
+    // ── Optional: Auto-share to Facebook Groups configured in FACEBOOK_GROUP_IDS ──
+    const groupIdsRaw = process.env.FACEBOOK_GROUP_IDS || "";
+    if (groupIdsRaw.trim().length > 0) {
+      const groupIds = groupIdsRaw.split(",").map(g => g.trim()).filter(Boolean);
+      for (const groupId of groupIds) {
+        try {
+          console.log(`[FB Auto-Post] 📢 Cross-posting to Facebook Group ID: ${groupId}...`);
+          await fetch(`https://graph.facebook.com/v19.0/${groupId}/feed`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: caption,
+              link: domain,
+              access_token: pageToken
+            })
+          });
+        } catch (gErr) {
+          console.warn(`[FB Auto-Post] Failed to cross-post to group ${groupId}:`, gErr);
+        }
+      }
+    }
+
+    return { success: true, postId };
   } catch (err: any) {
     console.error(`[FB Auto-Post] ❌ Excepción de red al publicar en Facebook:`, err.message || err);
     return { success: false, error: err.message || "Error de red al conectar con Facebook" };
