@@ -386,8 +386,9 @@ export async function createExpressApp() {
     const q = (req.query.q as string || "").toLowerCase().trim();
     const type = (req.query.type as string || "").toLowerCase().trim();
     const genre = (req.query.genre as string || "").toLowerCase().trim();
-    const page = parseInt(req.query.page as string, 10) || 1;
+    const page = parseInt(req.query.page as string || "1", 10);
     const PAGE_SIZE = 24;
+    const qNorm = q ? q.toLowerCase().trim() : "";
 
     const cacheKey = `search_local_${q}_${type}_${genre}_p${page}`;
     const cached = apiCache.get(cacheKey);
@@ -438,8 +439,24 @@ export async function createExpressApp() {
       }
     }
 
-    // Sorting: 1. Airing ("En emisión") first -> 2. Year Descending -> 3. Rating Descending
+    // Relevance score if text query provided
+    const getRelevance = (a: any) => {
+      if (!qNorm) return 0;
+      const t = (a.title || "").toLowerCase().trim();
+      if (t === qNorm) return 1000;
+      if (t.startsWith(qNorm)) return 500;
+      if (a.id === `tioanime-${qNorm}-tv` || a.id === `tioanime-${qNorm}`) return 400;
+      return 100;
+    };
+
+    // Sorting: 1. Search relevance (exact title match first) -> 2. Airing ("En emisión") first -> 3. Year Descending -> 4. Rating Descending
     results = [...results].sort((a, b) => {
+      if (qNorm) {
+        const relA = getRelevance(a);
+        const relB = getRelevance(b);
+        if (relA !== relB) return relB - relA;
+      }
+
       const isAiringA = a.status === "En emisión" ? 1 : 0;
       const isAiringB = b.status === "En emisión" ? 1 : 0;
       if (isAiringA !== isAiringB) {
