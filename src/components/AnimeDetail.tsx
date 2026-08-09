@@ -448,7 +448,7 @@ export default function AnimeDetail({
             <div className="flex flex-wrap items-center gap-3.5 text-xs md:text-sm text-neutral-200 font-semibold drop-shadow-md">
               <span className="flex items-center text-amber-400">
                 <Star className="h-4.5 w-4.5 mr-1 fill-amber-400 text-amber-400" />
-                {(currentAnime.rating || 0).toFixed(1)}
+                {(Number(currentAnime.rating) || 0).toFixed(1)}
               </span>
               <span>•</span>
               <span className="text-neutral-300">{currentAnime.year}</span>

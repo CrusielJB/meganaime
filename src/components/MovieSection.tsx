@@ -204,7 +204,7 @@ export const MovieSection: React.FC<MovieSectionProps> = ({
                 <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-neutral-300">
                   <span className="flex items-center text-amber-400 font-bold">
                     <Star className="h-4 w-4 mr-1 fill-amber-400 text-amber-400" />
-                    {(featuredMovie.rating || 0).toFixed(1)}
+                    {(Number(featuredMovie.rating) || 0).toFixed(1)}
                   </span>
                   <span>•</span>
                   <span>{featuredMovie.year}</span>

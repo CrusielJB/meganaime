@@ -161,7 +161,7 @@ export const SimulcastCalendar: React.FC<SimulcastCalendarProps> = ({
                   {/* Rating Badge */}
                   <div className="absolute top-3 right-3 bg-rose-500/90 text-white px-2.5 py-1 rounded-xl text-xs font-black flex items-center gap-1">
                     <Star className="h-3 w-3 fill-white text-white" />
-                    <span>{anime.rating.toFixed(1)}</span>
+                    <span>{(Number(anime.rating) || 0).toFixed(1)}</span>
                   </div>
                 </div>
 

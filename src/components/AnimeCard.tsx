@@ -57,7 +57,7 @@ export default function AnimeCard({
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
           <span className="rounded bg-black/60 backdrop-blur-md px-1.5 py-0.5 text-[10px] font-bold text-amber-400 border border-white/5 flex items-center">
             <Star className="h-3 w-3 mr-0.5 fill-amber-400 text-amber-400" />
-            {(anime.rating || 0).toFixed(1)}
+            {(Number(anime.rating) || 0).toFixed(1)}
           </span>
           <span className="rounded bg-black/60 backdrop-blur-md px-1.5 py-0.5 text-[10px] font-bold text-neutral-300 border border-white/5">
             {anime.year}
