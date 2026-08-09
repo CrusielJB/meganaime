@@ -19,6 +19,7 @@ import cron from "node-cron";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
 import { fuzzyMatch } from "./src/utils/titleNormalizer";
+import { postNewReleaseToFacebook } from "./src/utils/facebookAutoPost";
 
 // Initialize cache: check every 2 minutes for expired items
 const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
@@ -461,6 +462,37 @@ export async function createExpressApp() {
       success: true,
       message: "Correo verificado correctamente."
     });
+  });
+
+  // ── Automatic Facebook Page Posting Admin Endpoint ──
+  app.post("/api/admin/facebook-post", async (req, res) => {
+    const { animeId, episodeId, episodeNumber, title, coverUrl, genres, isMovie } = req.body || {};
+
+    if (!animeId || !episodeNumber) {
+      return res.status(400).json({ error: "Faltan parámetros (animeId, episodeNumber)." });
+    }
+
+    const item = LOCAL_CATALOG.find(a => a.id === animeId);
+    const targetTitle = title || item?.title || animeId;
+    const targetCover = coverUrl || item?.coverUrl || "";
+    const targetGenres = genres || item?.genres || ["Anime"];
+    const targetEpId = episodeId || `${animeId}-ep-${episodeNumber}`;
+
+    const result = await postNewReleaseToFacebook({
+      episodeId: targetEpId,
+      animeId,
+      animeTitle: targetTitle,
+      episodeNumber: parseInt(episodeNumber, 10),
+      coverUrl: targetCover,
+      genres: targetGenres,
+      isMovie: isMovie || item?.type === "Película"
+    });
+
+    if (result.success) {
+      return res.json({ success: true, message: `Publicación enviada exitosamente a Facebook Page!`, postId: result.postId });
+    } else {
+      return res.status(400).json({ success: false, error: result.error });
+    }
   });
 
   // --- API ROUTES ---
