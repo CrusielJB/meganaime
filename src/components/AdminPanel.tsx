@@ -363,10 +363,73 @@ export default function AdminPanel() {
       }
     }
 
+    async function loadRealUsers() {
+      try {
+        const usersRef = collection(db, 'users');
+        const usersSnap = await getDocs(usersRef);
+        const fetchedUsers: AdminUser[] = [];
+
+        usersSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const email = (data.email || '').toLowerCase();
+          const username = data.username || data.name || (email.includes('@') ? email.split('@')[0] : 'Usuario');
+          
+          // Exclude test, demo, and dummy accounts
+          const isTestEmail = email.includes('example.com') ||
+                              email.includes('test_rules') ||
+                              email.includes('test') ||
+                              email.includes('demo') ||
+                              email.includes('user1') ||
+                              email.includes('carlos.mendo') ||
+                              email.includes('sofia.r') ||
+                              email.includes('marcos.perez') ||
+                              email.includes('ana.gomez') ||
+                              email.includes('luis.mart') ||
+                              data.isTestUser === true ||
+                              data.isDemo === true;
+
+          if (!isTestEmail && email.length > 3) {
+            let regDate = data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : '2026-08-01';
+            let lastLoginStr = 'Reciente';
+            if (data.lastActive) {
+              const diffMs = Date.now() - new Date(data.lastActive).getTime();
+              const mins = Math.floor(diffMs / 60000);
+              if (mins < 60) lastLoginStr = `Hace ${Math.max(1, mins)} min`;
+              else if (mins < 1440) lastLoginStr = `Hace ${Math.floor(mins / 60)} horas`;
+              else lastLoginStr = `Hace ${Math.floor(mins / 1440)} días`;
+            }
+
+            fetchedUsers.push({
+              id: docSnap.id,
+              name: username,
+              email: data.email || 'Sin correo',
+              plan: data.isAdmin ? 'Premium' : (data.plan || 'Gratuito'),
+              status: 'Activo',
+              lastLogin: lastLoginStr,
+              registeredDate: regDate
+            });
+          }
+        });
+
+        // Sort newly registered users descending (newest first)
+        fetchedUsers.sort((a, b) => new Date(b.registeredDate).getTime() - new Date(a.registeredDate).getTime());
+
+        if (fetchedUsers.length > 0) {
+          setUsers(fetchedUsers);
+        }
+      } catch (err) {
+        console.error("Error loading real registered users from Firestore:", err);
+      }
+    }
+
     loadStats();
     loadCatalog();
+    loadRealUsers();
 
-    const interval = setInterval(loadStats, 60000);
+    const interval = setInterval(() => {
+      loadStats();
+      loadRealUsers();
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
