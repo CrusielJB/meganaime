@@ -78,9 +78,9 @@ ${item.androidUrl}
 export async function postNewReleaseToFacebook(
   payload: FacebookPostPayload
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
-  const pageId = process.env.FACEBOOK_PAGE_ID || "";
-  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "";
-  const domain = process.env.WEB_APP_URL || "https://meganaime-8c464.web.app";
+  const pageId = process.env.FACEBOOK_PAGE_ID || "1375353446122077";
+  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "EAAPY6fJZB22ABSCkBRNDTaALhaLA5xUKDOW02qfT6q838T0mjwk7LZCOyZC4d1jYoAhV7ZCist1lVVpdlWGBbu15L4P9YZCki9D4UYZAFYlG6y5eHo6NDBdvHFxHx6D9IgDdUkcBthE8srQtv9b3W1aRHjtWIZAX7IHEo9CxdEeHMBpQWIacZAyBDNBekI7jttTjDo8U";
+  const domain = process.env.WEB_APP_URL || "https://megaanime.net";
   const androidUrl = process.env.ANDROID_APP_URL || `${domain}/download/android`;
 
   if (!pageId || !pageToken) {
@@ -98,8 +98,8 @@ export async function postNewReleaseToFacebook(
     return { success: false, error: "Este episodio ya fue publicado en Facebook previamente." };
   }
 
-  // Prepare full cover image URL for Meta Facebook Graph API
-  let fullCoverUrl = payload.coverUrl;
+  // Prepare full cover image URL
+  let fullCoverUrl = payload.coverUrl || "https://cdn.myanimelist.net/images/anime/4/19644.jpg";
   if (!fullCoverUrl.startsWith("http")) {
     fullCoverUrl = `${domain}${fullCoverUrl.startsWith("/") ? "" : "/"}${fullCoverUrl}`;
   }
@@ -116,16 +116,32 @@ export async function postNewReleaseToFacebook(
 
   try {
     console.log(`[FB Auto-Post] 📤 Publishing cover photo post to Facebook Page (${pageId}) for "${payload.animeTitle}"...`);
-    const fbUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
+    
+    // Fetch image binary blob to ensure direct HD photo attachment on Meta Graph API
+    let imgBlob: Blob | null = null;
+    try {
+      const imgRes = await fetch(fullCoverUrl, { signal: AbortSignal.timeout(6000) });
+      if (imgRes.ok) {
+        imgBlob = await imgRes.blob();
+      }
+    } catch (e) {
+      console.warn(`[FB Auto-Post] Failed to fetch image binary from ${fullCoverUrl}, trying fallback URL...`);
+    }
 
+    if (!imgBlob) {
+      const fallbackRes = await fetch("https://cdn.myanimelist.net/images/anime/4/19644.jpg");
+      imgBlob = await fallbackRes.blob();
+    }
+
+    const formData = new FormData();
+    formData.append("source", imgBlob, "cover.jpg");
+    formData.append("caption", caption);
+    formData.append("access_token", pageToken);
+
+    const fbUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
     const response = await fetch(fbUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url: fullCoverUrl,
-        caption: caption,
-        access_token: pageToken
-      })
+      body: formData
     });
 
     const data = await response.json();
