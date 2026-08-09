@@ -42,8 +42,8 @@ function savePostedId(episodeId: string) {
 }
 
 /**
- * Formats an engaging, high-converting Facebook post in Spanish with hashtags and direct links.
- * Web link is clean: https://megaanime.net
+ * Formats an engaging, high-converting Facebook post in Spanish with hashtags and direct web link only.
+ * Mobile app line removed per user preference for now.
  */
 export function generateFacebookPostCaption(item: {
   animeTitle: string;
@@ -51,13 +51,11 @@ export function generateFacebookPostCaption(item: {
   genres?: string[];
   isMovie?: boolean;
   webUrl: string;
-  androidUrl: string;
 }): string {
   const epText = item.isMovie ? "¡PELÍCULA ESTRENO!" : `Capítulo ${item.episodeNumber}`;
   const genresText = item.genres && item.genres.length > 0 ? item.genres.slice(0, 3).join(", ") : "Anime";
   const hashtagAnime = item.animeTitle.replace(/[^a-zA-Z0-9]/g, "");
 
-  // Clean Web URL strictly https://megaanime.net
   const cleanWebUrl = "https://megaanime.net";
 
   return `🔥 ¡NUEVO ESTRENO DISPONIBLE EN megaAnime! 🔥
@@ -71,9 +69,6 @@ export function generateFacebookPostCaption(item: {
 🌐 Ver en la Web:
 ${cleanWebUrl}
 
-📱 Descargar App para Android:
-${item.androidUrl}
-
 #megaAnime #AnimeEnEspañol #${hashtagAnime} #EstrenoAnime #Otaku #AnimeHD`;
 }
 
@@ -86,7 +81,6 @@ export async function postNewReleaseToFacebook(
   const pageId = process.env.FACEBOOK_PAGE_ID || "1375353446122077";
   const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "EAAPY6fJZB22ABSCkBRNDTaALhaLA5xUKDOW02qfT6q838T0mjwk7LZCOyZC4d1jYoAhV7ZCist1lVVpdlWGBbu15L4P9YZCki9D4UYZAFYlG6y5eHo6NDBdvHFxHx6D9IgDdUkcBthE8srQtv9b3W1aRHjtWIZAX7IHEo9CxdEeHMBpQWIacZAyBDNBekI7jttTjDo8U";
   const domain = "https://megaanime.net";
-  const androidUrl = `${domain}/download/android`;
 
   if (!pageId || !pageToken) {
     console.log(`[FB Auto-Post] Skipped for "${payload.animeTitle}" Ep ${payload.episodeNumber} (FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN missing in .env)`);
@@ -118,8 +112,7 @@ export async function postNewReleaseToFacebook(
     episodeNumber: payload.episodeNumber,
     genres: payload.genres,
     isMovie: payload.isMovie,
-    webUrl: domain,
-    androidUrl
+    webUrl: domain
   });
 
   try {
@@ -215,7 +208,7 @@ export async function postNewReleaseToFacebook(
       }
     }
 
-    // ── Optional: Auto-share to Facebook Groups configured in FACEBOOK_GROUP_IDS ──
+    // Optional: Auto-share to Facebook Groups configured in FACEBOOK_GROUP_IDS
     const groupIdsRaw = process.env.FACEBOOK_GROUP_IDS || "";
     if (groupIdsRaw.trim().length > 0) {
       const groupIds = groupIdsRaw.split(",").map(g => g.trim()).filter(Boolean);
