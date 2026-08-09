@@ -343,9 +343,11 @@ export async function createExpressApp() {
     timezone: "America/New_York"
   });
   
-  // Pre-fetch the latest episodes immediately when server starts
-  updateEpisodesRepository();
-  refreshAiringEpisodesCount();
+  // Pre-fetch the latest episodes asynchronously after server startup
+  setTimeout(() => {
+    updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
+    refreshAiringEpisodesCount().catch(e => console.warn("Airing count error:", e));
+  }, 2000);
 
   // Body parsers
   app.use(express.json());
@@ -498,8 +500,8 @@ export async function createExpressApp() {
   // ── Meta Facebook Page Webhook Endpoints ──
   const FB_VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || "megaanime_webhook_verify_token_2026";
 
-  // GET /api/webhooks/facebook (Meta Verification Challenge Endpoint)
-  app.get("/api/webhooks/facebook", (req, res) => {
+  // GET /api/webhooks/facebook or /webhooks/facebook (Meta Verification Challenge Endpoint)
+  app.get(["/api/webhooks/facebook", "/webhooks/facebook"], (req, res) => {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
@@ -516,8 +518,8 @@ export async function createExpressApp() {
     return res.status(400).send("Faltan parámetros de verificación de Meta Webhook (hub.mode, hub.verify_token).");
   });
 
-  // POST /api/webhooks/facebook (Meta Events Receiver)
-  app.post("/api/webhooks/facebook", (req, res) => {
+  // POST /api/webhooks/facebook or /webhooks/facebook (Meta Events Receiver)
+  app.post(["/api/webhooks/facebook", "/webhooks/facebook"], (req, res) => {
     const body = req.body;
 
     if (body.object === "page") {
