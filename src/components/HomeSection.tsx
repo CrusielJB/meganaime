@@ -312,9 +312,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
     );
   }
 
-  // Netflix recommendation engine: "Porque viste X..."
+  // Netflix recommendation engine: "Porque viste X..." (Registered Users Only)
   const becauseYouWatchedData = useMemo(() => {
-    if (!continueWatching || continueWatching.length === 0) return null;
+    if (!currentUser || !continueWatching || continueWatching.length === 0) return null;
     const lastItem = continueWatching[0];
     const sourceAnime = lastItem.isManga ? lastItem.manga : lastItem.anime;
     if (!sourceAnime || !sourceAnime.genres || sourceAnime.genres.length === 0) return null;
@@ -337,7 +337,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
       sourceAnimeTitle: sourceAnime.title,
       animes: uniqueRecs
     };
-  }, [continueWatching, trendingAnimes, seasonalAnimes, movies]);
+  }, [currentUser, continueWatching, trendingAnimes, seasonalAnimes, movies]);
 
   return (
     <div className="space-y-14 animate-fade-in pb-16">
@@ -349,8 +349,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         onToggleFavorite={(id) => onToggleFavorite({ stopPropagation: () => {} } as any, id)}
       />
 
-      {/* SECTION: Porque viste X... (Netflix Recommendation Engine) */}
-      {becauseYouWatchedData && (
+      {/* SECTION: Porque viste X... (Netflix Recommendation Engine - Registered Users Only) */}
+      {currentUser && becauseYouWatchedData && (
         <section className="space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
