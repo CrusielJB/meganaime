@@ -152,6 +152,8 @@ export async function saveEpisodeProgress(
   animeCoverUrl?: string
 ) {
   if (!animeId || !episodeId || durationSeconds <= 0) return;
+  // Non-registered guest users: Do not save continue watching progress
+  if (!currentUser) return;
 
   // Normalize external IDs (e.g. consumet-21 → one-piece) before storing
   const normalizedAnimeId = normalizeAnimeId(animeId, animeTitle);

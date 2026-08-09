@@ -252,9 +252,13 @@ function AppContent() {
     }
   }, [setSelectedAnime, setActiveEpisodeId, currentUser]);
 
-  // Toggle favorite with event
+  // Toggle favorite with event (prompt auth for non-registered guest users)
   const handleToggleFavoriteWithEvent = (e: React.MouseEvent, animeId: string) => {
     e.stopPropagation();
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
     toggleFavorite(animeId);
   };
 
@@ -311,15 +315,7 @@ function AppContent() {
     );
   }
 
-  if (!currentUser) {
-    return (
-      <AuthModal
-        onSuccess={handleAuthSuccess}
-        isFullScreen={true}
-      />
-    );
-  }
-
+  // First-time users land directly on Homepage in guest mode without full-screen auth wall
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans selection:bg-rose-500 selection:text-white pb-12">
       

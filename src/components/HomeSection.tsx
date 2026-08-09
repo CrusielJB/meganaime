@@ -393,8 +393,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         </section>
       )}
 
-      {/* SECTION: Seguir Viendo (Netflix Style Carousel) */}
-      {continueWatching && continueWatching.length > 0 && (
+      {/* SECTION: Seguir Viendo (Netflix Style Carousel - Registered Users Only) */}
+      {currentUser && continueWatching && continueWatching.length > 0 && (
         <section className="space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">

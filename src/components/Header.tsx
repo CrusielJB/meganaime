@@ -134,7 +134,13 @@ export default function Header({
             <span>Categorías</span>
           </button>
           <button
-            onClick={() => setActiveTab("favoritos")}
+            onClick={() => {
+              if (!currentUser) {
+                onOpenAuth();
+              } else {
+                setActiveTab("favoritos");
+              }
+            }}
             className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all relative ${
               activeTab === "favoritos"
                 ? "bg-rose-500/10 text-rose-400"
@@ -151,7 +157,13 @@ export default function Header({
           </button>
           
           <button
-            onClick={() => setActiveTab("descargas")}
+            onClick={() => {
+              if (!currentUser) {
+                onOpenAuth();
+              } else {
+                setActiveTab("descargas");
+              }
+            }}
             className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               activeTab === "descargas"
                 ? "bg-rose-500/10 text-rose-400"
@@ -330,7 +342,13 @@ export default function Header({
           <span>Categorías</span>
         </button>
         <button
-          onClick={() => setActiveTab("favoritos")}
+          onClick={() => {
+            if (!currentUser) {
+              onOpenAuth();
+            } else {
+              setActiveTab("favoritos");
+            }
+          }}
           className={`flex flex-col items-center py-1.5 px-3 relative transition-colors ${
             activeTab === "favoritos" ? "text-rose-400" : "text-neutral-500"
           }`}
@@ -344,7 +362,13 @@ export default function Header({
           )}
         </button>
         <button
-          onClick={() => setActiveTab("descargas")}
+          onClick={() => {
+            if (!currentUser) {
+              onOpenAuth();
+            } else {
+              setActiveTab("descargas");
+            }
+          }}
           className={`flex flex-col items-center py-1.5 px-3 transition-colors ${
             activeTab === "descargas" ? "text-rose-400" : "text-neutral-500"
           }`}
