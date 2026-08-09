@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { getAnimesWithEpisodes } from "./animeDb";
 
 export interface FacebookPostPayload {
   episodeId: string;
@@ -98,10 +99,14 @@ export async function postNewReleaseToFacebook(
     return { success: false, error: "Este episodio ya fue publicado en Facebook previamente." };
   }
 
-  // Prepare full cover image URL
-  let fullCoverUrl = payload.coverUrl || "https://cdn.myanimelist.net/images/anime/4/19644.jpg";
-  if (!fullCoverUrl.startsWith("http")) {
-    fullCoverUrl = `${domain}${fullCoverUrl.startsWith("/") ? "" : "/"}${fullCoverUrl}`;
+  // Look up actual anime item in catalog if coverUrl is missing or invalid
+  let targetCoverUrl = payload.coverUrl;
+  if (!targetCoverUrl || targetCoverUrl.length < 10 || !targetCoverUrl.startsWith("http")) {
+    const catalog = getAnimesWithEpisodes();
+    const item = catalog.find(a => a.id === payload.animeId || a.title.toLowerCase() === payload.animeTitle.toLowerCase());
+    if (item && item.coverUrl) {
+      targetCoverUrl = item.coverUrl;
+    }
   }
 
   const webUrl = `${domain}?anime=${encodeURIComponent(payload.animeId)}&ep=${encodeURIComponent(payload.episodeId)}`;
@@ -119,41 +124,86 @@ export async function postNewReleaseToFacebook(
     
     // Fetch image binary blob to ensure direct HD photo attachment on Meta Graph API
     let imgBlob: Blob | null = null;
-    try {
-      const imgRes = await fetch(fullCoverUrl, { signal: AbortSignal.timeout(6000) });
-      if (imgRes.ok) {
-        imgBlob = await imgRes.blob();
+    if (targetCoverUrl && targetCoverUrl.startsWith("http")) {
+      try {
+        const imgRes = await fetch(targetCoverUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(8000)
+        });
+        if (imgRes.ok) {
+          const contentType = imgRes.headers.get("content-type") || "";
+          if (contentType.includes("image/")) {
+            imgBlob = await imgRes.blob();
+          }
+        }
+      } catch (e) {
+        console.warn(`[FB Auto-Post] Failed to fetch cover image from ${targetCoverUrl}:`, e);
       }
-    } catch (e) {
-      console.warn(`[FB Auto-Post] Failed to fetch image binary from ${fullCoverUrl}, trying fallback URL...`);
     }
 
+    // Secondary fallback: lookup anime by title in catalog if initial blob fetch failed
     if (!imgBlob) {
-      const fallbackRes = await fetch("https://cdn.myanimelist.net/images/anime/4/19644.jpg");
-      imgBlob = await fallbackRes.blob();
+      const catalog = getAnimesWithEpisodes();
+      const item = catalog.find(a => a.title.toLowerCase().includes(payload.animeTitle.toLowerCase()));
+      if (item && item.coverUrl && item.coverUrl.startsWith("http")) {
+        try {
+          const fallbackRes = await fetch(item.coverUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
+            signal: AbortSignal.timeout(8000)
+          });
+          if (fallbackRes.ok && (fallbackRes.headers.get("content-type") || "").includes("image/")) {
+            imgBlob = await fallbackRes.blob();
+          }
+        } catch (e) {}
+      }
     }
 
-    const formData = new FormData();
-    formData.append("source", imgBlob, "cover.jpg");
-    formData.append("caption", caption);
-    formData.append("access_token", pageToken);
+    if (imgBlob && imgBlob.size > 500) {
+      const formData = new FormData();
+      formData.append("source", imgBlob, "cover.jpg");
+      formData.append("caption", caption);
+      formData.append("access_token", pageToken);
 
-    const fbUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
-    const response = await fetch(fbUrl, {
+      const fbUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
+      const response = await fetch(fbUrl, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.id || data.post_id)) {
+        const postId = data.id || data.post_id;
+        savePostedId(payload.episodeId);
+        console.log(`[FB Auto-Post] 🎉 Publicación de foto exitosa en Facebook! Post ID: ${postId}`);
+        return { success: true, postId };
+      }
+    }
+
+    // Fallback: Feed post with link if photo binary was unavailable
+    console.log(`[FB Auto-Post] Photo binary unavailable, publishing feed link post to Facebook Page...`);
+    const feedUrl = `https://graph.facebook.com/v19.0/${pageId}/feed`;
+    const feedRes = await fetch(feedUrl, {
       method: "POST",
-      body: formData
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: caption,
+        link: webUrl,
+        access_token: pageToken
+      })
     });
 
-    const data = await response.json();
-
-    if (response.ok && (data.id || data.post_id)) {
-      const postId = data.id || data.post_id;
+    const feedData = await feedRes.json();
+    if (feedRes.ok && (feedData.id || feedData.post_id)) {
+      const postId = feedData.id || feedData.post_id;
       savePostedId(payload.episodeId);
-      console.log(`[FB Auto-Post] 🎉 Publicación exitosa en Facebook! Post ID: ${postId}`);
+      console.log(`[FB Auto-Post] 🎉 Publicación de enlace exitosa en Facebook! Post ID: ${postId}`);
       return { success: true, postId };
     } else {
-      const errorMsg = data.error?.message || JSON.stringify(data);
-      console.error(`[FB Auto-Post] ❌ Error de Facebook Graph API:`, errorMsg);
+      const errorMsg = feedData.error?.message || JSON.stringify(feedData);
       return { success: false, error: errorMsg };
     }
   } catch (err: any) {
