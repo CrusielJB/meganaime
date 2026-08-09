@@ -143,10 +143,13 @@ export async function postNewReleaseToFacebook(
       }
     }
 
-    // Secondary fallback: lookup anime by title in catalog if initial blob fetch failed
+    // Secondary fallback: lookup anime by exact title or ID in catalog if initial blob fetch failed
     if (!imgBlob) {
       const catalog = getAnimesWithEpisodes();
-      const item = catalog.find(a => a.title.toLowerCase().includes(payload.animeTitle.toLowerCase()));
+      const item = catalog.find(a => a.title.toLowerCase() === payload.animeTitle.toLowerCase())
+        || catalog.find(a => a.id === payload.animeId)
+        || catalog.find(a => a.title.toLowerCase().startsWith(payload.animeTitle.toLowerCase()));
+
       if (item && item.coverUrl && item.coverUrl.startsWith("http")) {
         try {
           const fallbackRes = await fetch(item.coverUrl, {
