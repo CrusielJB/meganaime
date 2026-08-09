@@ -495,6 +495,39 @@ export async function createExpressApp() {
     }
   });
 
+  // ── Meta Facebook Page Webhook Endpoints ──
+  const FB_VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || "megaanime_webhook_verify_token_2026";
+
+  // GET /api/webhooks/facebook (Meta Verification Challenge Endpoint)
+  app.get("/api/webhooks/facebook", (req, res) => {
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+
+    if (mode && token) {
+      if (mode === "subscribe" && token === FB_VERIFY_TOKEN) {
+        console.log(`[FB Webhook] ✅ Meta Webhook Verification successful! Challenge returned: ${challenge}`);
+        return res.status(200).send(challenge);
+      } else {
+        console.warn(`[FB Webhook] ❌ Verification failed. Token mismatch: received "${token}", expected "${FB_VERIFY_TOKEN}"`);
+        return res.sendStatus(403);
+      }
+    }
+    return res.status(400).send("Faltan parámetros de verificación de Meta Webhook (hub.mode, hub.verify_token).");
+  });
+
+  // POST /api/webhooks/facebook (Meta Events Receiver)
+  app.post("/api/webhooks/facebook", (req, res) => {
+    const body = req.body;
+
+    if (body.object === "page") {
+      console.log(`[FB Webhook] 📩 Event received from Facebook Page:`, JSON.stringify(body, null, 2));
+      return res.status(200).send("EVENT_RECEIVED");
+    } else {
+      return res.sendStatus(404);
+    }
+  });
+
   // --- API ROUTES ---
 
   // 1. Get Home Screen lists (Seasonal, Popular, Episodes)
