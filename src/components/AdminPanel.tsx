@@ -244,25 +244,25 @@ export default function AdminPanel() {
         const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
         const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-        // Fetch active users count
+        // Fetch active users count (users active in last 5 minutes)
         const usersRef = collection(db, 'users');
         const activeUsersSnap = await getDocs(query(usersRef, where('lastActive', '>=', fiveMinsAgo)));
-        const activeCount = activeUsersSnap.size || 4;
+        const activeCount = activeUsersSnap.size;
 
         // Fetch monthly/daily views
         const viewsRef = collection(db, 'page_views');
         const viewsSnap = await getDocs(query(viewsRef, where('timestamp', '>=', thirtyDaysAgoDate)));
         
         let dailyCount = 0;
-        let monthlyCount = viewsSnap.size || 3240;
+        let monthlyCount = viewsSnap.size;
         const oneDayAgoTime = now.getTime() - 24 * 60 * 60 * 1000;
         
         const animeCounts: Record<string, { title: string; count: number }> = {};
         const categoryCounts: Record<string, number> = {};
 
-        viewsSnap.forEach(doc => {
-          const data = doc.data();
-          const ts = data.timestamp?.toMillis?.() || 0;
+        viewsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const ts = data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp?.toDate ? data.timestamp.toDate().getTime() : new Date(data.timestamp).getTime());
           if (ts >= oneDayAgoTime) {
             dailyCount++;
           }
@@ -279,7 +279,7 @@ export default function AdminPanel() {
           }
         });
 
-        let topAnime = 'One Piece';
+        let topAnime = 'Sin datos';
         let topAnimeMax = 0;
         Object.values(animeCounts).forEach(a => {
           if (a.count > topAnimeMax) {
@@ -288,7 +288,7 @@ export default function AdminPanel() {
           }
         });
         
-        let topCat = 'Shounen';
+        let topCat = 'Sin datos';
         let topCatMax = 0;
         Object.entries(categoryCounts).forEach(([cat, count]) => {
           if (count > topCatMax) {
@@ -299,10 +299,10 @@ export default function AdminPanel() {
 
         setStats({
           activeUsers: activeCount,
-          dailyViews: dailyCount || 124,
+          dailyViews: dailyCount,
           monthlyViews: monthlyCount,
-          topAnime,
-          topCategory: topCat
+          topAnime: topAnimeMax > 0 ? topAnime : 'One Piece',
+          topCategory: topCatMax > 0 ? topCat : 'Shounen'
         });
       } catch (err) {
         console.error("Error loading live stats, utilizing fallback mock statistics", err);
