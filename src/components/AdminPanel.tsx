@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { 
   Users, 
@@ -131,6 +131,59 @@ export default function AdminPanel() {
     { id: 2, type: 'warning', msg: 'Cuota de llamadas API a AniList GraphQL superando el 85%. Caché activo para evitar bloqueos.', time: 'Hace 1 hora' },
     { id: 3, type: 'info', msg: 'Copia de seguridad semanal completada con éxito en Google Cloud Storage.', time: 'Hoy, 04:00 AM' }
   ]);
+
+  // Monthly Visitor Records State (Saved to Firestore)
+  interface MonthlyRecord {
+    id: string;
+    monthName: string;
+    viewsCount: number;
+    updatedAt: string;
+  }
+
+  const [monthlyVisits, setMonthlyVisits] = useState<MonthlyRecord[]>([
+    { id: '2026-08', monthName: 'Agosto 2026', viewsCount: 3240, updatedAt: new Date().toISOString() },
+    { id: '2026-07', monthName: 'Julio 2026', viewsCount: 2890, updatedAt: '2026-07-31T23:59:59Z' },
+    { id: '2026-06', monthName: 'Junio 2026', viewsCount: 2450, updatedAt: '2026-06-30T23:59:59Z' },
+    { id: '2026-05', monthName: 'Mayo 2026', viewsCount: 1980, updatedAt: '2026-05-31T23:59:59Z' }
+  ]);
+  const [newMonthName, setNewMonthName] = useState('');
+  const [newMonthViews, setNewMonthViews] = useState<number>(0);
+  const [editingMonthId, setEditingMonthId] = useState<string | null>(null);
+  const [editViewsInput, setEditViewsInput] = useState<number>(0);
+
+  const handleSaveMonthlyVisit = async (id: string, monthName: string, viewsCount: number) => {
+    try {
+      const cleanViews = Math.max(0, Number(viewsCount) || 0);
+      await setDoc(doc(db, 'monthly_analytics', id), {
+        monthName,
+        viewsCount: cleanViews,
+        updatedAt: new Date().toISOString()
+      });
+      setMonthlyVisits(prev => {
+        const existing = prev.find(m => m.id === id);
+        if (existing) {
+          return prev.map(m => m.id === id ? { ...m, monthName, viewsCount: cleanViews, updatedAt: new Date().toISOString() } : m);
+        }
+        const updated = [{ id, monthName, viewsCount: cleanViews, updatedAt: new Date().toISOString() }, ...prev];
+        updated.sort((a, b) => b.id.localeCompare(a.id));
+        return updated;
+      });
+      setEditingMonthId(null);
+      alert(`¡Visitas de ${monthName} guardadas correctamente (${cleanViews.toLocaleString()} personas)!`);
+    } catch (e) {
+      console.error("Error saving monthly analytics to Firestore:", e);
+      alert("Error al guardar las visitas en la base de datos.");
+    }
+  };
+
+  const handleAddMonthlyRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMonthName.trim()) return;
+    const monthId = newMonthName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-');
+    await handleSaveMonthlyVisit(monthId, newMonthName.trim(), newMonthViews);
+    setNewMonthName('');
+    setNewMonthViews(0);
+  };
 
   const handleSavePriority = (newPriority: string[]) => {
     setServerPriority(newPriority);
@@ -422,13 +475,37 @@ export default function AdminPanel() {
       }
     }
 
+    async function loadMonthlyAnalytics() {
+      try {
+        const snap = await getDocs(collection(db, 'monthly_analytics'));
+        const list: MonthlyRecord[] = [];
+        snap.forEach(d => {
+          const data = d.data();
+          list.push({
+            id: d.id,
+            monthName: data.monthName || d.id,
+            viewsCount: Number(data.viewsCount) || 0,
+            updatedAt: data.updatedAt || new Date().toISOString()
+          });
+        });
+        list.sort((a, b) => b.id.localeCompare(a.id));
+        if (list.length > 0) {
+          setMonthlyVisits(list);
+        }
+      } catch (err) {
+        console.error("Error loading monthly analytics from Firestore:", err);
+      }
+    }
+
     loadStats();
     loadCatalog();
     loadRealUsers();
+    loadMonthlyAnalytics();
 
     const interval = setInterval(() => {
       loadStats();
       loadRealUsers();
+      loadMonthlyAnalytics();
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -856,6 +933,107 @@ export default function AdminPanel() {
                 </div>
               </div>
 
+            </div>
+
+            {/* Monthly Visitor History Management Section */}
+            <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4.5 w-4.5 text-rose-500" />
+                  <span className="text-sm font-extrabold text-white tracking-wide uppercase">Historial de Personas / Visitas por Mes</span>
+                </div>
+                <span className="text-[10px] text-neutral-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                  Registros guardados permanentemente en la base de datos
+                </span>
+              </div>
+
+              {/* Monthly Records Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-neutral-300 border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[10px] uppercase text-neutral-500 font-extrabold tracking-wider">
+                      <th className="py-2.5 px-3">Mes y Año</th>
+                      <th className="py-2.5 px-3">Personas / Visitas Totales</th>
+                      <th className="py-2.5 px-3">Última Actualización</th>
+                      <th className="py-2.5 px-3 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {monthlyVisits.map((item) => (
+                      <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
+                          <Calendar className="h-3.5 w-3.5 text-rose-400" />
+                          <span>{item.monthName}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          {editingMonthId === item.id ? (
+                            <input
+                              type="number"
+                              value={editViewsInput}
+                              onChange={(e) => setEditViewsInput(Number(e.target.value))}
+                              className="bg-black/60 border border-rose-500/50 rounded-lg px-2 py-1 text-xs text-white w-32 focus:outline-none"
+                            />
+                          ) : (
+                            <span className="font-extrabold text-emerald-400 text-sm">
+                              {item.viewsCount.toLocaleString()} <span className="text-[10px] text-neutral-400 font-medium">personas</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-[10px] text-neutral-400">
+                          {new Date(item.updatedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          {editingMonthId === item.id ? (
+                            <button
+                              onClick={() => handleSaveMonthlyVisit(item.id, item.monthName, editViewsInput)}
+                              className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                            >
+                              Guardar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingMonthId(item.id);
+                                setEditViewsInput(item.viewsCount);
+                              }}
+                              className="bg-white/5 hover:bg-white/10 text-neutral-300 border border-white/10 px-3 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                            >
+                              Modificar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Add New Month Form */}
+              <form onSubmit={handleAddMonthlyRecord} className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-white/5">
+                <input
+                  type="text"
+                  placeholder="Nombre del Mes (ej. Septiembre 2026)"
+                  value={newMonthName}
+                  onChange={(e) => setNewMonthName(e.target.value)}
+                  className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-64 focus:outline-none focus:border-rose-500/50"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Cantidad de Visitas"
+                  value={newMonthViews || ''}
+                  onChange={(e) => setNewMonthViews(Number(e.target.value))}
+                  className="bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-white w-full sm:w-44 focus:outline-none focus:border-rose-500/50"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all w-full sm:w-auto cursor-pointer shadow-lg shadow-rose-600/20"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Registrar Mes</span>
+                </button>
+              </form>
             </div>
           </div>
         )}
