@@ -1212,7 +1212,6 @@ export default function AdminPanel() {
 
             </div>
           </div>
-          </div>
         )}
 
         {/* 2. CATALOGUE TAB */}
