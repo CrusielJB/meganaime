@@ -709,7 +709,7 @@ export async function createExpressApp() {
     const { id } = req.params;
     const cacheKey = `anime_${id}`;
     const cachedData = apiCache.get(cacheKey);
-    if (cachedData) return res.json(cachedData);
+    if (cachedData && req.query.nocache !== "true" && req.query.v === undefined) return res.json(cachedData);
 
     try {
       // Check local catalog first
@@ -749,7 +749,7 @@ export async function createExpressApp() {
         }));
 
         const fullAnime = { ...catalogItem, episodesCount: count, episodes };
-        apiCache.set(cacheKey, fullAnime, 7200);
+        apiCache.set(cacheKey, fullAnime, 300);
         return res.json(fullAnime);
       }
 
