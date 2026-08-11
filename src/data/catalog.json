@@ -1021,11 +1021,11 @@
       "Película",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.5,
     "type": "Película",
     "episodesCount": 1,
-    "year": 2020,
+    "year": 2026,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken-movie-2-soukai-no-namidahen"
   },
@@ -2898,7 +2898,7 @@
     "rating": 9.4,
     "type": "Anime",
     "episodesCount": 16,
-    "year": 2022,
+    "year": 2026,
     "episodes": [
       {
         "id": "tioanime-tensei-shitara-slime-datta-ken-4th-season-ep-1",
@@ -9461,7 +9461,7 @@
     "rating": 8.9,
     "type": "Anime",
     "episodesCount": 24,
-    "year": 2019,
+    "year": 2024,
     "episodes": [
       {
         "id": "tioanime-tensei-shitara-slime-datta-ken-3rd-season-ep-1",
@@ -10619,8 +10619,8 @@
     "status": "Finalizado",
     "rating": 9.2,
     "type": "Anime",
-    "episodesCount": 12,
-    "year": 2022,
+    "episodesCount": 3,
+    "year": 2023,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken-coleus-no-yume"
   },
@@ -17688,7 +17688,7 @@
     "rating": 8.7,
     "type": "Anime",
     "episodesCount": 12,
-    "year": 2024,
+    "year": 2021,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken-2nd-season-part-2"
   },
@@ -18844,7 +18844,7 @@
     "rating": 8.9,
     "type": "Anime",
     "episodesCount": 12,
-    "year": 2020,
+    "year": 2021,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken-2nd-season"
   },
@@ -25811,8 +25811,8 @@
     "status": "Finalizado",
     "rating": 9,
     "type": "Anime",
-    "episodesCount": 12,
-    "year": 2021,
+    "episodesCount": 24,
+    "year": 2018,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken"
   },
@@ -78708,7 +78708,7 @@
     "status": "Finalizado",
     "rating": 9.1,
     "type": "OVA",
-    "episodesCount": 1,
+    "episodesCount": 5,
     "year": 2019,
     "episodes": [],
     "external_id": "tensei-shitara-slime-datta-ken-ova"

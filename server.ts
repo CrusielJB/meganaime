@@ -25,6 +25,7 @@ startPeriodicFacebookAutoPoster();
 
 // Initialize cache: check every 2 minutes for expired items
 const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
+apiCache.flushAll();
 
 // In-memory simulation of user storage (active session helper)
 const USERS_DB: Record<string, { username: string; email: string; favorites: string[] }> = {};
