@@ -192,29 +192,9 @@ export async function postNewReleaseToFacebook(
       }
     }
 
-    // Fallback: Feed post with link if photo binary was unavailable
     if (!postId) {
-      console.log(`[FB Auto-Post] Photo binary unavailable, publishing feed link post to Facebook Page...`);
-      const feedUrl = `https://graph.facebook.com/v19.0/${pageId}/feed`;
-      const feedRes = await fetch(feedUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: caption,
-          link: domain,
-          access_token: pageToken
-        })
-      });
-
-      const feedData = await feedRes.json();
-      if (feedRes.ok && (feedData.id || feedData.post_id)) {
-        postId = feedData.id || feedData.post_id;
-        savePostedId(payload.episodeId);
-        console.log(`[FB Auto-Post] 🎉 Publicación de enlace exitosa en Facebook! Post ID: ${postId}`);
-      } else {
-        const errorMsg = feedData.error?.message || JSON.stringify(feedData);
-        return { success: false, error: errorMsg };
-      }
+      console.warn(`[FB Auto-Post] ⚠️ Skipping Facebook post for "${payload.animeTitle}" because cover image binary blob was unavailable (prevents link preview cards).`);
+      return { success: false, error: "No se pudo obtener la imagen de portada en HD para la foto." };
     }
 
     // Optional: Auto-share to Facebook Groups configured in FACEBOOK_GROUP_IDS
@@ -301,11 +281,6 @@ export function startPeriodicFacebookAutoPoster() {
     }
   };
 
-  // Schedule task every 3 hours: "0 */3 * * *"
+  // Schedule task every 3 hours strictly: "0 */3 * * *"
   cron.schedule("0 */3 * * *", publishRandomAnime);
-
-  // Trigger initial publication immediately on startup
-  setTimeout(() => {
-    publishRandomAnime().catch(console.error);
-  }, 10000);
 }
