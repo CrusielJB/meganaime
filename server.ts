@@ -19,10 +19,7 @@ console.log(`[Catalog] Loaded ${LOCAL_CATALOG.length} titles from local catalog.
 import cron from "node-cron";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
-import { postNewReleaseToFacebook, startPeriodicFacebookAutoPoster } from "./src/utils/facebookAutoPost";
-
-// Initialize 3-hour periodic random anime Facebook publisher
-startPeriodicFacebookAutoPoster();
+import { postNewReleaseToFacebook, publishRandomAnimeIfDue } from "./src/utils/facebookAutoPost";
 
 // Initialize cache: check every 2 minutes for expired items
 const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });
@@ -468,6 +465,18 @@ export async function createExpressApp() {
       success: true,
       message: "Correo verificado correctamente."
     });
+  });
+
+  // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from external cron or admin panel) ──
+  // Internally guards against double-posting: will skip if last post was < 3 hours ago.
+  app.post("/api/admin/fb-cron", async (req, res) => {
+    const secret = req.headers["x-cron-secret"] || req.body?.secret;
+    const CRON_SECRET = process.env.CRON_SECRET || "megaanime_cron_2026";
+    if (secret !== CRON_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const result = await publishRandomAnimeIfDue();
+    return res.json(result);
   });
 
   // ── Automatic Facebook Page Posting Admin Endpoint ──
