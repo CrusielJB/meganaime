@@ -18,8 +18,10 @@ console.log(`[Catalog] Loaded ${LOCAL_CATALOG.length} titles from local catalog.
 import cron from "node-cron";
 import NodeCache from "node-cache";
 import nodemailer from "nodemailer";
-import { fuzzyMatch } from "./src/utils/titleNormalizer";
-import { postNewReleaseToFacebook } from "./src/utils/facebookAutoPost";
+import { postNewReleaseToFacebook, startPeriodicFacebookAutoPoster } from "./src/utils/facebookAutoPost";
+
+// Initialize 3-hour periodic random anime Facebook publisher
+startPeriodicFacebookAutoPoster();
 
 // Initialize cache: check every 2 minutes for expired items
 const apiCache = new NodeCache({ stdTTL: 1800, checkperiod: 120 });

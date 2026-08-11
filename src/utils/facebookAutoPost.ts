@@ -236,3 +236,47 @@ export async function postNewReleaseToFacebook(
     return { success: false, error: err.message || "Error de red al conectar con Facebook" };
   }
 }
+
+import cron from "node-cron";
+
+/**
+ * Initializes a 3-hour cron schedule that automatically selects a random anime from the catalog
+ * and publishes it with high-res cover image to Facebook Page MegaAnime.
+ */
+export function startPeriodicFacebookAutoPoster() {
+  console.log("[FB Periodic Poster] 🤖 Initializing 3-hour automatic Facebook publication scheduler...");
+
+  const publishRandomAnime = async () => {
+    try {
+      const catalog = getAnimesWithEpisodes();
+      if (!catalog || catalog.length === 0) return;
+
+      const randomIndex = Math.floor(Math.random() * catalog.length);
+      const randomAnime = catalog[randomIndex];
+
+      console.log(`[FB Periodic Poster] ⏰ 3-Hour Cron Triggered: Publishing "${randomAnime.title}" (ID: ${randomAnime.id})...`);
+
+      const payload: FacebookPostPayload = {
+        episodeId: `periodic-${randomAnime.id}-${Date.now()}`,
+        animeId: randomAnime.id,
+        animeTitle: randomAnime.title,
+        episodeNumber: randomAnime.episodesCount || 12,
+        coverUrl: randomAnime.coverUrl || randomAnime.cover || "",
+        genres: randomAnime.genres,
+        isMovie: randomAnime.type === "Película"
+      };
+
+      await postNewReleaseToFacebook(payload);
+    } catch (e) {
+      console.error("[FB Periodic Poster] Error publishing random anime to Facebook:", e);
+    }
+  };
+
+  // Schedule task every 3 hours: "0 */3 * * *"
+  cron.schedule("0 */3 * * *", publishRandomAnime);
+
+  // Trigger initial publication immediately on startup
+  setTimeout(() => {
+    publishRandomAnime().catch(console.error);
+  }, 10000);
+}
