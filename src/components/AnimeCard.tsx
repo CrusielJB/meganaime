@@ -65,28 +65,19 @@ export default function AnimeCard({
         </div>
 
 
-        {/* Heart / Trash Quitar Button (Manual click handler, stops propagation) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(e, anime.id);
-          }}
-          className={`absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg border backdrop-blur-md transition-all z-20 cursor-pointer shadow-lg ${
-            isFavorite
-              ? "bg-rose-600/90 border-rose-500 text-white hover:bg-rose-700 hover:scale-105 active:scale-95 shadow-rose-950/50"
-              : "bg-black/50 border-white/10 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/20"
-          }`}
-          title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          {isFavorite ? (
-            <>
-              <Trash2 className="h-3.5 w-3.5 text-rose-100" />
-              <span className="text-[10px] font-extrabold text-white uppercase tracking-wider">Quitar</span>
-            </>
-          ) : (
+        {/* Heart Icon — only shown when NOT in favorites. Quitar is handled by FavoriteSection overlay */}
+        {!isFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(e, anime.id);
+            }}
+            className="absolute bottom-2 right-2 p-1.5 rounded-lg border backdrop-blur-md transition z-20 bg-black/50 border-white/10 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/20"
+            title="Agregar a favoritos"
+          >
             <Heart className="h-4 w-4" />
-          )}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Info Body */}
