@@ -708,8 +708,7 @@ export async function createExpressApp() {
   app.get("/api/anime/:id", async (req, res) => {
     const { id } = req.params;
     const cacheKey = `anime_${id}`;
-    const cachedData = apiCache.get(cacheKey);
-    if (cachedData && req.query.nocache !== "true" && req.query.v === undefined) return res.json(cachedData);
+    // Always evaluate catalog data directly to reflect instant metadata updates
 
     try {
       // Check local catalog first
