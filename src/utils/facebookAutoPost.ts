@@ -139,25 +139,34 @@ export async function postNewReleaseToFacebook(
       }
     }
 
-    // Secondary fallback: lookup anime by exact title or ID in catalog if initial blob fetch failed
+    // Tertiary fallback: query AniList for high-res cover image URL to guarantee 100% visible photo posts
     if (!imgBlob) {
-      const catalog = getAnimesWithEpisodes();
-      const item = catalog.find(a => a.title.toLowerCase() === payload.animeTitle.toLowerCase())
-        || catalog.find(a => a.id === payload.animeId)
-        || catalog.find(a => a.title.toLowerCase().startsWith(payload.animeTitle.toLowerCase()));
-
-      if (item && item.coverUrl && item.coverUrl.startsWith("http")) {
-        try {
-          const fallbackRes = await fetch(item.coverUrl, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-            signal: AbortSignal.timeout(8000)
-          });
-          if (fallbackRes.ok && (fallbackRes.headers.get("content-type") || "").includes("image/")) {
-            imgBlob = await fallbackRes.blob();
+      try {
+        console.log(`[FB Auto-Post] 🔍 Fetching AniList HD cover for "${payload.animeTitle}"...`);
+        const query = `
+          query ($search: String) {
+            Media(search: $search, type: ANIME) {
+              coverImage { extraLarge large }
+            }
           }
-        } catch (e) {}
+        `;
+        const aniRes = await fetch("https://graphql.anilist.co", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, variables: { search: payload.animeTitle } })
+        });
+        if (aniRes.ok) {
+          const aniData = await aniRes.json();
+          const aniCover = aniData?.data?.Media?.coverImage?.extraLarge || aniData?.data?.Media?.coverImage?.large;
+          if (aniCover && aniCover.startsWith("http")) {
+            const aniImgRes = await fetch(aniCover, { signal: AbortSignal.timeout(8000) });
+            if (aniImgRes.ok) {
+              imgBlob = await aniImgRes.blob();
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[FB Auto-Post] AniList fallback failed for ${payload.animeTitle}:`, e);
       }
     }
 
