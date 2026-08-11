@@ -12,10 +12,8 @@ const IS_BROWSER = typeof window !== "undefined";
 let _catalog: Anime[] | null = null;
 
 function loadCatalog(): Anime[] {
-  if (_catalog !== null) return _catalog;
   if (IS_BROWSER) {
-    _catalog = [];
-    return _catalog;
+    return [];
   }
   // Server-side: load from JSON file via fs.readFileSync — NOT bundled by esbuild
   try {

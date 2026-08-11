@@ -11,7 +11,8 @@ import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
 import { MOCK_ANIMES, getAnimesWithEpisodes } from "./src/utils/animeDb";
 
-// Local catalog — loaded once at startup from dist/catalog.json
+// Local catalog — loaded dynamically from catalog.json
+const getLocalCatalog = () => getAnimesWithEpisodes();
 let LOCAL_CATALOG = getAnimesWithEpisodes();
 console.log(`[Catalog] Loaded ${LOCAL_CATALOG.length} titles from local catalog.`);
 
@@ -712,7 +713,7 @@ export async function createExpressApp() {
 
     try {
       // Check local catalog first
-      const catalogItem = LOCAL_CATALOG.find(a => a.id === id || a.id.replace(/^tioanime-/, "") === id);
+      const catalogItem = getLocalCatalog().find(a => a.id === id || a.id.replace(/^tioanime-/, "") === id);
       if (catalogItem) {
         const isMovie = catalogItem.type === "Película";
         const isOVA = catalogItem.type === "OVA";
