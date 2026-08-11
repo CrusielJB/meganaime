@@ -240,35 +240,55 @@ export async function postNewReleaseToFacebook(
 import cron from "node-cron";
 
 /**
- * Initializes a 3-hour cron schedule that automatically selects a random anime from the catalog
- * and publishes it with high-res cover image to Facebook Page MegaAnime.
+ * Initializes a 3-hour cron schedule that automatically selects a random UNPUBLISHED anime from the catalog
+ * and publishes it with high-res cover image to Facebook Page MegaAnime without ever repeating.
  */
 export function startPeriodicFacebookAutoPoster() {
-  console.log("[FB Periodic Poster] 🤖 Initializing 3-hour automatic Facebook publication scheduler...");
+  console.log("[FB Periodic Poster] 🤖 Initializing 3-hour non-repeating Facebook publication scheduler...");
 
   const publishRandomAnime = async () => {
     try {
       const catalog = getAnimesWithEpisodes();
       if (!catalog || catalog.length === 0) return;
 
-      const randomIndex = Math.floor(Math.random() * catalog.length);
-      const randomAnime = catalog[randomIndex];
+      const postedSet = getPostedSet();
 
-      console.log(`[FB Periodic Poster] ⏰ 3-Hour Cron Triggered: Publishing "${randomAnime.title}" (ID: ${randomAnime.id})...`);
+      // Filter catalog to exclude any anime that has already been posted to Facebook
+      let unpostedAnimes = catalog.filter(a => {
+        const idKey = a.id;
+        const titleKey = a.title.toLowerCase();
+        return !postedSet.has(idKey) && !postedSet.has(titleKey) && !postedSet.has(`periodic-${a.id}`);
+      });
+
+      // If all catalog items have been published, log and cycle safely
+      if (unpostedAnimes.length === 0) {
+        console.log("[FB Periodic Poster] ℹ️ All catalog titles have been posted once. Resetting loop for fresh cycle...");
+        unpostedAnimes = catalog;
+      }
+
+      const randomIndex = Math.floor(Math.random() * unpostedAnimes.length);
+      const selectedAnime = unpostedAnimes[randomIndex];
+
+      console.log(`[FB Periodic Poster] ⏰ 3-Hour Cron Triggered (Unique): Publishing "${selectedAnime.title}" (ID: ${selectedAnime.id}). (${unpostedAnimes.length} unposted items remaining)...`);
+
+      // Save ID and normalized title in postedSet to guarantee zero repetitions
+      savePostedId(selectedAnime.id);
+      savePostedId(selectedAnime.title.toLowerCase());
+      savePostedId(`periodic-${selectedAnime.id}`);
 
       const payload: FacebookPostPayload = {
-        episodeId: `periodic-${randomAnime.id}-${Date.now()}`,
-        animeId: randomAnime.id,
-        animeTitle: randomAnime.title,
-        episodeNumber: randomAnime.episodesCount || 12,
-        coverUrl: randomAnime.coverUrl || randomAnime.cover || "",
-        genres: randomAnime.genres,
-        isMovie: randomAnime.type === "Película"
+        episodeId: `periodic-${selectedAnime.id}-${Date.now()}`,
+        animeId: selectedAnime.id,
+        animeTitle: selectedAnime.title,
+        episodeNumber: selectedAnime.episodesCount || 12,
+        coverUrl: selectedAnime.coverUrl || selectedAnime.cover || "",
+        genres: selectedAnime.genres,
+        isMovie: selectedAnime.type === "Película"
       };
 
       await postNewReleaseToFacebook(payload);
     } catch (e) {
-      console.error("[FB Periodic Poster] Error publishing random anime to Facebook:", e);
+      console.error("[FB Periodic Poster] Error publishing non-repeating random anime to Facebook:", e);
     }
   };
 
