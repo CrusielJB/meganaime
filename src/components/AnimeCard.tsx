@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, Heart, Play } from "lucide-react";
+import { Star, Heart, Play, Trash2 } from "lucide-react";
 import { Anime } from "../types";
 import { getAnimePlaceholder, getProxyImageUrl, recoverCoverImageInHotPath } from "../utils/imageUtils";
 
@@ -43,7 +43,7 @@ export default function AnimeCard({
         {/* Shadow Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent opacity-60 group-hover:opacity-85 transition-opacity" />
 
-        {/* Hover Hover Actions (Fades in) */}
+        {/* Hover Actions (Fades in) */}
         <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg self-center mb-3 scale-75 group-hover:scale-100 transition-transform duration-300">
             <Play className="h-5 w-5 fill-white ml-0.5" />
@@ -65,17 +65,27 @@ export default function AnimeCard({
         </div>
 
 
-        {/* Heart Icon Button (Manual click handler, stops propagation) */}
+        {/* Heart / Trash Quitar Button (Manual click handler, stops propagation) */}
         <button
-          onClick={(e) => onToggleFavorite(e, anime.id)}
-          className={`absolute bottom-2 right-2 p-1.5 rounded-lg border backdrop-blur-md transition z-20 ${
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(e, anime.id);
+          }}
+          className={`absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg border backdrop-blur-md transition-all z-20 cursor-pointer shadow-lg ${
             isFavorite
-              ? "bg-rose-500/20 border-rose-500/40 text-rose-500"
-              : "bg-black/40 border-white/5 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/10"
+              ? "bg-rose-600/90 border-rose-500 text-white hover:bg-rose-700 hover:scale-105 active:scale-95 shadow-rose-950/50"
+              : "bg-black/50 border-white/10 text-neutral-400 hover:text-rose-500 hover:bg-rose-500/20"
           }`}
           title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
         >
-          <Heart className={`h-4.5 w-4.5 ${isFavorite ? "fill-rose-500" : ""}`} />
+          {isFavorite ? (
+            <>
+              <Trash2 className="h-3.5 w-3.5 text-rose-100" />
+              <span className="text-[10px] font-extrabold text-white uppercase tracking-wider">Quitar</span>
+            </>
+          ) : (
+            <Heart className="h-4 w-4" />
+          )}
         </button>
       </div>
 
