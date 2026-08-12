@@ -81,12 +81,16 @@ export default function AdminPanel() {
 
   // Real stats state (populated from Firestore with fallback)
   const [stats, setStats] = useState({
-    activeUsers: 4,
-    dailyViews: 124,
-    monthlyViews: 3240,
-    topAnime: 'One Piece',
-    topCategory: 'Shounen'
+    activeUsers: 0,
+    dailyViews: 0,
+    monthlyViews: 0,
+    topAnime: 'Cargando...',
+    topCategory: 'Cargando...'
   });
+
+  // Daily visitor breakdown: [{ date: "2026-08-12", count: N }] newest first
+  interface DailyRecord { date: string; count: number; }
+  const [dailyHistory, setDailyHistory] = useState<DailyRecord[]>([]);
 
   // Local administrative states
   const [animes, setAnimes] = useState<LocalAnime[]>([]);
@@ -140,12 +144,7 @@ export default function AdminPanel() {
     updatedAt: string;
   }
 
-  const [monthlyVisits, setMonthlyVisits] = useState<MonthlyRecord[]>([
-    { id: '2026-08', monthName: 'Agosto 2026', viewsCount: 3240, updatedAt: new Date().toISOString() },
-    { id: '2026-07', monthName: 'Julio 2026', viewsCount: 2890, updatedAt: '2026-07-31T23:59:59Z' },
-    { id: '2026-06', monthName: 'Junio 2026', viewsCount: 2450, updatedAt: '2026-06-30T23:59:59Z' },
-    { id: '2026-05', monthName: 'Mayo 2026', viewsCount: 1980, updatedAt: '2026-05-31T23:59:59Z' }
-  ]);
+  const [monthlyVisits, setMonthlyVisits] = useState<MonthlyRecord[]>([]);
 
   const handleSavePriority = (newPriority: string[]) => {
     setServerPriority(newPriority);
@@ -203,71 +202,74 @@ export default function AdminPanel() {
     async function loadStats() {
       try {
         const now = new Date();
-        const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString();
-        const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const todayStr = now.toISOString().split("T")[0]; // "YYYY-MM-DD"
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
 
-        // Fetch active users count (users active in last 5 minutes)
-        const usersRef = collection(db, 'users');
-        const activeUsersSnap = await getDocs(query(usersRef, where('lastActive', '>=', fiveMinsAgo)));
-        const activeCount = activeUsersSnap.size;
-
-        // Fetch monthly/daily views
+        // Fetch all page_views from last 30 days using date string comparison
         const viewsRef = collection(db, 'page_views');
-        const viewsSnap = await getDocs(query(viewsRef, where('timestamp', '>=', thirtyDaysAgoDate)));
-        
-        let dailyCount = 0;
-        let monthlyCount = viewsSnap.size;
-        const oneDayAgoTime = now.getTime() - 24 * 60 * 60 * 1000;
-        
-        const animeCounts: Record<string, { title: string; count: number }> = {};
-        const categoryCounts: Record<string, number> = {};
+        const viewsSnap = await getDocs(query(viewsRef, where('date', '>=', thirtyDaysAgoStr)));
+
+        // Build daily breakdown map
+        const dailyMap: Record<string, number> = {};
+        const monthlyMap: Record<string, number> = {};
 
         viewsSnap.forEach(docSnap => {
           const data = docSnap.data();
-          const ts = data.timestamp?.toMillis ? data.timestamp.toMillis() : (data.timestamp?.toDate ? data.timestamp.toDate().getTime() : new Date(data.timestamp).getTime());
-          if (ts >= oneDayAgoTime) {
-            dailyCount++;
-          }
-          if (data.animeId) {
-            animeCounts[data.animeId] = { 
-              title: data.animeTitle || data.animeId, 
-              count: (animeCounts[data.animeId]?.count || 0) + 1 
-            };
-          }
-          if (data.genres && Array.isArray(data.genres)) {
-            data.genres.forEach((g: string) => {
-              categoryCounts[g] = (categoryCounts[g] || 0) + 1;
-            });
-          }
+          const date: string = data.date || '';
+          if (!date) return;
+          dailyMap[date] = (dailyMap[date] || 0) + 1;
+          const monthKey = date.slice(0, 7); // "YYYY-MM"
+          monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + 1;
         });
 
-        let topAnime = 'Sin datos';
-        let topAnimeMax = 0;
-        Object.values(animeCounts).forEach(a => {
-          if (a.count > topAnimeMax) {
-            topAnimeMax = a.count;
-            topAnime = a.title;
-          }
-        });
-        
-        let topCat = 'Sin datos';
-        let topCatMax = 0;
-        Object.entries(categoryCounts).forEach(([cat, count]) => {
-          if (count > topCatMax) {
-            topCatMax = count;
-            topCat = cat;
-          }
+        const todayCount = dailyMap[todayStr] || 0;
+        const monthlyCount = viewsSnap.size;
+
+        // Build sorted daily history (newest first, last 30 days)
+        const dailyArr: DailyRecord[] = Object.entries(dailyMap)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => b.date.localeCompare(a.date));
+        setDailyHistory(dailyArr);
+
+        // Build monthly records
+        const monthNames: Record<string, string> = {
+          '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+          '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+          '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+        };
+        const monthlyArr: MonthlyRecord[] = Object.entries(monthlyMap)
+          .map(([id, viewsCount]) => {
+            const [year, month] = id.split('-');
+            return {
+              id,
+              monthName: `${monthNames[month] || month} ${year}`,
+              viewsCount,
+              updatedAt: new Date().toISOString()
+            };
+          })
+          .sort((a, b) => b.id.localeCompare(a.id));
+        if (monthlyArr.length > 0) setMonthlyVisits(monthlyArr);
+
+        // Active users: sessions in last 5 minutes (using page_views with recent timestamp)
+        const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000);
+        const fiveMinsAgoStr = fiveMinsAgo.toISOString().split('T')[0];
+        // Approximation: count unique sessionIds from today
+        const todaySessionIds = new Set<string>();
+        viewsSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.date === todayStr && data.sessionId) todaySessionIds.add(data.sessionId);
         });
 
         setStats({
-          activeUsers: activeCount,
-          dailyViews: dailyCount,
+          activeUsers: todaySessionIds.size,
+          dailyViews: todayCount,
           monthlyViews: monthlyCount,
-          topAnime: topAnimeMax > 0 ? topAnime : 'One Piece',
-          topCategory: topCatMax > 0 ? topCat : 'Shounen'
+          topAnime: 'Sin datos',
+          topCategory: 'Sin datos'
         });
       } catch (err) {
-        console.error("Error loading live stats, utilizing fallback mock statistics", err);
+        console.error("Error loading live stats:", err);
       } finally {
         setLoading(false);
       }
@@ -897,89 +899,133 @@ export default function AdminPanel() {
 
             </div>
 
-            {/* Monthly Visitor History Section (100% Read-only Real Firestore Analytics) */}
+            {/* Daily Visitor History Section — resets per day automatically, 100% real Firestore data */}
             <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/5 pb-3">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4.5 w-4.5 text-rose-500" />
-                  <span className="text-sm font-extrabold text-white tracking-wide uppercase">Historial de Personas / Visitas por Mes</span>
+                  <span className="text-sm font-extrabold text-white tracking-wide uppercase">Historial de Personas / Visitas por Día</span>
                 </div>
                 <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 font-bold flex items-center gap-1">
                   <CheckCircle className="h-3 w-3" />
-                  Conteo Automático Real en Tiempo Real (No editable)
+                  Datos Reales de Firestore — Se reinicia cada día automáticamente
                 </span>
               </div>
 
-              {/* Monthly Records Read-Only Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-neutral-300 border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-[10px] uppercase text-neutral-500 font-extrabold tracking-wider">
-                      <th className="py-2.5 px-3">Mes y Año</th>
-                      <th className="py-2.5 px-3">Personas / Visitas Totales</th>
-                      <th className="py-2.5 px-3">Estado del Registro</th>
-                      <th className="py-2.5 px-3 text-right">Última Actualización</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {monthlyVisits.map((item) => (
-                      <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                        <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
-                          <Calendar className="h-3.5 w-3.5 text-rose-400" />
-                          <span>{item.monthName}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="font-extrabold text-emerald-400 text-sm">
-                            {item.viewsCount.toLocaleString()} <span className="text-[10px] text-neutral-400 font-medium">personas</span>
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                            Verificado Firestore
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right text-[10px] text-neutral-400">
-                          {new Date(item.updatedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </td>
+              {dailyHistory.length === 0 ? (
+                <div className="text-center py-8 text-neutral-500 text-xs">
+                  Aún no hay visitas registradas. Los datos aparecerán aquí cuando los usuarios visiten la página.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-neutral-300 border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 text-[10px] uppercase text-neutral-500 font-extrabold tracking-wider">
+                        <th className="py-2.5 px-3">Fecha</th>
+                        <th className="py-2.5 px-3">Personas / Visitas</th>
+                        <th className="py-2.5 px-3">Barra de Progreso</th>
+                        <th className="py-2.5 px-3 text-right">Estado</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {(() => {
+                        const todayStr = new Date().toISOString().split("T")[0];
+                        const maxCount = Math.max(...dailyHistory.map(d => d.count), 1);
+                        return dailyHistory.map((item) => {
+                          const isToday = item.date === todayStr;
+                          const pct = Math.round((item.count / maxCount) * 100);
+                          const [year, month, day] = item.date.split("-");
+                          const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                          const label = `${parseInt(day)} de ${monthNames[parseInt(month)-1]} ${year}`;
+                          return (
+                            <tr key={item.date} className={`transition-colors ${isToday ? 'bg-rose-500/5' : 'hover:bg-white/5'}`}>
+                              <td className="py-3 px-3 font-bold text-white flex items-center gap-2">
+                                <Calendar className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                                <span>{label}</span>
+                                {isToday && <span className="ml-1 text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded-full font-extrabold">HOY</span>}
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className="font-extrabold text-emerald-400 text-sm">
+                                  {item.count.toLocaleString()} <span className="text-[10px] text-neutral-400 font-medium">personas</span>
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 min-w-[120px]">
+                                <div className="w-full bg-neutral-800 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full transition-all ${isToday ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-right">
+                                {isToday ? (
+                                  <span className="text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">En Curso</span>
+                                ) : (
+                                  <span className="text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Completado</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
-            {/* Audience Analytics Cards Grid (Matching User Screenshot Layout) */}
+            {/* Audience Analytics Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
 
-              {/* Card 1: Daily Visits Trend (Chart) */}
+              {/* Card 1: Daily Visits Trend (Real Chart from dailyHistory) */}
               <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-5 flex flex-col space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-extrabold text-white">55 Visitas</span>
+                    <span className="text-sm font-extrabold text-white">{stats.dailyViews} Visitas Hoy</span>
                     <Info className="h-3.5 w-3.5 text-neutral-500 cursor-pointer" />
                   </div>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    +95.8% <span className="text-[9px] text-neutral-400 font-normal">respecto a los 28 días anteriores</span>
-                  </span>
+                  {dailyHistory.length >= 2 && (() => {
+                    const prev = dailyHistory[1]?.count || 0;
+                    const curr = dailyHistory[0]?.count || 0;
+                    const delta = prev > 0 ? Math.round(((curr - prev) / prev) * 100) : 0;
+                    return (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${delta >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20'}`}>
+                        {delta >= 0 ? '+' : ''}{delta}% <span className="text-[9px] text-neutral-400 font-normal">vs ayer</span>
+                      </span>
+                    );
+                  })()}
                 </div>
 
-                {/* Line graph simulation */}
+                {/* Real SVG line chart from dailyHistory (last 14 days) */}
                 <div className="w-full h-36 relative bg-black/30 rounded-xl p-2 flex flex-col justify-between">
-                  <svg className="w-full h-24" viewBox="0 0 300 80" preserveAspectRatio="none">
-                    <polyline
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="2.5"
-                      points="0,75 30,75 50,45 70,75 90,75 110,15 130,75 150,50 170,60 190,75 210,48 230,75 250,30 270,75 300,75"
-                    />
-                  </svg>
+                  {dailyHistory.length > 0 ? (() => {
+                    const last14 = [...dailyHistory].reverse().slice(-14);
+                    const maxVal = Math.max(...last14.map(d => d.count), 1);
+                    const points = last14.map((d, i) => {
+                      const x = (i / Math.max(last14.length - 1, 1)) * 300;
+                      const y = 75 - ((d.count / maxVal) * 65);
+                      return `${x.toFixed(1)},${y.toFixed(1)}`;
+                    }).join(" ");
+                    return (
+                      <svg className="w-full h-24" viewBox="0 0 300 80" preserveAspectRatio="none">
+                        <polyline fill="none" stroke="#3b82f6" strokeWidth="2.5" points={points} />
+                      </svg>
+                    );
+                  })() : (
+                    <div className="flex items-center justify-center h-24 text-neutral-600 text-xs">Sin datos aún</div>
+                  )}
                   <div className="flex justify-between items-center text-[9px] text-neutral-500 border-t border-white/5 pt-1">
-                    <span>13 de jul</span>
-                    <span>18 de jul</span>
-                    <span>23 de jul</span>
-                    <span>28 de jul</span>
-                    <span>2 de ago</span>
-                    <span>7 de ago</span>
+                    {dailyHistory.length > 0 ? (() => {
+                      const last14 = [...dailyHistory].reverse().slice(-14);
+                      const indices = [0, Math.floor(last14.length / 4), Math.floor(last14.length / 2), Math.floor(3 * last14.length / 4), last14.length - 1].filter((v, i, arr) => arr.indexOf(v) === i);
+                      return indices.map(i => {
+                        const d = last14[i];
+                        if (!d) return null;
+                        const [,month,day] = d.date.split("-");
+                        const mNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                        return <span key={d.date}>{parseInt(day)} {mNames[parseInt(month)-1]}</span>;
+                      });
+                    })() : null}
                   </div>
                 </div>
               </div>

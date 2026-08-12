@@ -22,6 +22,7 @@ import { getAnimesWithEpisodes } from "./utils/animeDb";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
 import { syncAllProgressFromFirestore, getAllLocalProgress } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
+import { useVisitorTracking } from "./hooks/useVisitorTracking";
 
 
 interface ErrorBoundaryProps {
@@ -120,6 +121,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfilesModal, setShowProfilesModal] = useState(false);
+
+  // Track real visitor session in Firestore (once per browser session)
+  useVisitorTracking();
   
   // Custom Hooks
   const { 
