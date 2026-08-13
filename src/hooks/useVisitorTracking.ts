@@ -4,28 +4,39 @@ import { db } from "../lib/firebase";
 
 /**
  * Tracks a real visitor session in Firestore `page_views` collection.
- * Fires once per browser session (uses sessionStorage flag).
- * Each document: { timestamp, date: "YYYY-MM-DD", sessionId, referrer, path }
+ * Safe against missing storage, security rules or network issues.
  */
 export function useVisitorTracking() {
   useEffect(() => {
-    const SESSION_KEY = "mga_tracked";
-    if (sessionStorage.getItem(SESSION_KEY)) return;
+    try {
+      if (typeof window === "undefined") return;
 
-    const today = new Date();
-    const dateStr = today.toISOString().split("T")[0]; // "YYYY-MM-DD"
-    const sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      const SESSION_KEY = "mga_tracked";
+      try {
+        if (sessionStorage.getItem(SESSION_KEY)) return;
+      } catch (e) {
+        // Storage access blocked or restricted
+      }
 
-    addDoc(collection(db, "page_views"), {
-      timestamp: serverTimestamp(),
-      date: dateStr,
-      sessionId,
-      referrer: document.referrer || "direct",
-      path: window.location.pathname
-    }).catch(() => {
-      // Silent fail — never block the UI for analytics
-    });
+      const today = new Date();
+      const dateStr = today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+      const sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-    sessionStorage.setItem(SESSION_KEY, "1");
+      addDoc(collection(db, "page_views"), {
+        timestamp: serverTimestamp(),
+        date: dateStr,
+        sessionId,
+        referrer: document.referrer || "direct",
+        path: window.location.pathname
+      }).catch((err) => {
+        console.warn("Visitor tracking payload fail:", err);
+      });
+
+      try {
+        sessionStorage.setItem(SESSION_KEY, "1");
+      } catch (e) {}
+    } catch (e) {
+      console.warn("Visitor tracking exception:", e);
+    }
   }, []);
 }

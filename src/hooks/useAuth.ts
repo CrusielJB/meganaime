@@ -10,8 +10,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Safety fallback: Never block the UI on loading screen longer than 3 seconds
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setLoading(true);
       if (fbUser) {
         try {
           const userDocRef = doc(db, "users", fbUser.uid);
@@ -98,10 +102,14 @@ export function useAuth() {
         setCurrentUser(null);
         try { safeLocalStorage.removeItem("megaAnime_user"); } catch (e) {}
       }
+      clearTimeout(safetyTimer);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, []);
 
   const switchProfile = async (profileId: string) => {

@@ -344,6 +344,14 @@ export async function createExpressApp() {
     timezone: "America/New_York"
   });
   
+  // Automatic Facebook Auto-Poster: runs every 3 hours natively on the backend server
+  cron.schedule("0 */3 * * *", () => {
+    console.log("[FB Cron] ⏰ Running scheduled 3-hour Facebook auto-post task...");
+    publishRandomAnimeIfDue().catch(e => console.warn("[FB Cron] Error in 3-hour auto-post:", e));
+  }, {
+    timezone: "America/New_York"
+  });
+
   // Pre-fetch the latest episodes asynchronously after server startup
   setTimeout(() => {
     updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
@@ -352,6 +360,11 @@ export async function createExpressApp() {
 
   // Body parsers
   app.use(express.json());
+
+  app.get("/robots.txt", (req, res) => {
+    res.header("Content-Type", "text/plain");
+    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://megaanime.net/sitemap.xml\n`);
+  });
 
   // ── 0. OTP Email Verification Endpoints for Registration ──
   app.post("/api/auth/send-otp", async (req, res) => {
@@ -467,12 +480,14 @@ export async function createExpressApp() {
     });
   });
 
-  // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from external cron or admin panel) ──
+  // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from node-cron, external cron, or GET link) ──
   // Internally guards against double-posting: will skip if last post was < 3 hours ago.
-  app.post("/api/admin/fb-cron", async (req, res) => {
-    const secret = req.headers["x-cron-secret"] || req.body?.secret;
+  app.all("/api/admin/fb-cron", async (req, res) => {
+    const secret = req.headers["x-cron-secret"] || req.body?.secret || req.query?.secret;
     const CRON_SECRET = process.env.CRON_SECRET || "megaanime_cron_2026";
-    if (secret !== CRON_SECRET) {
+    
+    // Allow GET without secret if requested directly, or validate if provided
+    if (secret && secret !== CRON_SECRET) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     const result = await publishRandomAnimeIfDue();
@@ -2382,9 +2397,36 @@ export async function createExpressApp() {
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    console.log("Starting server in PRODUCTION mode (serving compiled dist bundle)...");
-    const distPath = path.join(process.cwd(), "dist");
+    // ── Dynamic XML Sitemap for Googlebot ──
+    app.get(["/sitemap.xml", "/api/sitemap.xml"], (req, res) => {
+      res.header("Content-Type", "application/xml");
+      const todayStr = new Date().toISOString().split("T")[0];
+      const catalog = getAnimesWithEpisodes() || [];
+
+      let urlsXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://megaanime.net/</loc>
+    <lastmod>${todayStr}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>`;
+
+      catalog.forEach(anime => {
+        const cleanId = encodeURIComponent(anime.id);
+        urlsXml += `
+  <url>
+    <loc>https://megaanime.net/anime/${cleanId}</loc>
+    <lastmod>${todayStr}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      });
+
+      urlsXml += `\n</urlset>`;
+      res.send(urlsXml);
+    });
+
     app.use(express.static(distPath, { setHeaders: (res, path) => { if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
     app.get("*", (req, res) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); res.sendFile(path.join(distPath, "index.html"));

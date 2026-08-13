@@ -23,6 +23,7 @@ import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
 import { syncAllProgressFromFirestore, getAllLocalProgress } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
 import { useVisitorTracking } from "./hooks/useVisitorTracking";
+import { GlobalBanner } from "./components/GlobalBanner";
 
 
 interface ErrorBoundaryProps {
@@ -341,6 +342,8 @@ function AppContent() {
         }}
         onSwitchProfile={switchProfile}
       />
+
+      <GlobalBanner />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         

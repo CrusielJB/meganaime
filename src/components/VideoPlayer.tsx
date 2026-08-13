@@ -19,7 +19,9 @@ import {
   Tv,
   Check,
   Sparkles,
-  Globe
+  Globe,
+  Flag,
+  AlertTriangle
 } from "lucide-react";
 import { Episode, User } from "../types";
 import Hls from "hls.js";
@@ -29,6 +31,7 @@ import { getAnimesWithEpisodes } from "../utils/animeDb";
 import { getDownloadedEpisodeBlob } from "../utils/downloadDb";
 import CommentSection from "./CommentSection";
 import { resolveEmbedUrl } from "../utils/resolvers";
+import { sendUserReport } from "../utils/reports";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
@@ -121,6 +124,12 @@ export default function VideoPlayer({
   // Immersive Sidebar Control (Colapsed by default like Crunchyroll/Netflix theater mode)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [postMessageActive, setPostMessageActive] = useState(true);
+
+  // User error reporting states
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReportReason, setSelectedReportReason] = useState("El reproductor no carga / Enlace caído");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportSubmittedSuccess, setReportSubmittedSuccess] = useState(false);
 
   // Resolve premium/canonical metadata from local catalog using normalized ID
   const { resolvedTitle, resolvedCover } = React.useMemo(() => {
@@ -1362,6 +1371,18 @@ export default function VideoPlayer({
                           <Tv className="h-4.5 w-4.5" />
                         </button>
 
+                        {/* Report Problem Button */}
+                        <button
+                          onClick={() => {
+                            setReportSubmittedSuccess(false);
+                            setShowReportModal(true);
+                          }}
+                          className="text-neutral-400 hover:text-rose-400 cursor-pointer transition flex items-center gap-1 text-xs"
+                          title="Reportar problema con este reproductor"
+                        >
+                          <Flag className="h-4.5 w-4.5" />
+                        </button>
+
                         {/* Fullscreen Button */}
                         <button
                           onClick={toggleFullscreen}
@@ -1497,6 +1518,106 @@ export default function VideoPlayer({
                 title={`Comentarios del Episodio ${episodeNumber}`}
                 currentUser={currentUser}
               />
+            </div>
+          </div>
+        )}
+
+        {/* User Report Problem Modal */}
+        {showReportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+            <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl relative space-y-4">
+              <button 
+                onClick={() => setShowReportModal(false)}
+                className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1 rounded-lg transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Reportar problema con el video</h3>
+                  <p className="text-xs text-neutral-400">Servidor actual: <span className="text-rose-400 font-semibold">{servers[activeServerIdx]?.name || "Reproductor"}</span></p>
+                </div>
+              </div>
+
+              {reportSubmittedSuccess ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center space-y-2 py-6">
+                  <div className="h-10 w-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+                    <Check className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-emerald-400">¡Reporte Enviado!</h4>
+                  <p className="text-xs text-neutral-300">Gracias por informarnos. Nuestro equipo técnico revisará el reproductor en breve.</p>
+                  <button
+                    onClick={() => setShowReportModal(false)}
+                    className="mt-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs rounded-xl transition"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-xs text-neutral-300">Selecciona el inconveniente que estás experimentando para enviarlo a los administradores:</p>
+                  
+                  <div className="space-y-2">
+                    {[
+                      "El reproductor no carga / Enlace caído",
+                      "El servidor va muy lento o se traba",
+                      "Audio o subtítulos desincronizados",
+                      "El episodio o video es incorrecto"
+                    ].map((reason) => (
+                      <label 
+                        key={reason}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition cursor-pointer text-xs ${
+                          selectedReportReason === reason 
+                            ? "bg-rose-500/15 border-rose-500 text-white font-semibold" 
+                            : "bg-neutral-800/60 border-white/5 text-neutral-300 hover:bg-neutral-800"
+                        }`}
+                      >
+                        <input 
+                          type="radio" 
+                          name="reportReason" 
+                          value={reason}
+                          checked={selectedReportReason === reason}
+                          onChange={(e) => setSelectedReportReason(e.target.value)}
+                          className="accent-rose-500"
+                        />
+                        <span>{reason}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => setShowReportModal(false)}
+                      className="flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-bold text-xs rounded-xl transition"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={isSubmittingReport}
+                      onClick={async () => {
+                        setIsSubmittingReport(true);
+                        await sendUserReport({
+                          animeId,
+                          episodeId,
+                          animeTitle: resolvedTitle,
+                          episodeNumber: episodeNumber || 1,
+                          serverName: servers[activeServerIdx]?.name || "Desconocido",
+                          reason: selectedReportReason
+                        });
+                        setIsSubmittingReport(false);
+                        setReportSubmittedSuccess(true);
+                      }}
+                      className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2"
+                    >
+                      {isSubmittingReport ? "Enviando..." : "Enviar Reporte"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

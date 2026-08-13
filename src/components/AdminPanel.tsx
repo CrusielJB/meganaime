@@ -31,10 +31,20 @@ import {
   Activity,
   ShieldAlert,
   Sliders,
-  Check
+  Check,
+  Flag,
+  Megaphone,
+  Share2,
+  RefreshCw,
+  Film,
+  ExternalLink,
+  MessageSquare,
+  CheckCircle2
 } from 'lucide-react';
 import { MOCK_ANIMES } from '../utils/animeDb';
 import { MOCK_MANGAS } from '../utils/mangaDb';
+import { fetchUserReports, updateReportStatus, UserReport } from '../utils/reports';
+import { getGlobalBannerAlert, saveGlobalBannerAlert, GlobalBannerAlert } from '../utils/systemAlerts';
 
 // Main interface for local anime edits
 interface LocalAnime {
@@ -92,7 +102,33 @@ export default function AdminPanel() {
   interface DailyRecord { date: string; count: number; }
   const [dailyHistory, setDailyHistory] = useState<DailyRecord[]>([]);
 
-  // Local administrative states
+  // ── New Features State ──
+  // User Reports State
+  const [reports, setReports] = useState<UserReport[]>([]);
+  const [reportsFilter, setReportsFilter] = useState<'pending' | 'resolved'>('pending');
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  // Global System Banner State
+  const [globalBannerConfig, setGlobalBannerConfig] = useState<GlobalBannerAlert>({
+    active: false,
+    message: "¡Bienvenido a megaAnime! Disfruta del catálogo en Full HD.",
+    type: "info",
+    actionText: "",
+    actionUrl: ""
+  });
+  const [isSavingBanner, setIsSavingBanner] = useState(false);
+  const [bannerSavedToast, setBannerSavedToast] = useState(false);
+
+  // Facebook Direct Posting State
+  const [isFbPosting, setIsFbPosting] = useState<string | null>(null); // animeId being posted
+  const [fbPostToast, setFbPostToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // Granular Episode & Custom Server Manager Modal State
+  const [selectedAnimeForEpisodes, setSelectedAnimeForEpisodes] = useState<LocalAnime | null>(null);
+  const [customServersList, setCustomServersList] = useState<{ name: string; url: string; type: 'embed' | 'direct_mp4' }[]>([]);
+  const [newCustomServer, setNewCustomServer] = useState({ name: 'Mp4Upload HD', url: '', type: 'embed' as 'embed' | 'direct_mp4' });
+  const [selectedEpNum, setSelectedEpNum] = useState(1);
+  const [isSavingCustomServer, setIsSavingCustomServer] = useState(false);
   const [animes, setAnimes] = useState<LocalAnime[]>([]);
   const [mangas, setMangas] = useState<any[]>([]);
   const [catalogFilter, setCatalogFilter] = useState<'anime' | 'movie' | 'manga'>('anime');
@@ -208,7 +244,17 @@ export default function AdminPanel() {
 
         // Fetch all page_views from last 30 days using date string comparison
         const viewsRef = collection(db, 'page_views');
-        const viewsSnap = await getDocs(query(viewsRef, where('date', '>=', thirtyDaysAgoStr)));
+        let viewsSnap: any = { size: 0, forEach: () => {} };
+        try {
+          viewsSnap = await getDocs(query(viewsRef, where('date', '>=', thirtyDaysAgoStr)));
+        } catch (e) {
+          console.warn("Firestore query where(date) failed, trying simple fetch:", e);
+          try {
+            viewsSnap = await getDocs(viewsRef);
+          } catch (err2) {
+            console.warn("Firestore fetch views failed:", err2);
+          }
+        }
 
         // Build daily breakdown map
         const dailyMap: Record<string, number> = {};
@@ -274,7 +320,27 @@ export default function AdminPanel() {
         setLoading(false);
       }
     }
+    loadStats();
+  }, []);
 
+  // Load User Reports & Global System Banner
+  useEffect(() => {
+    async function loadReportsAndBanner() {
+      setLoadingReports(true);
+      const repList = await fetchUserReports();
+      setReports(repList);
+      setLoadingReports(false);
+
+      const bannerData = await getGlobalBannerAlert();
+      if (bannerData) {
+        setGlobalBannerConfig(bannerData);
+      }
+    }
+    loadReportsAndBanner();
+  }, [activeTab]);
+
+  // Load Catalog, Real Registered Users, and Monthly Analytics from Firestore
+  useEffect(() => {
     async function loadCatalog() {
       try {
         const res = await fetch('/api/admin/animes');
@@ -734,6 +800,25 @@ export default function AdminPanel() {
           </button>
 
           <button
+            onClick={() => setActiveTab('reportes')}
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+              activeTab === 'reportes' 
+                ? 'bg-rose-500/10 border-l-4 border-rose-500 text-rose-400' 
+                : 'text-neutral-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Flag className="h-4 w-4 text-amber-400" />
+              <span>Reportes de Usuarios</span>
+            </div>
+            {reports.filter(r => r.status === 'pending').length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                {reports.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('apariencia')}
             className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
               activeTab === 'apariencia' 
@@ -741,32 +826,8 @@ export default function AdminPanel() {
                 : 'text-neutral-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
             }`}
           >
-            <Palette className="h-4 w-4" />
-            <span>Apariencia</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('usuarios')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-              activeTab === 'usuarios' 
-                ? 'bg-rose-500/10 border-l-4 border-rose-500 text-rose-400' 
-                : 'text-neutral-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            <span>Usuarios</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reportes')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-              activeTab === 'reportes' 
-                ? 'bg-rose-500/10 border-l-4 border-rose-500 text-rose-400' 
-                : 'text-neutral-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4" />
-            <span>Reportes</span>
+            <Megaphone className="h-4 w-4 text-purple-400" />
+            <span>Avisos & Apariencia</span>
           </button>
         </nav>
       </aside>
@@ -785,7 +846,7 @@ export default function AdminPanel() {
             </div>
 
             {/* KPI Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-neutral-900/35 border border-white/5 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group">
                 <div className="h-10 w-10 bg-green-500/10 rounded-xl flex items-center justify-center">
                   <Users className="h-5 w-5 text-green-400" />
@@ -795,20 +856,7 @@ export default function AdminPanel() {
                   <span className="text-2xl font-black text-white leading-none mt-1 block">{stats.activeUsers}</span>
                 </div>
                 <div className="absolute top-2 right-2 flex items-center gap-0.5 text-[8px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full font-bold">
-                  <span>+12%</span>
-                </div>
-              </div>
-
-              <div className="bg-neutral-900/35 border border-white/5 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group">
-                <div className="h-10 w-10 bg-rose-500/10 rounded-xl flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-rose-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-neutral-500 uppercase font-black tracking-widest block">Nuevos Registros</span>
-                  <span className="text-2xl font-black text-white leading-none mt-1 block">8</span>
-                </div>
-                <div className="absolute top-2 right-2 flex items-center gap-0.5 text-[8px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full font-bold">
-                  <span>Hoy</span>
+                  <span>En vivo</span>
                 </div>
               </div>
 
@@ -823,6 +871,72 @@ export default function AdminPanel() {
                 <div className="absolute top-2 right-2 flex items-center gap-0.5 text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full font-bold">
                   <span>Últimas 24h</span>
                 </div>
+              </div>
+
+              <div className="bg-neutral-900/35 border border-white/5 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group">
+                <div className="h-10 w-10 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <Flag className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-500 uppercase font-black tracking-widest block">Reportes Pendientes</span>
+                  <span className="text-2xl font-black text-white leading-none mt-1 block">
+                    {reports.filter(r => r.status === 'pending').length}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setActiveTab('reportes')}
+                  className="absolute top-2 right-2 text-[9px] bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 px-2 py-0.5 rounded-full font-bold transition cursor-pointer"
+                >
+                  Ver todos
+                </button>
+              </div>
+
+              <div className="bg-neutral-900/35 border border-blue-500/20 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                      <Share2 className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-400 uppercase font-black tracking-wider block">Facebook Auto-Poster</span>
+                      <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Activo (3 horas)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  disabled={isFbPosting === 'cron'}
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch('/api/admin/fb-cron', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'x-cron-secret': 'meganaime_cron_2026'
+                        }
+                      });
+                      const res = await resp.json();
+                      if (res.posted) {
+                        setFbPostToast({ msg: `¡Publicado exitosamente en Facebook: "${res.animeTitle}"!`, type: 'success' });
+                        alert(`¡Publicado con éxito en Facebook: "${res.animeTitle}"!`);
+                      } else {
+                        setFbPostToast({ msg: res.reason || "Enfriamiento activo de 3 horas.", type: 'error' });
+                        alert(`Aviso: ${res.reason || 'Enfriamiento activo de 3 horas.'}`);
+                      }
+                    } catch (e: any) {
+                      setFbPostToast({ msg: "Error al publicar en Facebook.", type: 'error' });
+                    } finally {
+                      setIsFbPosting(null);
+                    }
+                  }}
+                  className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded-xl transition shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isFbPosting === 'cron' ? 'animate-spin' : ''}`} />
+                  <span>{isFbPosting === 'cron' ? 'Publicando...' : 'Publicar Ahora'}</span>
+                </button>
               </div>
             </div>
 
@@ -1407,20 +1521,67 @@ export default function AdminPanel() {
                             </span>
                           </td>
                           <td className="py-2.5 px-4 text-center">
-                            <button
-                              onClick={() => setSelectedAnime(item)}
-                              className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex mr-1"
-                              title="Editar contenido"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAnime(item.id)}
-                              className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
-                              title="Eliminar contenido"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                disabled={isFbPosting === item.id}
+                                onClick={async () => {
+                                  setIsFbPosting(item.id);
+                                  setFbPostToast(null);
+                                  try {
+                                    const resp = await fetch('/api/admin/facebook-post', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        episodeId: `manual-admin-${item.id}-${Date.now()}`,
+                                        animeId: item.id,
+                                        title: item.title,
+                                        episodeNumber: item.episodesCount || 1,
+                                        coverUrl: item.coverUrl || "",
+                                        genres: item.genres || ["Anime"],
+                                        isMovie: item.type === "Película"
+                                      })
+                                    });
+                                    const res = await resp.json();
+                                    if (res.success) {
+                                      setFbPostToast({ msg: `¡"${item.title}" publicado en Facebook!`, type: 'success' });
+                                      alert(`¡"${item.title}" publicado con éxito en la página de Facebook!`);
+                                    } else {
+                                      setFbPostToast({ msg: res.error || "No se pudo publicar en Facebook.", type: 'error' });
+                                      alert(`Error al publicar en Facebook: ${res.error || 'Intente de nuevo.'}`);
+                                    }
+                                  } catch (err: any) {
+                                    alert("Error de conexión con la API de Facebook.");
+                                  } finally {
+                                    setIsFbPosting(null);
+                                  }
+                                }}
+                                className="p-1.5 hover:bg-blue-500/15 text-neutral-400 hover:text-blue-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                                title="Publicar portada HD en Facebook"
+                              >
+                                <Share2 className={`h-3.5 w-3.5 ${isFbPosting === item.id ? 'animate-spin text-blue-400' : ''}`} />
+                              </button>
+                              <button
+                                onClick={() => setSelectedAnimeForEpisodes(item)}
+                                className="p-1.5 hover:bg-purple-500/15 text-neutral-400 hover:text-purple-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                                title="Gestionar Episodios y Servidores"
+                              >
+                                <Film className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setSelectedAnime(item)}
+                                className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                                title="Editar contenido"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAnime(item.id)}
+                                className="p-1.5 hover:bg-rose-500/15 text-neutral-400 hover:text-rose-400 rounded-lg transition-colors cursor-pointer inline-flex"
+                                title="Eliminar contenido"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1656,12 +1817,110 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* 3. APPEARANCE MANAGEMENT TABS */}
+        {/* 3. APPEARANCE & GLOBAL ANNOUNCEMENTS MANAGEMENT TAB */}
         {activeTab === 'apariencia' && (
           <div className="space-y-8 animate-slide-in">
             <div className="flex flex-col space-y-1">
-              <h1 className="text-xl font-extrabold text-white tracking-tight">Gestión de Portada</h1>
-              <p className="text-xs text-neutral-400">Controla lo que ven tus usuarios en el Banner principal y ajusta el orden de las listas.</p>
+              <h1 className="text-xl font-extrabold text-white tracking-tight">Gestión de Apariencia y Avisos Globales</h1>
+              <p className="text-xs text-neutral-400">Publica avisos masivos en la parte superior de la web y personaliza el banner principal.</p>
+            </div>
+
+            {/* Global System Banner Editor Card */}
+            <div className="bg-neutral-900/40 border border-purple-500/20 rounded-2xl p-6 space-y-4 relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20">
+                    <Megaphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Banner de Aviso Global (Header Bar)</h3>
+                    <p className="text-xs text-neutral-400">Aparece instantáneamente en la parte superior para todos los visitantes de megaAnime.</p>
+                  </div>
+                </div>
+
+                {/* Active Toggle Switch */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs font-bold text-neutral-300">
+                    {globalBannerConfig.active ? "Activado" : "Desactivado"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={globalBannerConfig.active}
+                    onChange={(e) => setGlobalBannerConfig({ ...globalBannerConfig, active: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600 relative"></div>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-[10px] text-neutral-400 font-semibold">Mensaje del Aviso:</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 🔥 ¡Película de Chainsaw Man disponible en Full HD!"
+                    value={globalBannerConfig.message}
+                    onChange={(e) => setGlobalBannerConfig({ ...globalBannerConfig, message: e.target.value })}
+                    className="w-full bg-neutral-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] text-neutral-400 font-semibold">Estilo / Color:</label>
+                  <select
+                    value={globalBannerConfig.type}
+                    onChange={(e) => setGlobalBannerConfig({ ...globalBannerConfig, type: e.target.value as any })}
+                    className="w-full bg-neutral-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value="info">Azul (Informativo / General)</option>
+                    <option value="warning">Ámbar (Alerta / Mantenimiento)</option>
+                    <option value="promo">Rosa Púrpura (Promocional / Estreno)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] text-neutral-400 font-semibold">Texto Botón (Opcional):</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Ver Ahora"
+                    value={globalBannerConfig.actionText || ""}
+                    onChange={(e) => setGlobalBannerConfig({ ...globalBannerConfig, actionText: e.target.value })}
+                    className="w-full bg-neutral-950 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-1">
+                  <label className="text-[10px] text-neutral-400 font-semibold">Enlace Botón URL (Opcional):</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: https://megaanime.net"
+                    value={globalBannerConfig.actionUrl || ""}
+                    onChange={(e) => setGlobalBannerConfig({ ...globalBannerConfig, actionUrl: e.target.value })}
+                    className="w-full bg-neutral-950 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                <span className="text-[10px] text-purple-300 flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5" /> los cambios se guardan directamente en Firestore para todos los clientes.
+                </span>
+
+                <button
+                  disabled={isSavingBanner}
+                  onClick={async () => {
+                    setIsSavingBanner(true);
+                    await saveGlobalBannerAlert(globalBannerConfig);
+                    setIsSavingBanner(false);
+                    setBannerSavedToast(true);
+                    setTimeout(() => setBannerSavedToast(false), 3000);
+                  }}
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/20 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>{isSavingBanner ? "Guardando..." : bannerSavedToast ? "¡Guardado!" : "Guardar Aviso Global"}</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1942,91 +2201,124 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* 5. REPORTS & ANALYTICS TAB */}
+        {/* 5. USER REPORTS & BROKEN LINKS CENTER TAB */}
         {activeTab === 'reportes' && (
           <div className="space-y-8 animate-slide-in">
-            <div className="flex flex-col space-y-1">
-              <h1 className="text-xl font-extrabold text-white tracking-tight">Reportes de Rendimiento</h1>
-              <p className="text-xs text-neutral-400">Analiza qué contenidos retienen más usuarios para planear las próximas adquisiciones.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col space-y-1">
+                <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <Flag className="h-5 w-5 text-amber-400" />
+                  Centro de Reportes de Usuarios
+                </h1>
+                <p className="text-xs text-neutral-400">Atiende los reportes de reproductores caídos y fallos informados por los espectadores en tiempo real.</p>
+              </div>
+
+              {/* Filter tab buttons */}
+              <div className="flex items-center gap-2 bg-neutral-900 p-1 rounded-xl border border-white/5">
+                <button
+                  onClick={() => setReportsFilter('pending')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    reportsFilter === 'pending'
+                      ? 'bg-rose-600 text-white shadow-md'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  Pendientes ({reports.filter(r => r.status === 'pending').length})
+                </button>
+                <button
+                  onClick={() => setReportsFilter('resolved')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    reportsFilter === 'resolved'
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  Resueltos ({reports.filter(r => r.status === 'resolved').length})
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Ranking of top views */}
-              <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col space-y-5">
-                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Crown className="h-4.5 w-4.5 text-amber-500" />
-                  Ranking de Visualizaciones del Mes
-                </span>
-
-                <div className="space-y-4">
-                  {[
-                    { title: 'One Piece', views: 1845, percentage: '100%' },
-                    { title: 'Mushoku Tensei: Jobless Reincarnation', views: 1420, percentage: '77%' },
-                    { title: 'Jujutsu Kaisen Season 3', views: 1105, percentage: '60%' },
-                    { title: 'Sousou no Frieren', views: 890, percentage: '48%' },
-                    { title: 'Kaiju No. 8', views: 760, percentage: '41%' }
-                  ].map((item, idx) => (
-                    <div key={item.title} className="space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-bold">
-                        <div className="flex items-center gap-2">
-                          <span className="text-neutral-500">#{idx + 1}</span>
-                          <span className="text-white truncate max-w-[200px]">{item.title}</span>
+            {/* Reports List Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reports.filter(r => r.status === reportsFilter).length === 0 ? (
+                <div className="col-span-full py-16 bg-neutral-900/20 border border-white/5 rounded-2xl flex flex-col items-center justify-center text-center space-y-3">
+                  <CheckCircle2 className="h-10 w-10 text-emerald-400 animate-bounce" />
+                  <h3 className="text-sm font-bold text-white">¡No hay reportes {reportsFilter === 'pending' ? 'pendientes' : 'resueltos'}!</h3>
+                  <p className="text-xs text-neutral-500 max-w-sm">Todos los reproductores y servidores están funcionando correctamente en la web.</p>
+                </div>
+              ) : (
+                reports
+                  .filter(r => r.status === reportsFilter)
+                  .map((rep) => (
+                    <div 
+                      key={rep.id || rep.createdAt}
+                      className="bg-neutral-900/40 border border-white/10 rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-white/20 transition group"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-md uppercase">
+                            Episodio {rep.episodeNumber}
+                          </span>
+                          <span className="text-[9px] text-neutral-500">
+                            {rep.createdAt ? new Date(rep.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Reciente"}
+                          </span>
                         </div>
-                        <span className="text-neutral-400">{item.views} vistas</span>
+
+                        <h3 className="text-sm font-bold text-white truncate">{rep.animeTitle}</h3>
+
+                        <div className="bg-black/30 p-2.5 rounded-xl border border-white/5 space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-neutral-400">Servidor:</span>
+                            <span className="font-semibold text-rose-400">{rep.serverName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-neutral-400">Motivo:</span>
+                            <span className="font-semibold text-amber-300 truncate max-w-[170px]">{rep.reason}</span>
+                          </div>
+                        </div>
                       </div>
-                      
-                      {/* Bar graph */}
-                      <div className="h-2 w-full bg-neutral-950 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full" 
-                          style={{ width: item.percentage }}
-                        />
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                        <button
+                          onClick={() => {
+                            const found = animes.find(a => a.id === rep.animeId || a.title === rep.animeTitle);
+                            if (found) {
+                              setSelectedAnimeForEpisodes(found);
+                              setSelectedEpNum(rep.episodeNumber);
+                            } else {
+                              alert(`Abriendo editor de servidores para ${rep.animeTitle}`);
+                            }
+                          }}
+                          className="flex-1 py-1.5 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 rounded-xl text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Film className="h-3 w-3" />
+                          <span>Reparar Enlaces</span>
+                        </button>
+
+                        {rep.status === 'pending' ? (
+                          <button
+                            onClick={async () => {
+                              if (rep.id) {
+                                await updateReportStatus(rep.id, 'resolved');
+                                setReports(reports.map(r => r.id === rep.id ? { ...r, status: 'resolved' } : r));
+                              } else {
+                                setReports(reports.map(r => r === rep ? { ...r, status: 'resolved' } : r));
+                              }
+                            }}
+                            className="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Check className="h-3 w-3" />
+                            <span>Solucionado</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Resuelto
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Retention drop rate */}
-              <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col space-y-4">
-                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <TrendingUp className="h-4.5 w-4.5 text-indigo-400" />
-                  Tasa de Retención Promedio por Minuto
-                </span>
-                
-                <p className="text-[10px] text-neutral-400 leading-relaxed">
-                  Gráfica que indica el porcentaje de usuarios retenidos a lo largo de un capítulo típico de 24 minutos.
-                </p>
-
-                {/* SVG Area chart for retention */}
-                <div className="w-full h-40 bg-black/25 rounded-xl relative overflow-hidden flex items-end">
-                  <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 150" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="retGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#818cf8" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#818cf8" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M 0 15 C 100 20, 200 45, 300 50 C 400 55, 450 75, 500 85 L 500 150 L 0 150 Z" fill="url(#retGrad)" />
-                    <path d="M 0 15 C 100 20, 200 45, 300 50 C 400 55, 450 75, 500 85" fill="transparent" stroke="#818cf8" strokeWidth="2.5" />
-                  </svg>
-                  
-                  {/* Markings */}
-                  <div className="absolute inset-0 flex justify-between items-end px-3 pb-1 text-[8px] text-neutral-500 select-none">
-                    <span>Inicio (98%)</span>
-                    <span>10 Min (88%)</span>
-                    <span>18 Min (80%)</span>
-                    <span>Fin (72%)</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 items-center bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-xl text-[9px] text-indigo-300 leading-normal">
-                  <Info className="h-4.5 w-4.5 flex-shrink-0" />
-                  <span>El pico de caída ocurre a los 1:30 minutos (omisión de intro) y a los 22:00 minutos (créditos finales).</span>
-                </div>
-              </div>
-
+                  ))
+              )}
             </div>
           </div>
         )}
@@ -2300,6 +2592,170 @@ export default function AdminPanel() {
         )}
       </main>
 
+      {/* Episode & Custom Server Manager Modal */}
+      {selectedAnimeForEpisodes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-neutral-900 border border-white/10 rounded-2xl p-6 max-w-2xl w-full shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setSelectedAnimeForEpisodes(null)}
+              className="absolute top-4 right-4 text-neutral-400 hover:text-white p-1 rounded-lg transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <img 
+                src={selectedAnimeForEpisodes.coverUrl} 
+                className="h-12 w-10 object-cover rounded-lg border border-white/10 shadow-md"
+                alt="cover"
+              />
+              <div>
+                <span className="text-[9px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded uppercase">Gestor de Episodios</span>
+                <h3 className="text-base font-bold text-white leading-tight">{selectedAnimeForEpisodes.title}</h3>
+                <p className="text-xs text-neutral-400">Episodios totales: {selectedAnimeForEpisodes.episodesCount || 12}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-white">Selecciona Episodio:</label>
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-md py-1">
+                  {Array.from({ length: selectedAnimeForEpisodes.episodesCount || 12 }, (_, i) => i + 1).map((epNum) => (
+                    <button
+                      key={epNum}
+                      onClick={() => setSelectedEpNum(epNum)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        selectedEpNum === epNum 
+                          ? "bg-rose-600 text-white shadow-lg shadow-rose-600/20" 
+                          : "bg-neutral-800 text-neutral-400 hover:text-white"
+                      }`}
+                    >
+                      EP {epNum}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Form to Add Custom Video Server */}
+              <div className="bg-black/30 border border-white/5 rounded-xl p-4 space-y-3">
+                <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Agregar Servidor Personalizado para Episodio {selectedEpNum}
+                </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] text-neutral-400 font-semibold block mb-1">Nombre Servidor:</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Mp4Upload HD, VOE VIP"
+                      value={newCustomServer.name}
+                      onChange={(e) => setNewCustomServer({ ...newCustomServer, name: e.target.value })}
+                      className="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] text-neutral-400 font-semibold block mb-1">URL de Video o Embed:</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: https://mp4upload.com/embed-xyz.html o https://.../video.mp4"
+                      value={newCustomServer.url}
+                      onChange={(e) => setNewCustomServer({ ...newCustomServer, url: e.target.value })}
+                      className="w-full bg-neutral-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <select
+                    value={newCustomServer.type}
+                    onChange={(e) => setNewCustomServer({ ...newCustomServer, type: e.target.value as any })}
+                    className="bg-neutral-950 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-neutral-300 focus:outline-none"
+                  >
+                    <option value="embed">Iframe / Embed Player (Recomendado)</option>
+                    <option value="direct_mp4">Enlace MP4 / HLS Directo</option>
+                  </select>
+
+                  <button
+                    disabled={isSavingCustomServer || !newCustomServer.url}
+                    onClick={async () => {
+                      if (!newCustomServer.url) return;
+                      setIsSavingCustomServer(true);
+                      const serverItem = { name: newCustomServer.name, url: newCustomServer.url, type: newCustomServer.type };
+                      const updatedList = [...customServersList, serverItem];
+                      setCustomServersList(updatedList);
+                      
+                      // Save custom server in local storage & Firestore API
+                      try {
+                        await fetch('/api/admin/animes/save', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            ...selectedAnimeForEpisodes,
+                            customServers: {
+                              ...((selectedAnimeForEpisodes as any).customServers || {}),
+                              [selectedEpNum]: updatedList
+                            }
+                          })
+                        });
+                      } catch (e) {}
+
+                      setNewCustomServer({ name: 'Mp4Upload HD', url: '', type: 'embed' });
+                      setIsSavingCustomServer(false);
+                      alert(`¡Servidor '${serverItem.name}' añadido con éxito para el Episodio ${selectedEpNum}!`);
+                    }}
+                    className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer flex items-center gap-1"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    <span>{isSavingCustomServer ? "Guardando..." : "Guardar Servidor"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* List of active custom servers */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-white">Servidores Configurados ({customServersList.length + 3}):</span>
+                
+                <div className="space-y-1.5">
+                  <div className="bg-neutral-950 border border-white/5 p-3 rounded-xl flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+                      <span className="font-bold text-white">MonosChinos Direct (Automático)</span>
+                    </div>
+                    <span className="text-[10px] text-neutral-500 font-mono">Prioridad #1</span>
+                  </div>
+
+                  {customServersList.map((srv, idx) => (
+                    <div key={idx} className="bg-rose-950/20 border border-rose-500/20 p-3 rounded-xl flex items-center justify-between text-xs text-white">
+                      <div className="flex items-center gap-2 truncate max-w-md">
+                        <span className="h-2 w-2 rounded-full bg-purple-400"></span>
+                        <span className="font-bold text-rose-300">{srv.name}</span>
+                        <span className="text-[10px] text-neutral-400 font-mono truncate">{srv.url}</span>
+                      </div>
+                      <button
+                        onClick={() => setCustomServersList(customServersList.filter((_, i) => i !== idx))}
+                        className="text-neutral-500 hover:text-rose-400 p-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSelectedAnimeForEpisodes(null)}
+                className="px-5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
