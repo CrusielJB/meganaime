@@ -1,4 +1,5 @@
 import React from "react";
+import { getApiUrl } from "./apiConfig";
 
 /**
  * Generates a beautiful fallback image URL using a high-quality, branded SVG placeholder.
@@ -108,7 +109,7 @@ export function getProxyImageUrl(url: string | undefined, title: string = "Anime
 
   // If it's a relative path (already proxied), return as-is
   if (trimmedUrl.startsWith("/")) {
-    return trimmedUrl;
+    return getApiUrl(trimmedUrl);
   }
 
   // Try base64 encoding for cleaner URL (avoids adblocker blocking external domain params)
@@ -130,7 +131,7 @@ export function getProxyImageUrl(url: string | undefined, title: string = "Anime
 
   const encodeParam = useBase64 ? "&encode=base64" : "";
   const bannerParam = isBanner || trimmedUrl.includes("banner") || trimmedUrl.includes("cover-large") || trimmedUrl.includes("bannerUrl") || trimmedUrl.includes("banner_url") ? "&isBanner=1" : "";
-  return `/api/image-proxy?url=${encodedUrl}${encodeParam}&title=${encodeURIComponent(title)}${bannerParam}`;
+  return getApiUrl(`/api/image-proxy?url=${encodedUrl}${encodeParam}&title=${encodeURIComponent(title)}${bannerParam}`);
 }
 
 
@@ -159,10 +160,11 @@ export async function recoverCoverImageInHotPath(
         let encoded = trimmed;
         try {
           encoded = btoa(unescape(encodeURIComponent(trimmed)));
-          imgElement.src = `/api/image-proxy?url=${encoded}&encode=base64&title=${encodeURIComponent(title)}`;
+          imgElement.src = getApiUrl(`/api/image-proxy?url=${encoded}&encode=base64&title=${encodeURIComponent(title)}`);
         } catch (err) {
           imgElement.src = data.coverUrl;
         }
+
 
         // NO-REGRESSION / SYNC FIX: Persist resolved cover back into the user's continue watching local storage cache
         try {
