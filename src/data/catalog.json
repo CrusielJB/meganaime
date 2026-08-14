@@ -15,7 +15,7 @@
     ],
     "rating": 8.8,
     "airedEpisodesCount": 7,
-    "episodesCount": 7,
+    "episodesCount": 6,
     "episodes": [
       {
         "id": "the-exiled-heavy-knight-ep-1",
@@ -59,7 +59,8 @@
         "title": "Episodio 7",
         "url": "https://megaanime.net?anime=the-exiled-heavy-knight&ep=the-exiled-heavy-knight-ep-7"
       }
-    ]
+    ],
+    "external_id": "180136"
   },
   {
     "id": "tioanime-sousou-no-frieren",
@@ -344,7 +345,7 @@
     "title_native": "僕の心のヤバイやつ 第2期"
   },
   {
-    "id": "tioanime-tsue-to-tsurugi-no-wistoria-2nd-season",
+    "id": "tioanime-haikyuu-movie-gomisuteba-no-kessen",
     "title": "HAIKYU!! The Dumpster Battle",
     "synopsis": "Theatrical follow-up to Haikyuu!! TO THE TOP 2. The first film of Haikyuu!! FINAL.\n\nThe Spring Nationals tournament continues on, with Karasuno High matched against rivals Nekoma High, the fated battle between cats versus crows, also known as the highly anticipated “Dumpster Battle”. This match is t...",
     "coverUrl": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx153658-KVnjW77cQw3y.jpg",
@@ -360,7 +361,7 @@
     "episodesCount": 1,
     "year": 2024,
     "episodes": [],
-    "external_id": "153658",
+    "external_id": "haikyuu-movie-gomisuteba-no-kessen",
     "title_romaji": "Haikyuu!!: Gomi Suteba no Kessen",
     "title_english": "HAIKYU!! The Dumpster Battle",
     "title_native": "ハイキュー!! ゴミ捨て場の決戦"
@@ -1082,7 +1083,7 @@
     "episodesCount": 4,
     "year": 2026,
     "episodes": [],
-    "external_id": "nige-jouzu-no-wakagimi-2nd-season"
+    "external_id": "182616"
   },
   {
     "id": "tioanime-futsutsuka-na-akujo-dewa-gozaimasu-ga-suuguu-chouso-torikae-den",
@@ -1186,10 +1187,10 @@
     "status": "En emisión",
     "rating": 9.6,
     "type": "Anime",
-    "episodesCount": 5,
+    "episodesCount": 6,
     "year": 2026,
     "episodes": [],
-    "external_id": "youjo-senki-ii"
+    "external_id": "135865"
   },
   {
     "id": "tioanime-otome-game-sekai-wa-mob-ni-kibishii-sekai-desu-2",
@@ -1525,10 +1526,10 @@
     "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
-    "episodesCount": 6,
+    "episodesCount": 7,
     "year": 2026,
     "episodes": [],
-    "external_id": "mushoku-tensei-iii-isekai-ittara-honki-dasu"
+    "external_id": "178789"
   },
   {
     "id": "tioanime-tetsunabe-no-jan",
@@ -2897,7 +2898,7 @@
     "status": "En emisión",
     "rating": 9.4,
     "type": "Anime",
-    "episodesCount": 16,
+    "episodesCount": 17,
     "year": 2026,
     "episodes": [
       {
@@ -2981,7 +2982,7 @@
         "title": "Episodio 16"
       }
     ],
-    "external_id": "tensei-shitara-slime-datta-ken-4th-season",
+    "external_id": "182205",
     "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx182205-q2AeO1owuQbO.jpg"
   },
   {
@@ -5298,7 +5299,7 @@
     "episodesCount": 12,
     "year": 2026,
     "episodes": [],
-    "external_id": "grand-blue-season-2"
+    "external_id": "199111"
   },
   {
     "id": "tioanime-busamen-gachi-fighter",
@@ -14104,7 +14105,7 @@
     "episodesCount": 43,
     "year": 2026,
     "episodes": [],
-    "external_id": "bleach-sennen-kessenhen"
+    "external_id": "185874"
   },
   {
     "id": "tioanime-fuufu-ijou-koibito-miman",
@@ -38809,7 +38810,7 @@
     "episodesCount": 1,
     "year": 2026,
     "episodes": [],
-    "external_id": "ghost-in-the-shell-2015"
+    "external_id": "177699"
   },
   {
     "id": "tioanime-haiyore-nyaruko-san-f",
@@ -73274,10 +73275,10 @@
     "status": "En emisión",
     "rating": 9.9,
     "type": "Anime",
-    "episodesCount": 1172,
+    "episodesCount": 1173,
     "year": 1999,
     "episodes": [],
-    "external_id": "one-piece-tv"
+    "external_id": "21"
   },
   {
     "id": "tioanime-hunter-x-hunter",

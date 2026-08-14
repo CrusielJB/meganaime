@@ -294,7 +294,7 @@ export async function publishRandomAnimeIfDue(): Promise<{ posted: boolean; reas
       animeId: selectedAnime.id,
       animeTitle: selectedAnime.title,
       episodeNumber: selectedAnime.episodesCount || 12,
-      coverUrl: selectedAnime.coverUrl || selectedAnime.cover || "",
+      coverUrl: selectedAnime.coverUrl || "",
       genres: selectedAnime.genres,
       isMovie: selectedAnime.type === "Película"
     };

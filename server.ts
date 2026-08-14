@@ -10,6 +10,7 @@ import { GENRES_LIST, Manga } from "./src/types";
 import { getAnimePlaceholder } from "./src/utils/imageUtils";
 import { MOCK_MANGAS } from "./src/utils/mangaDb";
 import { MOCK_ANIMES, getAnimesWithEpisodes } from "./src/utils/animeDb";
+import { fuzzyMatch } from "./src/utils/titleNormalizer";
 
 // Local catalog — loaded dynamically from catalog.json
 const getLocalCatalog = () => getAnimesWithEpisodes();
@@ -742,7 +743,8 @@ export async function createExpressApp() {
         const isOVA = catalogItem.type === "OVA";
         let count = isMovie ? 1 : isOVA ? 1 : (catalogItem.episodesCount || 12);
 
-        // For Airing animes ("En emisión"), fetch real-time aired count so unaired episodes never appear
+        // For Airing animes ("En emisión"), confirm real available episodes directly from streaming providers (TioAnime/MonosChinos)
+        // so ONLY episodes with confirmed video servers loadable in player are presented to the user.
         if (catalogItem.status === "En emisión" && !isMovie && !isOVA) {
           const rawSlug = catalogItem.id.replace(/^tioanime-/, "");
           const cachedCountKey = `aired_count_${rawSlug}`;
@@ -2427,7 +2429,8 @@ export async function createExpressApp() {
       res.send(urlsXml);
     });
 
-    app.use(express.static(distPath, { setHeaders: (res, path) => { if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath, { setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
     app.get("*", (req, res) => {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); res.sendFile(path.join(distPath, "index.html"));
     });

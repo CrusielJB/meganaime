@@ -605,6 +605,7 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+  "the-exiled-heavy-knight": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "youjo-senki-1": "youjo-senki",
   "your-name": "kimi-no-na-wa",
   "your-name-e1": "kimi-no-na-wa",
@@ -1379,12 +1380,16 @@ export async function scrapeEpisodeFromTioAnime(
     .replace(/-sub-espanol$/, "")
     .replace(/-(?:ep|episodio)-\d+$/i, "");
 
-  // For movies try without episode number, for series try with epNum first
+  // For movies try all common movie URL patterns on TioAnime
   const isMovie = slug.includes("-pelicula") || slug.includes("movie") || slug.includes("pelicula");
   const candidates = isMovie
     ? [
+        `https://tioanime.com/ver/${cleanSlug}-1`,
         `https://tioanime.com/ver/${cleanSlug}`,
-        `https://tioanime.com/ver/${cleanSlug}-1`
+        `https://tioanime.com/ver/${cleanSlug}-pelicula-1`,
+        `https://tioanime.com/ver/${cleanSlug}-pelicula`,
+        `https://tioanime.com/ver/${cleanSlug}-movie-1`,
+        `https://tioanime.com/ver/${cleanSlug}-movie`
       ]
     : [
         `https://tioanime.com/ver/${cleanSlug}-${epNum}`,

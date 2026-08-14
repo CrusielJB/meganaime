@@ -445,28 +445,73 @@ export default function VideoPlayer({
 
   const toggleFullscreen = () => {
     const container = playerWrapperRef.current;
-    if (!container) return;
+    const video = videoRef.current;
 
-    if (!document.fullscreenElement) {
-      container.requestFullscreen().catch(err => {
-        console.warn("Fullscreen request rejected:", err);
-      });
+    const isFS = !!(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement
+    );
+
+    if (!isFS) {
+      if (container) {
+        if (container.requestFullscreen) {
+          container.requestFullscreen().catch(() => {
+            if (video && (video as any).webkitEnterFullscreen) {
+              (video as any).webkitEnterFullscreen();
+            }
+          });
+        } else if ((container as any).webkitRequestFullscreen) {
+          (container as any).webkitRequestFullscreen();
+        } else if ((container as any).mozRequestFullScreen) {
+          (container as any).mozRequestFullScreen();
+        } else if ((container as any).msRequestFullscreen) {
+          (container as any).msRequestFullscreen();
+        } else if (video && (video as any).webkitEnterFullscreen) {
+          (video as any).webkitEnterFullscreen();
+        }
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
+      }
       setIsFullscreen(true);
     } else {
-      document.exitFullscreen().catch(err => {
-        console.warn("Fullscreen exit rejected:", err);
-      });
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+      }
       setIsFullscreen(false);
     }
   };
 
-  // Sync fullscreen state if changed externally (e.g. Escape key)
+  // Sync fullscreen state if changed externally (e.g. Escape key or native iOS/Android controls)
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFS = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFS);
     };
+
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
+    };
   }, []);
 
   // Keyboard Hotkeys Integration
@@ -1098,16 +1143,31 @@ export default function VideoPlayer({
                   )}
                 </div>
               ) : isEmbed && !useResolvedPlayer ? (
-                <div className="w-full h-full relative overflow-hidden shadow-2xl">
+                <div ref={playerWrapperRef} className="w-full h-full relative overflow-hidden shadow-2xl bg-black flex items-center justify-center">
                   <iframe
                     key={embedUrlWithTime}
                     src={embedUrlWithTime}
                     className="w-full h-full border-0"
                     allowFullScreen
-                    allow="autoplay; encrypted-media; picture-in-picture; clipboard-write"
+                    // @ts-ignore
+                    webkitallowfullscreen="true"
+                    // @ts-ignore
+                    mozallowfullscreen="true"
+                    allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />
+
+                  {/* Dedicated Mobile Fullscreen Floating Button for Embed Players */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="absolute bottom-4 left-4 bg-black/85 hover:bg-black text-white px-3 py-2 rounded-xl border border-white/20 text-xs font-bold flex items-center gap-2 shadow-2xl z-30 cursor-pointer transition active:scale-95 backdrop-blur-md"
+                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                  >
+                    {isFullscreen ? <Minimize className="h-4 w-4 text-rose-500" /> : <Maximize className="h-4 w-4 text-rose-500" />}
+                    <span className="text-[11px] font-semibold">{isFullscreen ? "Salir Fullscreen" : "Pantalla Completa"}</span>
+                  </button>
+
                   {!postMessageActive && (
                     <div className="absolute top-4 left-4 right-4 bg-rose-500/90 text-white backdrop-blur px-4 py-2.5 rounded-xl border border-rose-400/20 text-xs flex items-center justify-between shadow-2xl animate-slide-in max-w-xl mx-auto z-20">
                       <div className="flex items-center gap-2">

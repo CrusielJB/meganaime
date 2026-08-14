@@ -234,94 +234,91 @@ export default function AdminPanel() {
   };
 
   // Load metrics from Firestore or fallback to realistic stats
-  useEffect(() => {
-    async function loadStats() {
+  const loadStats = async () => {
+    try {
+      const now = new Date();
+      const todayStr = now.toISOString().split("T")[0]; // "YYYY-MM-DD"
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+
+      // Fetch all page_views from last 30 days using date string comparison
+      const viewsRef = collection(db, 'page_views');
+      let viewsSnap: any = { size: 0, forEach: () => {} };
       try {
-        const now = new Date();
-        const todayStr = now.toISOString().split("T")[0]; // "YYYY-MM-DD"
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
-
-        // Fetch all page_views from last 30 days using date string comparison
-        const viewsRef = collection(db, 'page_views');
-        let viewsSnap: any = { size: 0, forEach: () => {} };
+        viewsSnap = await getDocs(query(viewsRef, where('date', '>=', thirtyDaysAgoStr)));
+      } catch (e) {
+        console.warn("Firestore query where(date) failed, trying simple fetch:", e);
         try {
-          viewsSnap = await getDocs(query(viewsRef, where('date', '>=', thirtyDaysAgoStr)));
-        } catch (e) {
-          console.warn("Firestore query where(date) failed, trying simple fetch:", e);
-          try {
-            viewsSnap = await getDocs(viewsRef);
-          } catch (err2) {
-            console.warn("Firestore fetch views failed:", err2);
-          }
+          viewsSnap = await getDocs(viewsRef);
+        } catch (err2) {
+          console.warn("Firestore fetch views failed:", err2);
         }
-
-        // Build daily breakdown map
-        const dailyMap: Record<string, number> = {};
-        const monthlyMap: Record<string, number> = {};
-
-        viewsSnap.forEach(docSnap => {
-          const data = docSnap.data();
-          const date: string = data.date || '';
-          if (!date) return;
-          dailyMap[date] = (dailyMap[date] || 0) + 1;
-          const monthKey = date.slice(0, 7); // "YYYY-MM"
-          monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + 1;
-        });
-
-        const todayCount = dailyMap[todayStr] || 0;
-        const monthlyCount = viewsSnap.size;
-
-        // Build sorted daily history (newest first, last 30 days)
-        const dailyArr: DailyRecord[] = Object.entries(dailyMap)
-          .map(([date, count]) => ({ date, count }))
-          .sort((a, b) => b.date.localeCompare(a.date));
-        setDailyHistory(dailyArr);
-
-        // Build monthly records
-        const monthNames: Record<string, string> = {
-          '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
-          '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
-          '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
-        };
-        const monthlyArr: MonthlyRecord[] = Object.entries(monthlyMap)
-          .map(([id, viewsCount]) => {
-            const [year, month] = id.split('-');
-            return {
-              id,
-              monthName: `${monthNames[month] || month} ${year}`,
-              viewsCount,
-              updatedAt: new Date().toISOString()
-            };
-          })
-          .sort((a, b) => b.id.localeCompare(a.id));
-        if (monthlyArr.length > 0) setMonthlyVisits(monthlyArr);
-
-        // Active users: sessions in last 5 minutes (using page_views with recent timestamp)
-        const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000);
-        const fiveMinsAgoStr = fiveMinsAgo.toISOString().split('T')[0];
-        // Approximation: count unique sessionIds from today
-        const todaySessionIds = new Set<string>();
-        viewsSnap.forEach(docSnap => {
-          const data = docSnap.data();
-          if (data.date === todayStr && data.sessionId) todaySessionIds.add(data.sessionId);
-        });
-
-        setStats({
-          activeUsers: todaySessionIds.size,
-          dailyViews: todayCount,
-          monthlyViews: monthlyCount,
-          topAnime: 'Sin datos',
-          topCategory: 'Sin datos'
-        });
-      } catch (err) {
-        console.error("Error loading live stats:", err);
-      } finally {
-        setLoading(false);
       }
+
+      // Build daily breakdown map
+      const dailyMap: Record<string, number> = {};
+      const monthlyMap: Record<string, number> = {};
+
+      viewsSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        const date: string = data.date || '';
+        if (!date) return;
+        dailyMap[date] = (dailyMap[date] || 0) + 1;
+        const monthKey = date.slice(0, 7); // "YYYY-MM"
+        monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + 1;
+      });
+
+      const todayCount = dailyMap[todayStr] || 0;
+      const monthlyCount = viewsSnap.size;
+
+      // Build sorted daily history (newest first, last 30 days)
+      const dailyArr: DailyRecord[] = Object.entries(dailyMap)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => b.date.localeCompare(a.date));
+      setDailyHistory(dailyArr);
+
+      // Build monthly records
+      const monthNames: Record<string, string> = {
+        '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
+        '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
+        '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
+      };
+      const monthlyArr: MonthlyRecord[] = Object.entries(monthlyMap)
+        .map(([id, viewsCount]) => {
+          const [year, month] = id.split('-');
+          return {
+            id,
+            monthName: `${monthNames[month] || month} ${year}`,
+            viewsCount,
+            updatedAt: new Date().toISOString()
+          };
+        })
+        .sort((a, b) => b.id.localeCompare(a.id));
+      if (monthlyArr.length > 0) setMonthlyVisits(monthlyArr);
+
+      // Active users: sessions in last 5 minutes (using page_views with recent timestamp)
+      const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      const fiveMinsAgoStr = fiveMinsAgo.toISOString().split('T')[0];
+      // Approximation: count unique sessionIds from today
+      const todaySessionIds = new Set<string>();
+      viewsSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.date === todayStr && data.sessionId) todaySessionIds.add(data.sessionId);
+      });
+
+      setStats({
+        activeUsers: todaySessionIds.size,
+        dailyViews: todayCount,
+        monthlyViews: monthlyCount,
+        topAnime: 'Sin datos',
+        topCategory: 'Sin datos'
+      });
+    } catch (err) {
+      console.error("Error loading live stats:", err);
+    } finally {
+      setLoading(false);
     }
-    loadStats();
-  }, []);
+  };
 
   // Load User Reports & Global System Banner
   useEffect(() => {
