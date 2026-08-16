@@ -400,7 +400,7 @@
       "Psicológico",
       "Sobrenatural"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.6,
     "type": "Anime",
     "episodesCount": 11,
@@ -670,7 +670,7 @@
       "Drama",
       "Romance"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -1022,7 +1022,7 @@
       "Película",
       "Fantasía"
     ],
-    "status": "En emisión",
+    "status": "Finalizado",
     "rating": 9.5,
     "type": "Película",
     "episodesCount": 1,
@@ -1095,7 +1095,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 5,
@@ -1112,7 +1112,7 @@
     "genres": [
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8,
     "type": "Anime",
     "episodesCount": 6,
@@ -1130,7 +1130,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -1148,7 +1148,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -1166,7 +1166,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -1202,7 +1202,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.5,
     "type": "Anime",
     "episodesCount": 12,
@@ -1219,7 +1219,7 @@
     "genres": [
       "Acción"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.2,
     "type": "Anime",
     "episodesCount": 6,
@@ -1237,7 +1237,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.9,
     "type": "Anime",
     "episodesCount": 6,
@@ -1255,7 +1255,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.6,
     "type": "Anime",
     "episodesCount": 12,
@@ -1273,7 +1273,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -1290,7 +1290,7 @@
     "genres": [
       "Romance"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9,
     "type": "Anime",
     "episodesCount": 12,
@@ -1308,7 +1308,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -1326,7 +1326,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -1344,7 +1344,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 6,
@@ -1362,7 +1362,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.8,
     "type": "Anime",
     "episodesCount": 6,
@@ -1380,7 +1380,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.5,
     "type": "Anime",
     "episodesCount": 12,
@@ -1398,7 +1398,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -1416,7 +1416,7 @@
       "Aventura",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.9,
     "type": "Anime",
     "episodesCount": 12,
@@ -1433,7 +1433,7 @@
     "genres": [
       "Romance"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.6,
     "type": "Anime",
     "episodesCount": 12,
@@ -1451,7 +1451,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -1469,7 +1469,7 @@
       "Aventura",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8,
     "type": "Anime",
     "episodesCount": 6,
@@ -1487,7 +1487,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 6,
@@ -1505,7 +1505,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -1541,7 +1541,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.8,
     "type": "Anime",
     "episodesCount": 12,
@@ -1559,7 +1559,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.5,
     "type": "Anime",
     "episodesCount": 12,
@@ -1577,7 +1577,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -1612,7 +1612,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.6,
     "type": "Anime",
     "episodesCount": 5,
@@ -1629,7 +1629,7 @@
     "genres": [
       "Acción"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -1647,7 +1647,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9,
     "type": "Anime",
     "episodesCount": 12,
@@ -1664,7 +1664,7 @@
     "genres": [
       "Comedia"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -1682,7 +1682,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -1700,7 +1700,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -1718,7 +1718,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.8,
     "type": "Anime",
     "episodesCount": 7,
@@ -1753,7 +1753,7 @@
     "genres": [
       "Acción"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -1771,7 +1771,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.9,
     "type": "Anime",
     "episodesCount": 12,
@@ -1789,7 +1789,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -1807,7 +1807,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8,
     "type": "Anime",
     "episodesCount": 12,
@@ -1825,7 +1825,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 6,
@@ -1843,7 +1843,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.4,
     "type": "Anime",
     "episodesCount": 7,
@@ -1861,7 +1861,7 @@
       "Aventura",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -1879,7 +1879,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.8,
     "type": "Anime",
     "episodesCount": 12,
@@ -1897,7 +1897,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.5,
     "type": "Anime",
     "episodesCount": 12,
@@ -1915,7 +1915,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -1933,7 +1933,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.9,
     "type": "Anime",
     "episodesCount": 12,
@@ -1951,7 +1951,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.6,
     "type": "Anime",
     "episodesCount": 7,
@@ -1968,7 +1968,7 @@
     "genres": [
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.3,
     "type": "Anime",
     "episodesCount": 7,
@@ -1986,7 +1986,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9,
     "type": "Anime",
     "episodesCount": 12,
@@ -2004,7 +2004,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -2022,7 +2022,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -2039,7 +2039,7 @@
     "genres": [
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -2057,7 +2057,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.8,
     "type": "Anime",
     "episodesCount": 12,
@@ -2074,7 +2074,7 @@
     "genres": [
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.5,
     "type": "Anime",
     "episodesCount": 8,
@@ -2091,7 +2091,7 @@
     "genres": [
       "Acción"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.2,
     "type": "Anime",
     "episodesCount": 8,
@@ -2216,7 +2216,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.1,
     "type": "Anime",
     "episodesCount": 18,
@@ -2324,7 +2324,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.3,
     "type": "Anime",
     "episodesCount": 19,
@@ -2447,7 +2447,7 @@
       "Aventura",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -2626,7 +2626,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.9,
     "type": "Anime",
     "episodesCount": 12,
@@ -2734,7 +2734,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -2752,7 +2752,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.8,
     "type": "Anime",
     "episodesCount": 12,
@@ -2788,7 +2788,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -2860,7 +2860,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8,
     "type": "Anime",
     "episodesCount": 12,
@@ -3263,7 +3263,7 @@
     "genres": [
       "Deportes"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 1,
@@ -3815,7 +3815,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9,
     "type": "Anime",
     "episodesCount": 12,
@@ -4704,7 +4704,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -5597,7 +5597,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 12,
@@ -7569,7 +7569,7 @@
       "Acción",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 7.9,
     "type": "Anime",
     "episodesCount": 12,
@@ -7587,7 +7587,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.6,
     "type": "Anime",
     "episodesCount": 12,
@@ -7783,7 +7783,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -8266,7 +8266,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.3,
     "type": "Anime",
     "episodesCount": 12,
@@ -10689,7 +10689,7 @@
     "genres": [
       "Romance"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -17883,7 +17883,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.4,
     "type": "Anime",
     "episodesCount": 12,
@@ -17935,7 +17935,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.5,
     "type": "Anime",
     "episodesCount": 24,
@@ -20739,7 +20739,7 @@
     "genres": [
       "Terror"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.2,
     "type": "Anime",
     "episodesCount": 12,
@@ -38300,7 +38300,7 @@
       "Acción",
       "Fantasía"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 8.1,
     "type": "Anime",
     "episodesCount": 67,
@@ -75154,7 +75154,7 @@
     "genres": [
       "Misterio"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.7,
     "type": "Anime",
     "episodesCount": 12,
@@ -78384,7 +78384,7 @@
       "Acción",
       "Aventura"
     ],
-    "status": "Finalizado",
+    "status": "En emisión",
     "rating": 9.1,
     "type": "Anime",
     "episodesCount": 12,
