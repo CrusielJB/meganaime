@@ -1449,7 +1449,7 @@ export async function scrapeEpisodeFromTioAnime(
               });
 
               // Filter out YourUpload completely if Voe/Mega/Mp4Upload exist to prevent DMCA error screens
-              const filtered = servers.filter(s => {
+              let filtered = servers.filter(s => {
                 const u = s.url.toLowerCase();
                 const n = s.name.toLowerCase();
                 if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) {
@@ -1457,6 +1457,17 @@ export async function scrapeEpisodeFromTioAnime(
                 }
                 return true;
               });
+
+              // Check if top Voe server returns 404 and fallback to Mega instantly
+              if (filtered.length > 1 && filtered[0].url.includes("voe")) {
+                try {
+                  const checkHead = await fetch(filtered[0].url, { method: "HEAD", signal: AbortSignal.timeout(2000) });
+                  if (!checkHead.ok) {
+                    console.log(`[Scraper] Top Voe server (${filtered[0].url}) returned ${checkHead.status} 404. Falling back to Mega/other servers.`);
+                    filtered.shift(); // Remove dead Voe server so Mega becomes #1
+                  }
+                } catch (e) {}
+              }
 
               return filtered.length > 0 ? filtered : servers;
             }
