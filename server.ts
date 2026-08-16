@@ -481,6 +481,12 @@ export async function createExpressApp() {
     });
   });
 
+  app.all("/api/admin/flush-cache", (req, res) => {
+    apiCache.flushAll();
+    console.log("[Cache] 🧹 Server apiCache flushed completely!");
+    return res.json({ success: true, message: "Cache de servidor vaciada en megaanime.net" });
+  });
+
   // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from node-cron, external cron, or GET link) ──
   // Internally guards against double-posting: will skip if last post was < 3 hours ago.
   app.all("/api/admin/fb-cron", async (req, res) => {
