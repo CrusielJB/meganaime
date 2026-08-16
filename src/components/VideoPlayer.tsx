@@ -282,10 +282,30 @@ export default function VideoPlayer({
       : [])
   ];
 
-  // Purge any restricted YouTube embeds to ensure clean video playback
-  const servers = rawServersList.filter(s => 
-    s && s.url && !s.url.toLowerCase().includes("youtube.com") && !s.url.toLowerCase().includes("youtu.be")
-  );
+  // Purge YouTube embeds and YourUpload (if other working servers exist) on the client side
+  const filteredServers = rawServersList.filter(s => {
+    if (!s || !s.url) return false;
+    const u = s.url.toLowerCase();
+    const n = (s.name || "").toLowerCase();
+    if (u.includes("youtube.com") || u.includes("youtu.be")) return false;
+    if ((u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) && rawServersList.length > 1) {
+      return false;
+    }
+    return true;
+  });
+
+  // Sort Voe and Mega to the top positions for instant clean playback
+  const servers = [...filteredServers].sort((a, b) => {
+    const getScore = (s: { name: string; url: string }) => {
+      const u = s.url.toLowerCase();
+      const n = (s.name || "").toLowerCase();
+      if (u.includes("voe") || n.includes("voe")) return 1;
+      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 2;
+      if (u.includes("mp4upload") || n.includes("mp4upload")) return 3;
+      return 10;
+    };
+    return getScore(a) - getScore(b);
+  });
 
   // Auto-select best direct stream server when servers load so our custom player is used
   useEffect(() => {
