@@ -2090,7 +2090,7 @@ export async function createExpressApp() {
       } catch (e) {}
 
       if (!response || !response.ok) {
-        return res.json({ url: null, isHls: false });
+        return res.json({ url: null, isHls: false, dead: true });
       }
       const rawHtml = await response.text();
 
@@ -2125,7 +2125,7 @@ export async function createExpressApp() {
       const html = unpackPacker(rawHtml) + "\n" + rawHtml;
 
       // Detect if third-party embed page returned a 404 or File Deleted page
-      const isDeadEmbed = /404 Not Found|File Not Found|File deleted|Video not found|this video is no longer available/i.test(html);
+      const isDeadEmbed = /404|No encontrado|Not Found|File Not Found|File deleted|Video not found|no longer available|Content Restricted/i.test(html);
       if (isDeadEmbed) {
         return res.json({ url: null, isHls: false, dead: true });
       }
