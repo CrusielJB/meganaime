@@ -1432,7 +1432,7 @@ export async function scrapeEpisodeFromTioAnime(
               }
             }
             if (servers.length > 0) {
-              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Mega > Mp4Upload > Okru > YourUpload (bottom)
+              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Mega > Mp4Upload > Okru
               servers.sort((a, b) => {
                 const score = (s: { name: string; url: string }) => {
                   const u = s.url.toLowerCase();
@@ -1442,12 +1442,23 @@ export async function scrapeEpisodeFromTioAnime(
                   if (u.includes("mega.nz") || n.includes("mega")) return 90;
                   if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
                   if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
-                  if (u.includes("yourupload") || n.includes("yourupload")) return 10; // Bottom priority due to frequent DMCA blocks
+                  if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) return 10;
                   return 50;
                 };
                 return score(b) - score(a);
               });
-              return servers;
+
+              // Filter out YourUpload completely if Voe/Mega/Mp4Upload exist to prevent DMCA error screens
+              const filtered = servers.filter(s => {
+                const u = s.url.toLowerCase();
+                const n = s.name.toLowerCase();
+                if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) {
+                  return servers.length === 1; // Only keep if it's the only server available
+                }
+                return true;
+              });
+
+              return filtered.length > 0 ? filtered : servers;
             }
           } catch (e) {}
         }
