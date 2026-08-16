@@ -625,6 +625,10 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "consumet-199748": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "i-became-a-legend-after-my-10-year-long-last-stand": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "koko-wa-ore-ni-makasete-saki-ni-ike-to-ittekara-10-nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "tioanime-koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "tioanime-sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
+  "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
   "one-piece-pelicula-gigantes": "one-piece-film-red",
   "black-torch": "black-torch-sub-espanol",
   "black-torch-sub-espanol": "black-torch-sub-espanol",
@@ -829,9 +833,9 @@ export async function scrapeEpisodeFromMonosChinos(
   alTitles?: AniListTitles | null
 ): Promise<Array<{ name: string; url: string }>> {
   const domains = [
+    "https://monoschinos2.net",
     "https://monoschinos2.com",
     "https://monoschinos3.com",
-    "https://monoschinos2.net",
     "https://monoschinos.net",
     "https://monoschinos.st",
     "https://monoschinos.to",
@@ -888,7 +892,7 @@ export async function scrapeEpisodeFromMonosChinos(
             const finalQueries = Array.from(new Set(queriesToTry)).slice(0, 3);
 
             for (const query of finalQueries) {
-              const searchUrl = `${domain}/buscar?q=${encodeURIComponent(query)}`;
+              const searchUrl = `${domain}/animes?buscar=${encodeURIComponent(query)}`;
               const searchRes = await fetch(searchUrl, { headers: HEADERS, signal: AbortSignal.timeout(3000) });
               if (searchRes.ok) {
                 const searchText = await searchRes.text();
@@ -1468,6 +1472,18 @@ export async function scrapeEpisodeFromTioAnime(
                   }
                 } catch (e) {}
               }
+
+              // Automatically query and merge MonosChinos servers (Mega, Mp4Upload, LuluStream, Voe, etc.)
+              try {
+                const mcServers = await scrapeEpisodeFromMonosChinos(slug, cleanSlug, epNum, isMovie, cleanSlug, null);
+                if (mcServers && mcServers.length > 0) {
+                  for (const mcs of mcServers) {
+                    if (!filtered.some(s => s.url === mcs.url)) {
+                      filtered.push(mcs);
+                    }
+                  }
+                }
+              } catch (e) {}
 
               return filtered.length > 0 ? filtered : servers;
             }
