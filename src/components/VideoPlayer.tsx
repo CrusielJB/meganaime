@@ -1154,6 +1154,7 @@ export default function VideoPlayer({
                     // @ts-ignore
                     mozallowfullscreen="true"
                     allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />
