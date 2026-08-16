@@ -738,30 +738,33 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "dragon-ball-daima": "dragon-ball-daima",
   "bleach-sennen-kessen-hen": "bleach-sennen-kessen-hen",
   "hunter-x-hunter-2011": "hunter-x-hunter-2011",
+  "tioanime-sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
+  "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
   "black-clover": "black-clover",
   "shingeki-no-kyojin": "shingeki-no-kyojin"
 };
 
-export async function verifyVideoServers(servers: Array<{ name: string; url: string }>, domain: string, limit: number = 4): Promise<Array<{ name: string; url: string }>> {
-  const PREFERRED_SERVERS = ["ok", "filemoon", "mp4upload", "mega", "yourupload", "fembed", "mixdrop", "streamtape", "dood", "voe", "burst", "streamsb", "ruvid", "vidguard", "uqload", "vidmoly", "streamvid"];
-  
-  // 1. Sort by preference first
+export async function verifyVideoServers(servers: Array<{ name: string; url: string }>, domain: string, limit: number = 6): Promise<Array<{ name: string; url: string }>> {
+  // Sort servers by reliability: Voe > Mega > Mp4Upload > Filemoon / Streamtape / OkRu > YourUpload (bottom)
   const sorted = [...servers].sort((a, b) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    let aScore = 99;
-    let bScore = 99;
-    if (aName.includes("ok")) aScore = 0;
-    if (bName.includes("ok")) bScore = 0;
-    if (aName.includes("filemoon")) aScore = Math.min(aScore, 1);
-    if (bName.includes("filemoon")) bScore = Math.min(bScore, 1);
-    if (aName.includes("mega")) aScore = Math.min(aScore, 2);
-    if (bName.includes("mega")) bScore = Math.min(bScore, 2);
-    PREFERRED_SERVERS.forEach((pref, index) => {
-      if (aName.includes(pref)) aScore = Math.min(aScore, index + 10);
-      if (bName.includes(pref)) bScore = Math.min(bScore, index + 10);
-    });
-    return aScore - bScore;
+    const aName = (a.name || "").toLowerCase();
+    const bName = (b.name || "").toLowerCase();
+    const aUrl = (a.url || "").toLowerCase();
+    const bUrl = (b.url || "").toLowerCase();
+
+    const getScore = (name: string, url: string) => {
+      if (url.includes("voe") || name.includes("voe")) return 1;
+      if (url.includes("mega.nz") || url.includes("mega.co.nz") || name.includes("mega")) return 2;
+      if (url.includes("mp4upload") || name.includes("mp4upload")) return 3;
+      if (url.includes("filemoon") || name.includes("filemoon")) return 4;
+      if (url.includes("streamtape") || name.includes("streamtape")) return 5;
+      if (url.includes("ok.ru") || url.includes("okru") || name.includes("ok")) return 6;
+      if (url.includes("savefiles") || url.includes("dsvplay")) return 7;
+      if (url.includes("yourupload") || url.includes("bysekoze") || name.includes("yourupload")) return 99; // Bottom priority
+      return 20;
+    };
+
+    return getScore(aName, aUrl) - getScore(bName, bUrl);
   });
 
   // 2. Verify top candidates in parallel for speed
@@ -787,6 +790,15 @@ export async function verifyVideoServers(servers: Array<{ name: string; url: str
         return null;
       }
       
+      const lowerUrl = server.url.toLowerCase();
+      if (lowerUrl.includes("yourupload") || lowerUrl.includes("bysekoze")) {
+        const text = await response.text();
+        if (text.includes("DMCA") || text.includes("Content Restricted") || text.includes("received DMCA complaint")) {
+          console.warn(`[Server Check] 🚨 Discarding DMCA-restricted server: ${server.url}`);
+          return null;
+        }
+      }
+
       return server;
     } catch {
       // Network error or timeout - assume potentially problematic
@@ -1420,18 +1432,18 @@ export async function scrapeEpisodeFromTioAnime(
               }
             }
             if (servers.length > 0) {
-              // Prioritize reliable active servers: Direct MP4/M3U8 > YourUpload > Voe > Okru > Mega
+              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Mega > Mp4Upload > Okru > YourUpload (bottom)
               servers.sort((a, b) => {
                 const score = (s: { name: string; url: string }) => {
                   const u = s.url.toLowerCase();
                   const n = s.name.toLowerCase();
                   if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 100;
-                  if (u.includes("yourupload") || n.includes("yourupload")) return 90;
-                  if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 80;
+                  if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 95;
+                  if (u.includes("mega.nz") || n.includes("mega")) return 90;
+                  if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
                   if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
-                  if (u.includes("mega.nz") || n.includes("mega")) return 60;
-                  if (u.includes("my.mail.ru") || n.includes("maru")) return 50;
-                  return 10;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 10; // Bottom priority due to frequent DMCA blocks
+                  return 50;
                 };
                 return score(b) - score(a);
               });
