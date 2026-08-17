@@ -1454,22 +1454,15 @@ export async function scrapeEpisodeFromTioAnime(
                   if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 95;
                   if (u.includes("mega.nz") || n.includes("mega")) return 90;
                   if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 80;
                   if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
-                  if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) return 10;
+                  if (u.includes("bysekoze")) return 10;
                   return 50;
                 };
                 return score(b) - score(a);
               });
 
-              // Filter out YourUpload if better servers exist
-              let filtered = servers.filter(s => {
-                const u = s.url.toLowerCase();
-                const n = s.name.toLowerCase();
-                if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) {
-                  return servers.length === 1;
-                }
-                return true;
-              });
+              let filtered = [...servers];
 
               // Automatically query and merge MonosChinos servers (VOE, Dsvplay, Savefiles, Mega, etc.)
               try {
