@@ -1188,24 +1188,6 @@ export default function VideoPlayer({
                     <span className="text-[11px] font-semibold">{isFullscreen ? "Salir Fullscreen" : "Pantalla Completa"}</span>
                   </button>
 
-                  {!postMessageActive && (
-                    <div className="absolute top-4 left-4 right-4 bg-rose-500/90 text-white backdrop-blur px-4 py-2.5 rounded-xl border border-rose-400/20 text-xs flex items-center justify-between shadow-2xl animate-slide-in max-w-xl mx-auto z-20">
-                      <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4 flex-shrink-0" />
-                        <span>Este reproductor no comparte eventos de progreso. Guardaremos tu avance automáticamente cada 10 segundos.</span>
-                      </div>
-                      <button 
-                        onClick={() => setPostMessageActive(true)} 
-                        className="ml-3 hover:text-white/80 font-bold cursor-pointer"
-                      >
-                        Entendido
-                      </button>
-                    </div>
-                  )}
-                  <div className="absolute bottom-4 right-4 bg-black/85 backdrop-blur px-3 py-2 rounded-xl border border-white/10 text-[9px] text-neutral-400 flex items-center gap-1.5 pointer-events-none z-10">
-                    <Info className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Usa la pantalla completa del reproductor para omitir anuncios.</span>
-                  </div>
                 </div>
               ) : (
 
