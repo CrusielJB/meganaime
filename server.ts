@@ -2106,7 +2106,7 @@ export async function createExpressApp() {
       } catch (e) {}
 
       if (!response || !response.ok) {
-        return res.json({ url: null, isHls: false, dead: true });
+        return res.json({ url: null, isHls: false, dead: false });
       }
       const rawHtml = await response.text();
 

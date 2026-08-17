@@ -407,21 +407,12 @@ export default function VideoPlayer({
       try {
         const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
 
-        if (resolved && resolved.dead) {
-          console.warn(`[Auto-Player] Active server (${activeServer.name}) is dead/deleted! Auto-switching to next server...`);
-          const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
-          if (nextWorkingIdx !== -1 && servers.length > 1) {
-            setActiveServerIdx(nextWorkingIdx);
-            return;
-          }
-        }
-
         if (resolved && resolved.url) {
           setResolvedStreamUrl(getApiUrl(resolved.url));
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // Use real activeServer URL for this episode inside player container
+          // Use direct activeServer URL inside iframe player container
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);
         }
