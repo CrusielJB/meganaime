@@ -19,7 +19,7 @@ export function getAvailableEpisodesCountForAiring(anime: Anime): number {
   if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
     return anime.airedEpisodesCount;
   }
-  if (anime.id.includes("one-piece")) return 1173;
+  if (anime.id.includes("one-piece")) return 1174;
   if (anime.id === "mushoku-tensei-3") return 7;
   if (anime.id === "youjo-senki-2") return 6;
   if (anime.id === "that-time-i-got-reincarnated-as-a-slime-4") return 18;

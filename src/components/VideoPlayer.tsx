@@ -1183,7 +1183,6 @@ export default function VideoPlayer({
                     // @ts-ignore
                     mozallowfullscreen="true"
                     allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; clipboard-write *; accelerometer *; gyroscope *"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-downloads"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />
