@@ -32,6 +32,7 @@ import { getDownloadedEpisodeBlob } from "../utils/downloadDb";
 import CommentSection from "./CommentSection";
 import { resolveEmbedUrl } from "../utils/resolvers";
 import { sendUserReport } from "../utils/reports";
+import { getApiUrl } from "../utils/apiConfig";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
@@ -261,9 +262,11 @@ export default function VideoPlayer({
     async function fetchEpisodeDetails() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/episode/${encodeURIComponent(episodeId)}`);
-        const data = await res.json();
-        setEpisodeData(data);
+        const res = await fetch(getApiUrl(`/api/episode/${encodeURIComponent(episodeId)}`), { signal: AbortSignal.timeout(6000) });
+        if (res.ok) {
+          const data = await res.json();
+          setEpisodeData(data);
+        }
       } catch (err) {
         console.error("Error loading episode players:", err);
       } finally {
@@ -294,14 +297,17 @@ export default function VideoPlayer({
     return true;
   });
 
-  // Sort Voe and Mega to the top positions for instant clean playback
+  // Sort instant autoplay servers (Direct Stream, Voe, Streamwish, Mp4Upload) to the top
   const servers = [...filteredServers].sort((a, b) => {
     const getScore = (s: { name: string; url: string }) => {
       const u = s.url.toLowerCase();
       const n = (s.name || "").toLowerCase();
-      if (u.includes("voe") || n.includes("voe")) return 1;
-      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 2;
-      if (u.includes("mp4upload") || n.includes("mp4upload")) return 3;
+      if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 1;
+      if (u.includes("voe") || n.includes("voe")) return 2;
+      if (u.includes("streamwish") || u.includes("filelions") || n.includes("wish")) return 3;
+      if (u.includes("mp4upload") || n.includes("mp4upload")) return 4;
+      if (u.includes("ok.ru") || n.includes("okru")) return 5;
+      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 6;
       return 10;
     };
     return getScore(a) - getScore(b);
@@ -399,7 +405,7 @@ export default function VideoPlayer({
         }
 
         if (resolved && resolved.url) {
-          setResolvedStreamUrl(resolved.url);
+          setResolvedStreamUrl(getApiUrl(resolved.url));
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
@@ -717,20 +723,11 @@ export default function VideoPlayer({
     const isHls = resolvedIsHls || resolvedStreamUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
 
     const handleVideoError = () => {
-      const hasMoreServers = activeServerIdx < servers.length - 1;
-      if (hasMoreServers) {
-        setVideoError("Cargando reproductor...");
-        setIsAutoAdvancing(true);
-        autoAdvanceTimerRef.current = setTimeout(() => {
-          setActiveServerIdx(prev => Math.min(prev + 1, servers.length - 1));
-          setVideoError(null);
-          setIsAutoAdvancing(false);
-        }, 1500);
-      } else {
-        console.log("[Auto-Player] All servers exhausted for this episode.");
-        setVideoError("No se pudo cargar el video de este servidor. Por favor selecciona otro servidor arriba o intenta de nuevo.");
-        setIsAutoAdvancing(false);
-      }
+      console.warn(`[Auto-Player] Direct stream error on ${activeServer?.name}. Switching to clean embed player.`);
+      setUseResolvedPlayer(false);
+      setResolvedStreamUrl(activeServer?.url || "");
+      setVideoError(null);
+      setIsAutoAdvancing(false);
     };
 
     const startPlayback = (videoEl: HTMLVideoElement) => {
@@ -1058,9 +1055,9 @@ export default function VideoPlayer({
 
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in">
-      {/* Top Controls Bar */}
-      <div className={`flex h-16 items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 ${
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Top Controls Bar with iOS Safe Area Inset Support */}
+      <div className={`flex items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] min-h-[calc(4rem+env(safe-area-inset-top,0px))] pb-2 ${
         isFullscreen && !showControls ? "opacity-0 pointer-events-none -translate-y-full" : "opacity-100"
       }`}>
         <div className="flex items-center space-x-3">
@@ -1173,7 +1170,7 @@ export default function VideoPlayer({
                     webkitallowfullscreen="true"
                     // @ts-ignore
                     mozallowfullscreen="true"
-                    allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope"
+                    allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; clipboard-write *; accelerometer *; gyroscope *"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
@@ -1244,14 +1241,9 @@ export default function VideoPlayer({
                       }
                     }}
                     onError={() => {
-                      console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Failing over...`);
-                      const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
-                      if (nextWorkingIdx !== -1 && servers.length > 1) {
-                        setActiveServerIdx(nextWorkingIdx);
-                      } else {
-                        setUseResolvedPlayer(false);
-                        setResolvedStreamUrl(activeServer.url);
-                      }
+                      console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Falling back to embed player.`);
+                      setUseResolvedPlayer(false);
+                      setResolvedStreamUrl(activeServer.url);
                     }}
                   />
                   

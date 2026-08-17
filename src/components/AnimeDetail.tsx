@@ -2,7 +2,8 @@ import React, { useState, useMemo } from "react";
 import { X, Play, Heart, Star, Calendar, ArrowUpDown, Clock, ChevronDown, BookOpen, Film, Download, CheckCircle, RefreshCw, Sparkles } from "lucide-react";
 import { Anime, Episode, Manga, User } from "../types";
 import { getAnimePlaceholder, getProxyImageUrl, recoverCoverImageInHotPath } from "../utils/imageUtils";
-import { getAnimesWithEpisodes, getBaseTitle } from "../utils/animeDb";
+import { getAnimesWithEpisodes, getBaseTitle, generateEpisodesForAnime } from "../utils/animeDb";
+import { getApiUrl } from "../utils/apiConfig";
 import { syncEpisodeProgress, PlaybackProgress, syncAllEpisodesProgressFromFirestore, getCanonicalEpisodeKey, normalizeAnimeId } from "../utils/progress";
 import { saveEpisodeDownload, isEpisodeDownloaded, deleteEpisodeDownload } from "../utils/downloadDb";
 import { collection, query, where, orderBy, getDocs, addDoc } from "firebase/firestore";
@@ -180,7 +181,7 @@ export default function AnimeDetail({
   // Fetch fresh details for currentAnime if its episodes are empty
   React.useEffect(() => {
     if (currentAnime && currentAnime.id && (!currentAnime.episodes || currentAnime.episodes.length === 0)) {
-      fetch(`/api/anime/${currentAnime.id}`)
+      fetch(getApiUrl(`/api/anime/${currentAnime.id}`), { signal: AbortSignal.timeout(5000) })
         .then(res => res.json())
         .then(data => {
           if (data && !data.error) {
@@ -190,14 +191,21 @@ export default function AnimeDetail({
                 ...prev,
                 ...data,
                 seasons: prev.seasons || data.seasons,
+                episodes: Array.isArray(data.episodes) && data.episodes.length > 0 ? data.episodes : generateEpisodesForAnime(prev)
               };
               return merged;
             });
           }
         })
-        .catch(err => console.warn("Failed to fetch season details in AnimeDetail:", err));
+        .catch(err => {
+          console.warn("Failed to fetch season details in AnimeDetail:", err);
+          setCurrentAnime(prev => ({
+            ...prev,
+            episodes: generateEpisodesForAnime(prev)
+          }));
+        });
     }
-  }, [currentAnime.id, onSelectAnime]);
+  }, [currentAnime.id]);
 
   // Load all anime once
   const [allAnime] = useState(() => getAnimesWithEpisodes());
@@ -426,8 +434,8 @@ export default function AnimeDetail({
           <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/20 to-transparent" />
           
-          {/* Floating Actions on Top Bar */}
-          <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20">
+          {/* Floating Actions on Top Bar with Safe Area Support */}
+          <div className="absolute top-4 md:top-4 left-6 right-6 flex justify-between items-center z-20 pt-[env(safe-area-inset-top,0px)]">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 border border-rose-500/30 text-rose-400 tracking-wider uppercase">
               {currentAnime.type === "Película" ? "Película de Anime" : "Serie de Anime"}
             </span>

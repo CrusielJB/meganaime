@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { getProxyImageUrl, getAnimePlaceholder } from '../utils/imageUtils';
 import { saveEpisodeProgress, getLocalEpisodeProgress } from '../utils/progress';
+import { getApiUrl } from '../utils/apiConfig';
 import { User } from '../types';
 
 interface Chapter {
@@ -37,7 +38,7 @@ export const MangaReader: React.FC<MangaReaderProps> = ({
 
   useEffect(() => {
     // Fetch chapters for the manga
-    fetch(`/api/manga/${mangaId}/chapters`)
+    fetch(getApiUrl(`/api/manga/${mangaId}/chapters`), { signal: AbortSignal.timeout(6000) })
       .then(res => res.json())
       .then(data => {
         setChapters(data);
@@ -52,7 +53,7 @@ export const MangaReader: React.FC<MangaReaderProps> = ({
   useEffect(() => {
     if (selectedChapter) {
       setPagesLoading(true);
-      fetch(`/api/chapter/${selectedChapter}/pages`)
+      fetch(getApiUrl(`/api/chapter/${selectedChapter}/pages`), { signal: AbortSignal.timeout(6000) })
         .then(res => res.json())
         .then(data => {
           setPages(data);
@@ -164,9 +165,9 @@ export const MangaReader: React.FC<MangaReaderProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 overflow-hidden">
-      {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between p-3.5 sm:p-4 bg-neutral-900 border-b border-white/10 shrink-0 gap-3">
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Top Navigation Bar with Safe Area Support */}
+      <div className="flex items-center justify-between p-3.5 sm:p-4 pt-[calc(0.875rem+env(safe-area-inset-top,0px))] bg-neutral-900 border-b border-white/10 shrink-0 gap-3">
         <div className="flex items-center gap-3">
           {selectedChapter && (
             <button 

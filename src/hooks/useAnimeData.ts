@@ -4,15 +4,26 @@ import { db, OperationType, handleFirestoreError } from "../lib/firebase";
 import { Anime, Episode, User } from "../types";
 import { safeLocalStorage } from "../utils/safeStorage";
 import { getAnimesWithEpisodes } from "../utils/animeDb";
+import { getApiUrl } from "../utils/apiConfig";
+
+const initialLocalDb = getAnimesWithEpisodes();
 
 export function useAnimeData(currentUser: User | null, setCurrentUser: (user: User | null) => void) {
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [trendingAnimes, setTrendingAnimes] = useState<Anime[]>([]);
-  const [seasonalAnimes, setSeasonalAnimes] = useState<Anime[]>([]);
-  const [movies, setMovies] = useState<Anime[]>([]);
+  const [episodes, setEpisodes] = useState<Episode[]>(() => {
+    return initialLocalDb.flatMap(a => (a.episodes || []).slice(0, 2)).slice(0, 24);
+  });
+  const [trendingAnimes, setTrendingAnimes] = useState<Anime[]>(() => {
+    return initialLocalDb.slice(0, 15);
+  });
+  const [seasonalAnimes, setSeasonalAnimes] = useState<Anime[]>(() => {
+    return initialLocalDb.filter(a => a.status === "En emisión").slice(0, 24);
+  });
+  const [movies, setMovies] = useState<Anime[]>(() => {
+    return initialLocalDb.filter(a => a.type === "Película").slice(0, 12);
+  });
   const [categories, setCategories] = useState<string[]>([]);
-  const [loadingHome, setLoadingHome] = useState(true);
+  const [loadingHome, setLoadingHome] = useState(() => initialLocalDb.length === 0);
   
   const [seasonalPage, setSeasonalPage] = useState(1);
   const [seasonalTotalPages, setSeasonalTotalPages] = useState(10);
@@ -21,9 +32,11 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
   // Load home data
   useEffect(() => {
     async function loadHome() {
-      setLoadingHome(true);
+      if (initialLocalDb.length === 0) {
+        setLoadingHome(true);
+      }
       try {
-        const res = await fetch("/api/home?page=1", { signal: AbortSignal.timeout(8000) });
+        const res = await fetch(getApiUrl("/api/home?page=1"), { signal: AbortSignal.timeout(8000) });
         const data = await res.json();
         if (data && data.success && Array.isArray(data.trending) && data.trending.length > 0) {
           setEpisodes(data.episodes || []);
@@ -39,7 +52,7 @@ export function useAnimeData(currentUser: User | null, setCurrentUser: (user: Us
           setTrendingAnimes(localDb.slice(0, 15));
         }
 
-        const moviesRes = await fetch("/api/movies", { signal: AbortSignal.timeout(8000) });
+        const moviesRes = await fetch(getApiUrl("/api/movies"), { signal: AbortSignal.timeout(8000) });
         if (moviesRes.ok) {
           const moviesData = await moviesRes.json();
           if (Array.isArray(moviesData) && moviesData.length > 0) {

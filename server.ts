@@ -44,6 +44,17 @@ const emailTransporter = nodemailer.createTransport({
 export async function createExpressApp() {
   const app = express();
 
+  // Universal CORS middleware for iOS / Android / Web clients
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
+    next();
+  });
+
   // --- CUSTOM ADMIN DATABASE IMPLEMENTATION ---
   const customDbPath = path.join(process.cwd(), "src/utils/customAnimes.json");
   const customMangasDbPath = path.join(process.cwd(), "src/utils/customMangas.json");
@@ -832,7 +843,12 @@ export async function createExpressApp() {
         const epNum = parseInt(tioMatch[2], 10);
         const servers = await scrapeEpisodeFromTioAnime(rawSlug, epNum);
         if (servers && servers.length > 0) {
-          const catalogItem = LOCAL_CATALOG.find(a => a.id === `tioanime-${rawSlug}` || a.id.includes(rawSlug));
+          const catalogItem = LOCAL_CATALOG.find(a => 
+            a.id === `tioanime-${rawSlug}` || 
+            a.id === `tioanime-${rawSlug}-tv` || 
+            a.id === rawSlug || 
+            (a.external_id && a.external_id === rawSlug)
+          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
           const epData = {
             id,
             title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,

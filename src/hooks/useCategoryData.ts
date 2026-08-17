@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Anime } from "../types";
+import { getApiUrl } from "../utils/apiConfig";
 
 export function useCategoryData(activeTab: string) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -24,14 +25,16 @@ export function useCategoryData(activeTab: string) {
         if (activeType && activeType !== "todos") params.set("type", activeType);
         params.set("page", String(categoryPage));
 
-        const res = await fetch(`/api/search?${params.toString()}`);
-        const data = await res.json();
+        const res = await fetch(getApiUrl(`/api/search?${params.toString()}`), { signal: AbortSignal.timeout(6000) });
+        if (res.ok) {
+          const data = await res.json();
 
-        const items = Array.isArray(data) ? data : (data.results || []);
-        const pages = data.totalPages || 1;
+          const items = Array.isArray(data) ? data : (data.results || []);
+          const pages = data.totalPages || 1;
 
-        setCategoryResults(items);
-        setTotalPages(pages);
+          setCategoryResults(items);
+          setTotalPages(pages);
+        }
       } catch (err) {
         console.error("Failed to load category data:", err);
         setCategoryResults([]);

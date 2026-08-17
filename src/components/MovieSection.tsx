@@ -4,6 +4,7 @@ import AnimeCard from "./AnimeCard";
 import { Pagination } from "./Pagination";
 import { Anime } from "../types";
 import { getProxyImageUrl, getAnimePlaceholder, recoverCoverImageInHotPath } from "../utils/imageUtils";
+import { getApiUrl } from "../utils/apiConfig";
 
 interface MovieSectionProps {
   onSelectAnime: (anime: Anime) => void;
@@ -44,7 +45,7 @@ export const MovieSection: React.FC<MovieSectionProps> = ({
     const fetchMovies = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/movies");
+        const response = await fetch(getApiUrl("/api/movies"), { signal: AbortSignal.timeout(6000) });
         const data = await response.json();
         const mappedData = Array.isArray(data) ? data.map((m: any) => ({
           ...m,

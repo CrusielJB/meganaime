@@ -117,8 +117,8 @@ export const MangaDetail: React.FC<MangaDetailProps> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/20 to-transparent" />
               
-              {/* Floating Actions on Top Bar */}
-              <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20">
+              {/* Floating Actions on Top Bar with Safe Area Support */}
+              <div className="absolute top-4 md:top-4 left-6 right-6 flex justify-between items-center z-20 pt-[env(safe-area-inset-top,0px)]">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 border border-rose-500/30 text-rose-400 tracking-wider uppercase">
                   Manga Oficial
                 </span>

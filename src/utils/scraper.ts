@@ -674,7 +674,10 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "178789": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
   "mushoku-tensei-3": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
   "mushoku-tensei-iii-isekai-ittara-honki-dasu": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
-  "one-piece": "one-piece",
+  "one-piece": "one-piece-tv",
+  "tioanime-one-piece-tv": "one-piece-tv",
+  "consumet-21": "one-piece-tv",
+  "21": "one-piece-tv",
   "that-time-i-got-reincarnated-as-a-slime-1": "tensei-shitara-slime-datta-ken",
   "that-time-i-got-reincarnated-as-a-slime-2": "tensei-shitara-slime-datta-ken-2",
   "that-time-i-got-reincarnated-as-a-slime-3": "tensei-shitara-slime-datta-ken-3rd-season",
@@ -742,8 +745,6 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "dragon-ball-daima": "dragon-ball-daima",
   "bleach-sennen-kessen-hen": "bleach-sennen-kessen-hen",
   "hunter-x-hunter-2011": "hunter-x-hunter-2011",
-  "tioanime-sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
-  "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
   "black-clover": "black-clover",
   "shingeki-no-kyojin": "shingeki-no-kyojin"
 };
@@ -1390,11 +1391,13 @@ export async function scrapeEpisodeFromTioAnime(
   epNum: number = 1
 ): Promise<Array<{ name: string; url: string }>> {
   // Strip prefixes/suffixes that could break the URL: tioanime-, -pelicula, -sub-espanol, -ep-N, -episodio-N
-  const cleanSlug = slug
+  const rawClean = slug
     .replace(/^tioanime-/, "")
     .replace(/-pelicula$/, "")
     .replace(/-sub-espanol$/, "")
     .replace(/-(?:ep|episodio)-\d+$/i, "");
+
+  const cleanSlug = TIOANIME_SLUG_MAP[rawClean.toLowerCase()] || rawClean;
 
   // For movies try all common movie URL patterns on TioAnime
   const isMovie = slug.includes("-pelicula") || slug.includes("movie") || slug.includes("pelicula");
@@ -1409,6 +1412,7 @@ export async function scrapeEpisodeFromTioAnime(
       ]
     : [
         `https://tioanime.com/ver/${cleanSlug}-${epNum}`,
+        `https://tioanime.com/ver/${rawClean}-${epNum}`,
         `https://tioanime.com/ver/${cleanSlug}-1`,
         `https://tioanime.com/ver/${cleanSlug}`
       ];
