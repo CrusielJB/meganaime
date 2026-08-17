@@ -285,13 +285,25 @@ export default function VideoPlayer({
       : [])
   ];
 
-  // Purge YouTube embeds and YourUpload (if other working servers exist) on the client side
+  // Purge YouTube embeds, YourUpload, and Mega download links (if other streaming servers exist)
   const filteredServers = rawServersList.filter(s => {
     if (!s || !s.url) return false;
     const u = s.url.toLowerCase();
     const n = (s.name || "").toLowerCase();
     if (u.includes("youtube.com") || u.includes("youtu.be")) return false;
     if ((u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) && rawServersList.length > 1) {
+      return false;
+    }
+    // Filter out mega.nz download links if streaming embed servers exist (prevents Mega redirect to download screen)
+    const hasStreamingServer = rawServersList.some(other => {
+      const otherUrl = (other?.url || "").toLowerCase();
+      return !otherUrl.includes("mega.nz") && !otherUrl.includes("mega.co.nz") && (
+        otherUrl.includes("voe") || otherUrl.includes("streamwish") || otherUrl.includes("mp4upload") ||
+        otherUrl.includes("savefiles") || otherUrl.includes("dsvplay") || otherUrl.includes("ok.ru") ||
+        otherUrl.endsWith(".mp4") || otherUrl.endsWith(".m3u8")
+      );
+    });
+    if ((u.includes("mega.nz") || u.includes("mega.co.nz")) && hasStreamingServer) {
       return false;
     }
     return true;
@@ -1171,7 +1183,7 @@ export default function VideoPlayer({
                     // @ts-ignore
                     mozallowfullscreen="true"
                     allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; clipboard-write *; accelerometer *; gyroscope *"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox allow-downloads"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />

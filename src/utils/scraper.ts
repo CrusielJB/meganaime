@@ -1458,30 +1458,19 @@ export async function scrapeEpisodeFromTioAnime(
                 return score(b) - score(a);
               });
 
-              // Filter out YourUpload completely if Voe/Mega/Mp4Upload exist to prevent DMCA error screens
+              // Filter out YourUpload if better servers exist
               let filtered = servers.filter(s => {
                 const u = s.url.toLowerCase();
                 const n = s.name.toLowerCase();
                 if (u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) {
-                  return servers.length === 1; // Only keep if it's the only server available
+                  return servers.length === 1;
                 }
                 return true;
               });
 
-              // Check if top Voe server returns 404 and fallback to Mega instantly
-              if (filtered.length > 1 && filtered[0].url.includes("voe")) {
-                try {
-                  const checkHead = await fetch(filtered[0].url, { method: "HEAD", signal: AbortSignal.timeout(2000) });
-                  if (!checkHead.ok) {
-                    console.log(`[Scraper] Top Voe server (${filtered[0].url}) returned ${checkHead.status} 404. Falling back to Mega/other servers.`);
-                    filtered.shift(); // Remove dead Voe server so Mega becomes #1
-                  }
-                } catch (e) {}
-              }
-
-              // Automatically query and merge MonosChinos servers (Mega, Mp4Upload, LuluStream, Voe, etc.)
+              // Automatically query and merge MonosChinos servers (VOE, Dsvplay, Savefiles, Mega, etc.)
               try {
-                const mcServers = await scrapeEpisodeFromMonosChinos(slug, cleanSlug, epNum, isMovie, cleanSlug, null);
+                const mcServers = await scrapeEpisodeFromMonosChinos(rawClean, rawClean, epNum, isMovie, rawClean, null);
                 if (mcServers && mcServers.length > 0) {
                   for (const mcs of mcServers) {
                     if (!filtered.some(s => s.url === mcs.url)) {
@@ -1490,6 +1479,19 @@ export async function scrapeEpisodeFromTioAnime(
                   }
                 }
               } catch (e) {}
+
+              // Filter out Mega.nz when true streaming servers (VOE, Streamwish, Mp4Upload, etc.) exist to avoid download redirects
+              const hasStreaming = filtered.some(s => {
+                const u = s.url.toLowerCase();
+                return !u.includes("mega.nz") && !u.includes("mega.co.nz") && (
+                  u.includes("voe") || u.includes("streamwish") || u.includes("mp4upload") ||
+                  u.includes("savefiles") || u.includes("dsvplay") || u.includes("ok.ru") ||
+                  u.endsWith(".mp4") || u.endsWith(".m3u8")
+                );
+              });
+              if (hasStreaming) {
+                filtered = filtered.filter(s => !s.url.toLowerCase().includes("mega.nz") && !s.url.toLowerCase().includes("mega.co.nz"));
+              }
 
               return filtered.length > 0 ? filtered : servers;
             }
