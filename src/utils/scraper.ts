@@ -1451,10 +1451,10 @@ export async function scrapeEpisodeFromTioAnime(
                   const u = s.url.toLowerCase();
                   const n = s.name.toLowerCase();
                   if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 100;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 98;
                   if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 95;
                   if (u.includes("mega.nz") || n.includes("mega")) return 90;
                   if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
-                  if (u.includes("yourupload") || n.includes("yourupload")) return 80;
                   if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
                   if (u.includes("bysekoze")) return 10;
                   return 50;

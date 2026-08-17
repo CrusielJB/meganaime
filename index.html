@@ -41,6 +41,24 @@
           } catch(err) {}
         }
       })();
+
+      // Global Ad-Shield & Popup Blocker to protect user from 3rd-party embed redirections
+      (function() {
+        try {
+          var originalOpen = window.open;
+          window.open = function(url, target, features) {
+            if (!url) return null;
+            var strUrl = String(url).toLowerCase();
+            var allowed = ["megaanime.net", "firebaseapp.com", "web.app", "localhost", "127.0.0.1"];
+            var isAllowed = allowed.some(function(domain) { return strUrl.indexOf(domain) !== -1; });
+            if (!isAllowed && (strUrl.indexOf("http://") === 0 || strUrl.indexOf("https://") === 0 || strUrl.indexOf("//") === 0)) {
+              console.warn("[Ad-Shield] Blocked popup window to external ad URL:", url);
+              return null;
+            }
+            return originalOpen.call(window, url, target, features);
+          };
+        } catch(e) {}
+      })();
     </script>
 
     <meta charset="UTF-8" />
