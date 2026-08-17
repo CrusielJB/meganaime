@@ -604,7 +604,7 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 
-const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "the-exiled-heavy-knight": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "youjo-senki-1": "youjo-senki",
   "your-name": "kimi-no-na-wa",
@@ -748,6 +748,8 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "black-clover": "black-clover",
   "shingeki-no-kyojin": "shingeki-no-kyojin"
 };
+
+export const TIOANIME_SLUG_MAP: Record<string, string> = MONOSCHINOS_SLUG_MAP;
 
 export async function verifyVideoServers(servers: Array<{ name: string; url: string }>, domain: string, limit: number = 6): Promise<Array<{ name: string; url: string }>> {
   // Sort servers by reliability: Voe > Mega > Mp4Upload > Filemoon / Streamtape / OkRu > YourUpload (bottom)
