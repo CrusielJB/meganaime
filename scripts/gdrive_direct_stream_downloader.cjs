@@ -277,8 +277,21 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
 
           globalProcessedEpisodes++;
           existingRemoteFiles.add(filename);
+          
+          // Save to drive_episodes.json manifest for instant player streaming
+          try {
+            const manifest = fs.existsSync(MANIFEST_FILE) ? JSON.parse(fs.readFileSync(MANIFEST_FILE, "utf-8")) : {};
+            manifest[anime.id] = manifest[anime.id] || { title: anime.title, episodes: {} };
+            manifest[anime.id].episodes[`ep-${ep}`] = {
+              gdrivePath: remoteFilePath.replace(/^gdrive:MegaAnime_HD\//, ''),
+              filename: filename,
+              uploadedAt: new Date().toISOString()
+            };
+            fs.writeFileSync(MANIFEST_FILE, JSON.stringify(manifest, null, 2), "utf-8");
+          } catch(e) {}
+
           const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
-          process.stdout.write(`\r   ✅ [Ep ${ep}/${anime.maxEps}] Guardado en Drive! | Total Global: ${globalBar} (${globalProcessedEpisodes}/${grandTotalEpisodes} eps)\n`);
+          process.stdout.write(`\r   ✅ [Ep ${ep}/${anime.maxEps}] Guardado en Drive e Implementado en la Web! | Total Global: ${globalBar} (${globalProcessedEpisodes}/${grandTotalEpisodes} eps)\n`);
         } else {
           globalProcessedEpisodes++;
           console.warn(`   ⚠️ Servidor directo no disponible temporalmente para ep ${ep}.`);
