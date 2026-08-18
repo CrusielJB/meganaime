@@ -309,11 +309,12 @@ export default function VideoPlayer({
     return true;
   });
 
-  // Sort instant autoplay servers (Direct Stream, Voe, Streamwish, Mp4Upload) to the top
+  // Sort instant autoplay servers (Google Drive, Direct Stream, Voe, Streamwish, Mp4Upload) to the top
   const servers = [...filteredServers].sort((a, b) => {
     const getScore = (s: { name: string; url: string }) => {
       const u = s.url.toLowerCase();
       const n = (s.name || "").toLowerCase();
+      if (u.includes("drive.google.com") || n.includes("drive") || n.includes("megaanime drive")) return 0;
       if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 1;
       if (u.includes("voe") || n.includes("voe")) return 2;
       if (u.includes("streamwish") || u.includes("filelions") || n.includes("wish")) return 3;
@@ -332,6 +333,16 @@ export default function VideoPlayer({
     let isMounted = true;
 
     const findAndSelectCustomPlayerServer = async () => {
+      // 0. If Google Drive server exists, select it IMMEDIATELY as top priority
+      const driveIdx = servers.findIndex(s => s && s.url && (s.url.includes("drive.google.com") || (s.name && s.name.toLowerCase().includes("drive"))));
+      if (driveIdx !== -1) {
+        if (isMounted) {
+          setActiveServerIdx(driveIdx);
+          setIsResolving(false);
+        }
+        return;
+      }
+
       // 1. If any server is ALREADY a direct MP4/M3U8 URL, select it instantly
       const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
       if (directIdx !== -1) {

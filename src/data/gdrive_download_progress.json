@@ -1,14 +1,14 @@
 {
-  "currentAnimeIndex": 7,
+  "currentAnimeIndex": 9,
   "totalAnimes": 89,
-  "currentAnimeTitle": "One Piece",
-  "mainFolder": "One Piece",
-  "seasonFolder": "",
-  "currentEpisode": 1095,
-  "totalEpisodesInAnime": 1174,
-  "episodePercentage": "31.2%",
-  "globalProcessedEpisodes": 1187,
+  "currentAnimeTitle": "OSHI NO KO Season 3",
+  "mainFolder": "OSHI NO KO",
+  "seasonFolder": "3ra Temporada",
+  "currentEpisode": 7,
+  "totalEpisodesInAnime": 11,
+  "episodePercentage": "97.7%",
+  "globalProcessedEpisodes": 1274,
   "grandTotalEpisodes": 2202,
-  "globalPercentage": "53.9%",
-  "lastUpdated": "2026-08-18T12:50:16.445Z"
+  "globalPercentage": "57.9%",
+  "lastUpdated": "2026-08-18T13:12:12.938Z"
 }
