@@ -849,6 +849,31 @@ export async function createExpressApp() {
             a.id === rawSlug || 
             (a.external_id && a.external_id === rawSlug)
           ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
+          // Check if file is available in Google Drive
+          const driveTitle = catalogItem?.title || rawSlug;
+          const sanitizedTitle = driveTitle.replace(/[<>:"/\\|?*]/g, "_").trim();
+          const epFormatted = String(epNum).padStart(2, '0');
+          const possiblePaths = [
+            `${sanitizedTitle}/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
+            `${sanitizedTitle}/3ra Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
+            `${sanitizedTitle}/2da Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
+            `${sanitizedTitle}/4ta Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`
+          ];
+
+          for (const p of possiblePaths) {
+            try {
+              const { execSync } = await import("child_process");
+              const check = execSync(`rclone check --one-way "gdrive:MegaAnime_HD/${p}" "gdrive:" 2>/dev/null || rclone lsf "gdrive:MegaAnime_HD/${path.dirname(p)}" 2>/dev/null`, { encoding: "utf-8", timeout: 800 });
+              if (check.includes(path.basename(p))) {
+                servers.unshift({
+                  name: "⚡ MegaAnime Drive (1080p Ultra HD)",
+                  url: `/api/gdrive-stream?path=${encodeURIComponent(p)}`
+                });
+                break;
+              }
+            } catch(e) {}
+          }
+
           const epData = {
             id,
             title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
@@ -2063,6 +2088,37 @@ export async function createExpressApp() {
       if (!res.headersSent) {
         res.status(502).send("Upstream stream error: " + err.message);
       }
+    }
+  });
+
+  // ── Google Drive Direct Video Stream Endpoint (Zero ads, native player, Full HD 1080p) ──
+  app.get("/api/gdrive-stream", async (req, res) => {
+    const rawPath = req.query.path as string;
+    if (!rawPath) {
+      return res.status(400).json({ error: "Missing path parameter" });
+    }
+
+    try {
+      const { spawn } = await import("child_process");
+      const remoteTarget = `gdrive:MegaAnime_HD/${rawPath.replace(/^\/+/, '')}`;
+
+      res.setHeader("Content-Type", "video/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
+
+      const rclone = spawn("rclone", ["cat", remoteTarget]);
+
+      rclone.stdout.on("error", (err) => {
+        if (!res.writableEnded) res.end();
+      });
+
+      rclone.stdout.pipe(res);
+
+      req.on("close", () => {
+        try { rclone.kill(); } catch(e) {}
+      });
+    } catch (err: any) {
+      console.error("GDrive stream error:", err.message);
+      if (!res.headersSent) res.status(500).send("Error streaming from Google Drive");
     }
   });
 
