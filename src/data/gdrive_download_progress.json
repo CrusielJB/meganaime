@@ -1,14 +1,14 @@
 {
-  "currentAnimeIndex": 9,
+  "currentAnimeIndex": 43,
   "totalAnimes": 89,
-  "currentAnimeTitle": "OSHI NO KO Season 3",
-  "mainFolder": "OSHI NO KO",
-  "seasonFolder": "3ra Temporada",
-  "currentEpisode": 7,
-  "totalEpisodesInAnime": 11,
-  "episodePercentage": "97.7%",
-  "globalProcessedEpisodes": 1274,
+  "currentAnimeTitle": "\"Kimi wo Aisuru Ki wa Nai\" to Itta Jiki Koushaku-sama ga Nazeka Dekiai shitekimasu",
+  "mainFolder": "_Kimi wo Aisuru Ki wa Nai_ to Itta Jiki Koushaku-sama ga Nazeka Dekiai shitekimasu",
+  "seasonFolder": "",
+  "currentEpisode": 1,
+  "totalEpisodesInAnime": 12,
+  "episodePercentage": "53.7%",
+  "globalProcessedEpisodes": 1608,
   "grandTotalEpisodes": 2202,
-  "globalPercentage": "57.9%",
-  "lastUpdated": "2026-08-18T13:12:12.938Z"
+  "globalPercentage": "73.0%",
+  "lastUpdated": "2026-08-18T18:35:26.913Z"
 }
