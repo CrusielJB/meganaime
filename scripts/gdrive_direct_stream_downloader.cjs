@@ -176,6 +176,18 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
   const airingMap = JSON.parse(fs.readFileSync(AIRING_MAP_FILE, "utf-8"));
   const airing = catalog.filter(a => a.status === "En emisión");
 
+  // Priority keywords in requested order
+  const PRIORITY_KEYWORDS = [
+    "mushoku-tensei",
+    "bleach",
+    "black-torch",
+    "10nen",
+    "lv999",
+    "kage",
+    "sekai-saikyou-no-kouei",
+    "one-piece"
+  ];
+
   // Calculate total episodes count across all airing animes
   let grandTotalEpisodes = 0;
   const animeQueue = airing.map(a => {
@@ -184,6 +196,20 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
     if (a.id.includes("one-piece")) maxEps = 1174;
     grandTotalEpisodes += maxEps;
     return { ...a, maxEps };
+  });
+
+  // Sort queue by priority order first, then rest of catalog
+  animeQueue.sort((a, b) => {
+    const getPriorityIndex = (item) => {
+      const id = item.id.toLowerCase();
+      const title = item.title.toLowerCase();
+      for (let idx = 0; idx < PRIORITY_KEYWORDS.length; idx++) {
+        const kw = PRIORITY_KEYWORDS[idx];
+        if (id.includes(kw) || title.includes(kw.replace(/-/g, " "))) return idx;
+      }
+      return 999;
+    };
+    return getPriorityIndex(a) - getPriorityIndex(b);
   });
 
   console.log(`\n========================================================================`);

@@ -849,30 +849,32 @@ export async function createExpressApp() {
             a.id === rawSlug || 
             (a.external_id && a.external_id === rawSlug)
           ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
-          // Check if file is available in Google Drive
-          const driveTitle = catalogItem?.title || rawSlug;
-          const sanitizedTitle = driveTitle.replace(/[<>:"/\\|?*]/g, "_").trim();
-          const epFormatted = String(epNum).padStart(2, '0');
-          const possiblePaths = [
-            `${sanitizedTitle}/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
-            `${sanitizedTitle}/3ra Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
-            `${sanitizedTitle}/2da Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`,
-            `${sanitizedTitle}/4ta Temporada/${sanitizedTitle} - Episodio ${epFormatted}.mp4`
-          ];
-
-          for (const p of possiblePaths) {
-            try {
-              const { execSync } = await import("child_process");
-              const check = execSync(`rclone check --one-way "gdrive:MegaAnime_HD/${p}" "gdrive:" 2>/dev/null || rclone lsf "gdrive:MegaAnime_HD/${path.dirname(p)}" 2>/dev/null`, { encoding: "utf-8", timeout: 800 });
-              if (check.includes(path.basename(p))) {
-                servers.unshift({
-                  name: "⚡ MegaAnime Drive (1080p Ultra HD)",
-                  url: `/api/gdrive-stream?path=${encodeURIComponent(p)}`
-                });
+          // Check if file is available in Google Drive Manifest or cloud path
+          try {
+            let manifest: any = {};
+            const manifestPaths = [
+              path.join(process.cwd(), "dist/drive_episodes.json"),
+              path.join(process.cwd(), "src/data/drive_episodes.json")
+            ];
+            for (const mp of manifestPaths) {
+              if (fs.existsSync(mp)) {
+                manifest = JSON.parse(fs.readFileSync(mp, "utf-8"));
                 break;
               }
-            } catch(e) {}
-          }
+            }
+
+            const targetId = catalogItem?.id || `tioanime-${rawSlug}`;
+            const entry = manifest[targetId] || manifest[`tioanime-${rawSlug}`] || manifest[rawSlug] || Object.values(manifest).find((m: any) => m.title && catalogItem?.title && m.title.toLowerCase() === catalogItem.title.toLowerCase()) as any;
+            const epKey = `ep-${epNum}`;
+            const driveEp = entry?.episodes?.[epKey];
+
+            if (driveEp?.gdrivePath) {
+              servers.unshift({
+                name: "⚡ MegaAnime Drive (1080p Ultra HD)",
+                url: `/api/gdrive-stream?path=${encodeURIComponent(driveEp.gdrivePath)}`
+              });
+            }
+          } catch(e) {}
 
           const epData = {
             id,
