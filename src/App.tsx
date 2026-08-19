@@ -263,22 +263,26 @@ function AppContent() {
     }
   }, [setSelectedAnime, setActiveEpisodeId, currentUser]);
 
-  // Handle direct Deep Links (?anime=SLUG, ?id=SLUG, /anime/SLUG) to open Anime Details modal immediately
+  // Handle direct Deep Links (?anime=SLUG, ?id=SLUG, /anime/SLUG, /ver/SLUG) to open Anime Details modal immediately
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const animeParam = params.get("anime") || params.get("id");
     let targetSlug = animeParam;
 
-    if (!targetSlug && window.location.pathname.startsWith("/anime/")) {
-      targetSlug = window.location.pathname.replace("/anime/", "").split("/")[0];
+    if (!targetSlug && (window.location.pathname.startsWith("/anime/") || window.location.pathname.startsWith("/ver/"))) {
+      targetSlug = window.location.pathname.replace(/^\/(anime|ver)\//, "").split("/")[0];
     }
 
     if (targetSlug) {
+      const cleanTarget = decodeURIComponent(targetSlug).toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
       const allAnimes = getAnimesWithEpisodes();
       const match = allAnimes.find(a => 
         a.id === targetSlug || 
         a.id === `tioanime-${targetSlug}` || 
-        a.id.toLowerCase() === targetSlug.toLowerCase()
+        a.id.toLowerCase() === targetSlug.toLowerCase() ||
+        a.id.toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-") === cleanTarget ||
+        a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanTarget ||
+        a.title.toLowerCase().includes(cleanTarget.replace(/-/g, " "))
       );
       if (match) {
         handleSelectAnime(match);

@@ -130,9 +130,14 @@ export async function postNewReleaseToFacebook(
     }
   }
 
-  const directAnimeUrl = payload.animeSlug 
-    ? `https://megaanime.net/?anime=${encodeURIComponent(payload.animeSlug)}`
-    : (payload.animeId ? `https://megaanime.net/?anime=${encodeURIComponent(payload.animeId)}` : domain);
+  const cleanSlug = payload.animeTitle
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const directAnimeUrl = `https://megaanime.net/ver/${cleanSlug}`;
 
   const caption = generateFacebookPostCaption({
     animeTitle: payload.animeTitle,

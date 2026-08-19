@@ -2519,8 +2519,50 @@ export async function createExpressApp() {
 
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+    
+    // Dynamic SSR OpenGraph tags injection for Facebook / Social Crawlers & Direct Links
     app.get("*", (req, res) => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); res.sendFile(path.join(distPath, "index.html"));
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      const indexPath = path.join(distPath, "index.html");
+      if (!fs.existsSync(indexPath)) return res.status(200).send("megaAnime");
+
+      let html = fs.readFileSync(indexPath, "utf-8");
+
+      // Extract anime query or path
+      const animeQuery = (req.query.anime as string) || (req.query.id as string);
+      let animeSlug = animeQuery;
+      if (!animeSlug && (req.path.startsWith("/anime/") || req.path.startsWith("/ver/"))) {
+        animeSlug = req.path.replace(/^\/(anime|ver)\//, "").split("/")[0];
+      }
+
+      if (animeSlug) {
+        const cleanSlug = decodeURIComponent(animeSlug).toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        const found = LOCAL_CATALOG.find(a => 
+          a.id === animeSlug ||
+          a.id === `tioanime-${animeSlug}` ||
+          a.id.toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-") === cleanSlug ||
+          a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanSlug ||
+          a.title.toLowerCase().includes(cleanSlug.replace(/-/g, " "))
+        );
+
+        if (found) {
+          const ogTitle = `${found.title} - Ver Online en HD | megaAnime`;
+          let ogImage = found.coverUrl || "https://megaanime.net/icon-512.png";
+          if (ogImage.includes("tioanime.com")) {
+            ogImage = `https://megaanime.net/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+          }
+          const ogUrl = `https://megaanime.net/ver/${encodeURIComponent(cleanSlug)}`;
+
+          html = html.replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`);
+          html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`);
+          html = html.replace(/<meta property="og:description" content=".*?"\s*\/?>/i, `<meta property="og:description" content="${ogDesc}" />`);
+          html = html.replace(/<meta property="og:image" content=".*?"\s*\/?>/i, `<meta property="og:image" content="${ogImage}" /><meta property="og:image:secure_url" content="${ogImage}" /><meta property="og:image:type" content="image/jpeg" />`);
+          html = html.replace(/<meta property="og:url" content=".*?"\s*\/?>/i, `<meta property="og:url" content="${ogUrl}" />`);
+          html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/?>/i, `<meta name="twitter:image" content="${ogImage}" />`);
+        }
+      }
+
+      res.send(html);
     });
   }
 
