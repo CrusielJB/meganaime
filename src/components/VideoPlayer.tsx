@@ -1098,7 +1098,7 @@ export default function VideoPlayer({
 
         {/* Action controls (Immersive Toggle / Close) */}
         <div className="flex items-center space-x-2">
-          {/* Immersive Servers & Info Toggle Button */}
+          {/* Immersive Info Toggle Button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`flex h-10 px-4 items-center justify-center gap-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
@@ -1106,10 +1106,10 @@ export default function VideoPlayer({
                 ? "bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/25"
                 : "bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10 hover:text-white"
             }`}
-            title="Ver servidores y episodios"
+            title="Ver información del episodio"
           >
             <Menu className="h-4 w-4" />
-            <span>Servidores e Info</span>
+            <span>{activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? "Episodio e Info" : "Servidores e Info"}</span>
           </button>
 
           <button
@@ -1524,31 +1524,43 @@ export default function VideoPlayer({
                 </div>
               </div>
 
-              {/* Server Selector List */}
-              <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
-                <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
-                  <Server className="h-4 w-4 text-rose-500" />
-                  <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Seleccionar Reproductor</span>
+              {/* Server Selector List / MegaAnime Drive Exclusive Banner */}
+              {activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? (
+                <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 space-y-2.5 shadow-lg shadow-rose-950/40">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="h-4 w-4 text-rose-400 animate-pulse" />
+                    <span className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono">⚡ MegaAnime Drive (1080p Ultra HD)</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-relaxed">
+                    Reproduciendo en calidad nativa Ultra HD directamente desde nuestros servidores en la nube sin anuncios ni ventanas emergentes.
+                  </p>
                 </div>
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                  {servers.map((srv, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setActiveServerIdx(idx);
-                      }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                        activeServerIdx === idx
-                          ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
-                          : "bg-neutral-900 border-white/5 text-neutral-400 hover:border-neutral-700 hover:text-white"
-                      }`}
-                    >
-                      <span className="truncate">{srv.name}</span>
-                      {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                    </button>
-                  ))}
+              ) : (
+                <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
+                  <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
+                    <Server className="h-4 w-4 text-rose-500" />
+                    <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Seleccionar Reproductor</span>
+                  </div>
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    {servers.map((srv, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setActiveServerIdx(idx);
+                        }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          activeServerIdx === idx
+                            ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
+                            : "bg-neutral-900 border-white/5 text-neutral-400 hover:border-neutral-700 hover:text-white"
+                        }`}
+                      >
+                        <span className="truncate">{srv.name}</span>
+                        {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Bottom Episode Navigation */}

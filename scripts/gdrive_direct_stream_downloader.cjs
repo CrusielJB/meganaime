@@ -59,7 +59,7 @@ function getRemoteFolderFiles(remoteDir) {
     return remoteFolderCache.get(remoteDir);
   }
   try {
-    const out = execSync(`rclone lsf "${remoteDir}" 2>/dev/null`, { encoding: "utf-8" });
+    const out = execSync(`rclone lsf --min-size 15M "${remoteDir}" 2>/dev/null`, { encoding: "utf-8" });
     const set = new Set(out.split("\n").map(s => s.trim()).filter(Boolean));
     remoteFolderCache.set(remoteDir, set);
     return set;
@@ -176,16 +176,16 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
   const airingMap = JSON.parse(fs.readFileSync(AIRING_MAP_FILE, "utf-8"));
   const airing = catalog.filter(a => a.status === "En emisión");
 
-  // Priority keywords in requested order
+  // Priority keywords in requested order (One Piece #1)
   const PRIORITY_KEYWORDS = [
-    "mushoku-tensei",
+    "one-piece",
     "bleach",
+    "mushoku-tensei",
     "black-torch",
     "10nen",
     "lv999",
     "kage",
-    "sekai-saikyou-no-kouei",
-    "one-piece"
+    "sekai-saikyou-no-kouei"
   ];
 
   // Calculate total episodes count across all airing animes
@@ -252,7 +252,7 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
       try {
         const episodeId = `${anime.id}-ep-${ep}`;
         const epApiUrl = `https://megaanime-1c250.web.app/api/episode/${encodeURIComponent(episodeId)}`;
-        const apiRes = await fetch(epApiUrl, { signal: AbortSignal.timeout(10000) });
+        const apiRes = await fetch(epApiUrl, { signal: AbortSignal.timeout(30000) });
 
         if (!apiRes.ok) {
           globalProcessedEpisodes++;

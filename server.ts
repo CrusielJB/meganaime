@@ -364,11 +364,13 @@ export async function createExpressApp() {
     timezone: "America/New_York"
   });
 
-  // Pre-fetch the latest episodes asynchronously after server startup
-  setTimeout(() => {
-    updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
-    refreshAiringEpisodesCount().catch(e => console.warn("Airing count error:", e));
-  }, 2000);
+  // Pre-fetch the latest episodes asynchronously after server startup (skip during Firebase CLI analysis)
+  if (process.env.K_SERVICE || (!process.argv.includes("deploy") && process.env.NODE_ENV === "production")) {
+    setTimeout(() => {
+      updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
+      refreshAiringEpisodesCount().catch(e => console.warn("Airing count error:", e));
+    }, 5000);
+  }
 
   // Body parsers
   app.use(express.json());
