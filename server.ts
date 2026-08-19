@@ -838,47 +838,86 @@ export async function createExpressApp() {
     if (cached) return res.json(cached);
 
     try {
-      // Check TioAnime catalog episode path
+      // 1. FIRST: Check if this episode exists in Google Drive manifest for INSTANT 1ms playback
+      let manifest: any = {};
+      const manifestPaths = [
+        path.join(process.cwd(), "dist/drive_episodes.json"),
+        path.join(process.cwd(), "src/data/drive_episodes.json")
+      ];
+      for (const mp of manifestPaths) {
+        if (fs.existsSync(mp)) {
+          manifest = JSON.parse(fs.readFileSync(mp, "utf-8"));
+          break;
+        }
+      }
+
+      let rawSlug = "";
+      let epNum = 1;
       const tioMatch = id.match(/^(?:tioanime-)?(.+?)-(?:ep|episodio)-(\d+)$/i);
       if (tioMatch) {
-        const rawSlug = tioMatch[1];
-        const epNum = parseInt(tioMatch[2], 10);
-        const servers = await scrapeEpisodeFromTioAnime(rawSlug, epNum);
+        rawSlug = tioMatch[1];
+        epNum = parseInt(tioMatch[2], 10);
+      } else {
+        const parts = id.split("-ep-");
+        if (parts.length === 2) {
+          rawSlug = parts[0];
+          epNum = parseInt(parts[1], 10);
+        }
+      }
+
+      // Match anime in catalog
+      const catalogItem = LOCAL_CATALOG.find(a => 
+        a.id === id ||
+        a.id === rawSlug ||
+        a.id === `tioanime-${rawSlug}` || 
+        a.id === `tioanime-${rawSlug}-tv` || 
+        (rawSlug.startsWith("one-piece") && a.id.includes("one-piece")) ||
+        (a.external_id && a.external_id === rawSlug)
+      ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
+
+      // Check if episode is in Google Drive
+      const entryKeys = [
+        rawSlug,
+        `tioanime-${rawSlug}`,
+        `tioanime-${rawSlug}-tv`,
+        catalogItem?.id,
+        (rawSlug.includes("one-piece") || catalogItem?.title?.toLowerCase().includes("one piece")) ? "tioanime-one-piece-tv" : null
+      ].filter(Boolean);
+
+      let driveEp: any = null;
+      for (const k of entryKeys) {
+        if (manifest[k]?.episodes?.[`ep-${epNum}`]) {
+          driveEp = manifest[k].episodes[`ep-${epNum}`];
+          break;
+        }
+      }
+
+      if (driveEp && (driveEp.streamUrl || (driveEp.fileId && !driveEp.fileId.startsWith("drive-")))) {
+        const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
+        const epData = {
+          id,
+          title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
+          number: epNum,
+          animeId: catalogItem ? catalogItem.id : (rawSlug.includes("one-piece") ? "tioanime-one-piece-tv" : `tioanime-${rawSlug}`),
+          animeTitle: catalogItem ? catalogItem.title : (rawSlug.includes("one-piece") ? "One Piece" : rawSlug),
+          coverUrl: catalogItem ? catalogItem.coverUrl : "",
+          videoServers: [
+            {
+              name: "⚡ MegaAnime (1080p Ultra HD)",
+              url: directDriveUrl
+            }
+          ],
+          videoUrl: directDriveUrl
+        };
+        apiCache.set(cacheKey, epData, 86400);
+        return res.json(epData);
+      }
+
+      // 2. SECOND: If not in Google Drive, scrape TioAnime for external servers
+      if (rawSlug) {
+        const scrapeSlug = rawSlug.includes("one-piece") ? "one-piece-tv" : rawSlug;
+        const servers = await scrapeEpisodeFromTioAnime(scrapeSlug, epNum);
         if (servers && servers.length > 0) {
-          const catalogItem = LOCAL_CATALOG.find(a => 
-            a.id === `tioanime-${rawSlug}` || 
-            a.id === `tioanime-${rawSlug}-tv` || 
-            a.id === rawSlug || 
-            (a.external_id && a.external_id === rawSlug)
-          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
-          // Check if file is available in Google Drive Manifest or cloud path
-          try {
-            let manifest: any = {};
-            const manifestPaths = [
-              path.join(process.cwd(), "dist/drive_episodes.json"),
-              path.join(process.cwd(), "src/data/drive_episodes.json")
-            ];
-            for (const mp of manifestPaths) {
-              if (fs.existsSync(mp)) {
-                manifest = JSON.parse(fs.readFileSync(mp, "utf-8"));
-                break;
-              }
-            }
-
-            const targetId = catalogItem?.id || `tioanime-${rawSlug}`;
-            const entry = manifest[targetId] || manifest[`tioanime-${rawSlug}`] || manifest[rawSlug] || Object.values(manifest).find((m: any) => m.title && catalogItem?.title && m.title.toLowerCase() === catalogItem.title.toLowerCase()) as any;
-            const epKey = `ep-${epNum}`;
-            const driveEp = entry?.episodes?.[epKey];
-
-            if (driveEp?.streamUrl || (driveEp?.fileId && !driveEp.fileId.startsWith("drive-"))) {
-              const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
-              servers.unshift({
-                name: "⚡ MegaAnime (1080p Ultra HD)",
-                url: directDriveUrl
-              });
-            }
-          } catch(e) {}
-
           const epData = {
             id,
             title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,

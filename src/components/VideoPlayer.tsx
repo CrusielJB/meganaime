@@ -262,7 +262,7 @@ export default function VideoPlayer({
     async function fetchEpisodeDetails() {
       setLoading(true);
       try {
-        const res = await fetch(getApiUrl(`/api/episode/${encodeURIComponent(episodeId)}`), { signal: AbortSignal.timeout(6000) });
+        const res = await fetch(getApiUrl(`/api/episode/${encodeURIComponent(episodeId)}`), { signal: AbortSignal.timeout(15000) });
         if (res.ok) {
           const data = await res.json();
           setEpisodeData(data);
