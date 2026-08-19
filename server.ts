@@ -870,16 +870,11 @@ export async function createExpressApp() {
             const epKey = `ep-${epNum}`;
             const driveEp = entry?.episodes?.[epKey];
 
-            if (driveEp?.fileId || driveEp?.streamUrl) {
+            if (driveEp?.streamUrl || (driveEp?.fileId && !driveEp.fileId.startsWith("drive-"))) {
               const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
               servers.unshift({
                 name: "⚡ MegaAnime (1080p Ultra HD)",
                 url: directDriveUrl
-              });
-            } else if (driveEp?.gdrivePath) {
-              servers.unshift({
-                name: "⚡ MegaAnime (1080p Ultra HD)",
-                url: `/api/gdrive-stream?path=${encodeURIComponent(driveEp.gdrivePath)}`
               });
             }
           } catch(e) {}

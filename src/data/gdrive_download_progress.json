@@ -1,14 +1,14 @@
 {
-  "currentAnimeIndex": 25,
+  "currentAnimeIndex": 30,
   "totalAnimes": 89,
-  "currentAnimeTitle": "Tefuda ga Oome no Victoria",
-  "mainFolder": "Tefuda ga Oome no Victoria",
+  "currentAnimeTitle": "Buchigire Reijou wa Houfuku wo Chikaimashita.",
+  "mainFolder": "Buchigire Reijou wa Houfuku wo Chikaimashita.",
   "seasonFolder": "",
-  "currentEpisode": 9,
+  "currentEpisode": 1,
   "totalEpisodesInAnime": 12,
-  "episodePercentage": "97.9%",
-  "globalProcessedEpisodes": 1425,
+  "episodePercentage": "99.6%",
+  "globalProcessedEpisodes": 1465,
   "grandTotalEpisodes": 2202,
-  "globalPercentage": "64.8%",
-  "lastUpdated": "2026-08-19T17:45:06.650Z"
+  "globalPercentage": "66.6%",
+  "lastUpdated": "2026-08-19T18:13:56.059Z"
 }

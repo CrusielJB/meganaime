@@ -6310,12 +6310,12 @@
       "ep-3": {
         "gdrivePath": "Lv999 no Murabito/Lv999 no Murabito - Episodio 03.mp4",
         "filename": "Lv999 no Murabito - Episodio 03.mp4",
-        "uploadedAt": "2026-08-19T15:12:38.346Z"
+        "uploadedAt": "2026-08-19T17:52:48.467Z"
       },
       "ep-5": {
         "gdrivePath": "Lv999 no Murabito/Lv999 no Murabito - Episodio 05.mp4",
         "filename": "Lv999 no Murabito - Episodio 05.mp4",
-        "uploadedAt": "2026-08-19T15:12:43.063Z"
+        "uploadedAt": "2026-08-19T17:52:52.707Z"
       },
       "ep-6": {
         "gdrivePath": "Lv999 no Murabito/Lv999 no Murabito - Episodio 06.mp4",
@@ -6335,7 +6335,7 @@
       "ep-12": {
         "gdrivePath": "Lv999 no Murabito/Lv999 no Murabito - Episodio 12.mp4",
         "filename": "Lv999 no Murabito - Episodio 12.mp4",
-        "uploadedAt": "2026-08-19T15:13:43.046Z"
+        "uploadedAt": "2026-08-19T17:52:57.845Z"
       }
     }
   },
@@ -99009,6 +99009,41 @@
         "gdrivePath": "Kore Kaite Shine/Kore Kaite Shine - Episodio 05.mp4",
         "filename": "Kore Kaite Shine - Episodio 05.mp4",
         "uploadedAt": "2026-08-19T17:48:58.092Z"
+      }
+    }
+  },
+  "tioanime-kabushikigaisha-magilumiere-2nd-season": {
+    "title": "Kabushikigaisha Magi-Lumière 2nd Season",
+    "episodes": {
+      "ep-2": {
+        "gdrivePath": "Kabushikigaisha Magi-Lumière/2da Temporada/Kabushikigaisha Magi-Lumière 2nd Season - Episodio 02.mp4",
+        "filename": "Kabushikigaisha Magi-Lumière 2nd Season - Episodio 02.mp4",
+        "uploadedAt": "2026-08-19T18:09:58.635Z"
+      },
+      "ep-6": {
+        "gdrivePath": "Kabushikigaisha Magi-Lumière/2da Temporada/Kabushikigaisha Magi-Lumière 2nd Season - Episodio 06.mp4",
+        "filename": "Kabushikigaisha Magi-Lumière 2nd Season - Episodio 06.mp4",
+        "uploadedAt": "2026-08-19T18:10:31.740Z"
+      },
+      "ep-7": {
+        "gdrivePath": "Kabushikigaisha Magi-Lumière/2da Temporada/Kabushikigaisha Magi-Lumière 2nd Season - Episodio 07.mp4",
+        "filename": "Kabushikigaisha Magi-Lumière 2nd Season - Episodio 07.mp4",
+        "uploadedAt": "2026-08-19T18:10:40.536Z"
+      }
+    }
+  },
+  "tioanime-ryoumin-0nin-start-no-henkyou-ryoushusama": {
+    "title": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama",
+    "episodes": {
+      "ep-2": {
+        "gdrivePath": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama/Ryoumin 0-nin Start no Henkyou Ryoushu-sama - Episodio 02.mp4",
+        "filename": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama - Episodio 02.mp4",
+        "uploadedAt": "2026-08-19T18:13:52.840Z"
+      },
+      "ep-3": {
+        "gdrivePath": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama/Ryoumin 0-nin Start no Henkyou Ryoushu-sama - Episodio 03.mp4",
+        "filename": "Ryoumin 0-nin Start no Henkyou Ryoushu-sama - Episodio 03.mp4",
+        "uploadedAt": "2026-08-19T18:13:58.732Z"
       }
     }
   }
