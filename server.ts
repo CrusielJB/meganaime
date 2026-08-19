@@ -866,14 +866,15 @@ export async function createExpressApp() {
       }
 
       // Match anime in catalog
-      const catalogItem = LOCAL_CATALOG.find(a => 
-        a.id === id ||
-        a.id === rawSlug ||
-        a.id === `tioanime-${rawSlug}` || 
-        a.id === `tioanime-${rawSlug}-tv` || 
-        (rawSlug.startsWith("one-piece") && a.id.includes("one-piece")) ||
-        (a.external_id && a.external_id === rawSlug)
-      ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`));
+      const catalogItem = (rawSlug === "one-piece" || rawSlug === "one-piece-tv" || rawSlug === "one-piece-temporada-2")
+        ? (LOCAL_CATALOG.find(a => a.id === "one-piece" || a.id === "tioanime-one-piece-tv") || LOCAL_CATALOG.find(a => a.title === "One Piece"))
+        : (LOCAL_CATALOG.find(a => 
+            a.id === id ||
+            a.id === rawSlug ||
+            a.id === `tioanime-${rawSlug}` || 
+            a.id === `tioanime-${rawSlug}-tv` || 
+            (a.external_id && a.external_id === rawSlug)
+          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`)));
 
       // Check if episode is in Google Drive
       const entryKeys = [
