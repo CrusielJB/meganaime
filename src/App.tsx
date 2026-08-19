@@ -263,6 +263,38 @@ function AppContent() {
     }
   }, [setSelectedAnime, setActiveEpisodeId, currentUser]);
 
+  // Handle direct Deep Links (?anime=SLUG, ?id=SLUG, /anime/SLUG) to open Anime Details modal immediately
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const animeParam = params.get("anime") || params.get("id");
+    let targetSlug = animeParam;
+
+    if (!targetSlug && window.location.pathname.startsWith("/anime/")) {
+      targetSlug = window.location.pathname.replace("/anime/", "").split("/")[0];
+    }
+
+    if (targetSlug) {
+      const allAnimes = getAnimesWithEpisodes();
+      const match = allAnimes.find(a => 
+        a.id === targetSlug || 
+        a.id === `tioanime-${targetSlug}` || 
+        a.id.toLowerCase() === targetSlug.toLowerCase()
+      );
+      if (match) {
+        handleSelectAnime(match);
+      } else {
+        fetch(`/api/anime/${encodeURIComponent(targetSlug)}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data && !data.error && data.title) {
+              handleSelectAnime(data);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [handleSelectAnime]);
+
   // Toggle favorite with event (prompt auth for non-registered guest users)
   const handleToggleFavoriteWithEvent = (e: React.MouseEvent, animeId: string) => {
     e.stopPropagation();
