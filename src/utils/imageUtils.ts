@@ -106,9 +106,15 @@ export function getProxyImageUrl(url: string | undefined, title: string = "Anime
     return getAnimePlaceholder(title, isBanner);
   }
 
-  // Native Capacitor iOS/Android WKWebView optimization:
-  // Direct HTTPS CDN URLs load 100x faster directly in <img> tags without server proxy overhead!
-  if (isNativePlatform() && (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://"))) {
+  // Direct HTTPS CDN URLs (AniList, Cloudinary, MyAnimeList, Imgur, Supabase) load 100x faster directly without server proxy!
+  if (
+    trimmedUrl.startsWith("https://s4.anilist.co/") ||
+    trimmedUrl.startsWith("https://cdn.myanimelist.net/") ||
+    trimmedUrl.startsWith("https://images.weserv.nl/") ||
+    trimmedUrl.startsWith("https://res.cloudinary.com/") ||
+    trimmedUrl.startsWith("https://i.imgur.com/") ||
+    (isNativePlatform() && (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")))
+  ) {
     return trimmedUrl;
   }
 

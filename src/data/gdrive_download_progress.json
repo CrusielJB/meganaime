@@ -1,14 +1,14 @@
 {
-  "currentAnimeIndex": 1,
+  "currentAnimeIndex": 19,
   "totalAnimes": 89,
-  "currentAnimeTitle": "One Piece",
-  "mainFolder": "One Piece",
-  "seasonFolder": "",
-  "currentEpisode": 82,
-  "totalEpisodesInAnime": 1174,
-  "episodePercentage": "84.3%",
-  "globalProcessedEpisodes": 91,
+  "currentAnimeTitle": "Otome Game Sekai wa Mob ni Kibishii Sekai desu 2",
+  "mainFolder": "Otome Game Sekai wa Mob ni Kibishii Sekai desu",
+  "seasonFolder": "2da Temporada",
+  "currentEpisode": 9,
+  "totalEpisodesInAnime": 12,
+  "episodePercentage": "98.6%",
+  "globalProcessedEpisodes": 1365,
   "grandTotalEpisodes": 2202,
-  "globalPercentage": "4.2%",
-  "lastUpdated": "2026-08-19T00:29:34.509Z"
+  "globalPercentage": "62.0%",
+  "lastUpdated": "2026-08-19T17:22:41.128Z"
 }

@@ -113,7 +113,26 @@ async function resolveDirectVideoUrl(serverName, serverUrl) {
 function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgress) {
   return new Promise((resolve, reject) => {
     const client = fileUrl.startsWith("https") ? https : http;
-    const rclone = spawn("rclone", ["rcat", remoteDestPath]);
+    const rclone = spawn("rclone", ["rcat", remoteDestPath, "--drive-chunk-size", "64M", "--low-level-retries", "3", "--timeout", "45s"]);
+
+    rclone.stdin.on("error", () => {}); // Prevent uncaught EPIPE
+
+    let isSettled = false;
+    const hardTimeout = setTimeout(() => {
+      if (isSettled) return;
+      isSettled = true;
+      try { req.destroy(new Error("Hard timeout (180s)")); } catch(e) {}
+      try { rclone.kill("SIGKILL"); } catch(e) {}
+      reject(new Error("Hard timeout after 180s"));
+    }, 180000);
+
+    const finish = (err, res) => {
+      if (isSettled) return;
+      isSettled = true;
+      clearTimeout(hardTimeout);
+      if (err) reject(err);
+      else resolve(res);
+    };
 
     const req = client.get(fileUrl, {
       headers: {
@@ -123,22 +142,36 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
       }
     }, (response) => {
       if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        rclone.stdin.end();
+        clearTimeout(hardTimeout);
+        try { rclone.stdin.end(); } catch(e) {}
         return streamToGoogleDrive(response.headers.location, remoteDestPath, refererUrl, onProgress).then(resolve).catch(reject);
       }
 
       if (response.statusCode !== 200) {
-        rclone.stdin.end();
-        return reject(new Error(`HTTP ${response.statusCode}`));
+        try { rclone.stdin.end(); } catch(e) {}
+        return finish(new Error(`HTTP ${response.statusCode}`));
       }
 
       const totalBytes = parseInt(response.headers['content-length'] || "0", 10);
       let transferredBytes = 0;
       let lastReport = Date.now();
 
+      let watchdog = setTimeout(() => {
+        try { req.destroy(new Error("Stream stalled (20s inactivity)")); } catch(e) {}
+        try { rclone.stdin.end(); } catch(e) {}
+      }, 20000);
+
       response.on("data", (chunk) => {
+        clearTimeout(watchdog);
+        watchdog = setTimeout(() => {
+          try { req.destroy(new Error("Stream stalled (20s inactivity)")); } catch(e) {}
+          try { rclone.stdin.end(); } catch(e) {}
+        }, 20000);
+
         transferredBytes += chunk.length;
-        rclone.stdin.write(chunk);
+        if (rclone.stdin && !rclone.stdin.destroyed && rclone.stdin.writable) {
+          try { rclone.stdin.write(chunk); } catch(e) {}
+        }
 
         if (Date.now() - lastReport > 1500) {
           lastReport = Date.now();
@@ -148,68 +181,71 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
       });
 
       response.on("end", () => {
-        rclone.stdin.end();
+        clearTimeout(watchdog);
+        try { rclone.stdin.end(); } catch(e) {}
+      });
+
+      response.on("error", (err) => {
+        clearTimeout(watchdog);
+        try { rclone.stdin.end(); } catch(e) {}
+        finish(err);
       });
     });
 
     rclone.on("close", (code) => {
       if (code === 0) {
-        resolve({ success: true, remotePath: remoteDestPath });
+        finish(null, { success: true, remotePath: remoteDestPath });
       } else {
-        reject(new Error(`rclone rcat error code ${code}`));
+        finish(new Error(`rclone rcat error code ${code}`));
       }
     });
 
     req.on("error", (err) => {
-      rclone.stdin.end();
-      reject(err);
+      try { rclone.stdin.end(); } catch(e) {}
+      finish(err);
     });
 
-    req.setTimeout(60000, () => {
-      req.destroy(new Error("Timeout after 60s"));
+    req.setTimeout(25000, () => {
+      try { rclone.stdin.end(); } catch(e) {}
+      req.destroy(new Error("Initial connection timeout after 25s"));
     });
   });
 }
 
 (async () => {
   const catalog = JSON.parse(fs.readFileSync(CATALOG_FILE, "utf-8"));
-  const airingMap = JSON.parse(fs.readFileSync(AIRING_MAP_FILE, "utf-8"));
+  const airingMap = fs.existsSync(AIRING_MAP_FILE) ? JSON.parse(fs.readFileSync(AIRING_MAP_FILE, "utf-8")) : {};
+  const driveData = fs.existsSync(MANIFEST_FILE) ? JSON.parse(fs.readFileSync(MANIFEST_FILE, "utf-8")) : {};
   const airing = catalog.filter(a => a.status === "En emisión");
 
-  // Priority keywords in requested order (One Piece #1)
-  const PRIORITY_KEYWORDS = [
-    "one-piece",
-    "bleach",
-    "mushoku-tensei",
-    "black-torch",
-    "10nen",
-    "lv999",
-    "kage",
-    "sekai-saikyou-no-kouei"
-  ];
-
-  // Calculate total episodes count across all airing animes
+  // Calculate total episodes count across all airing animes and count missing eps per anime
   let grandTotalEpisodes = 0;
   const animeQueue = airing.map(a => {
     let maxEps = a.episodesCount || 1;
     if (airingMap[a.id]) maxEps = airingMap[a.id];
     if (a.id.includes("one-piece")) maxEps = 1174;
     grandTotalEpisodes += maxEps;
-    return { ...a, maxEps };
+
+    const driveEntry = driveData[a.id] || driveData[a.id.replace(/^tioanime-/, "")];
+    let presentCount = 0;
+    for (let ep = 1; ep <= maxEps; ep++) {
+      const inDriveJson = driveEntry?.episodes?.[`ep-${ep}`]?.fileId && parseFloat(driveEntry.episodes[`ep-${ep}`].sizeMB || "0") > 10;
+      if (inDriveJson) presentCount++;
+    }
+    const missingCount = Math.max(0, maxEps - presentCount);
+    return { ...a, maxEps, presentCount, missingCount };
   });
 
-  // Sort queue by priority order first, then rest of catalog
+  // Sort queue by least missing episodes first (1 ep missing -> 2 eps missing -> ... -> One Piece at the end)
   animeQueue.sort((a, b) => {
-    const getPriorityIndex = (item) => {
-      const id = item.id.toLowerCase();
-      const title = item.title.toLowerCase();
-      for (let idx = 0; idx < PRIORITY_KEYWORDS.length; idx++) {
-        const kw = PRIORITY_KEYWORDS[idx];
-        if (id.includes(kw) || title.includes(kw.replace(/-/g, " "))) return idx;
-      }
-      return 999;
-    };
-    return getPriorityIndex(a) - getPriorityIndex(b);
+    // Put One Piece at the end of active queue as requested
+    if (a.id.includes("one-piece")) return 1;
+    if (b.id.includes("one-piece")) return -1;
+    // Animes already completed stay at top to be instantly acknowledged
+    if (a.missingCount === 0 && b.missingCount !== 0) return -1;
+    if (b.missingCount === 0 && a.missingCount !== 0) return 1;
+    // Lowest missing count first!
+    return a.missingCount - b.missingCount;
   });
 
   console.log(`\n========================================================================`);
@@ -228,6 +264,7 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
       : `gdrive:MegaAnime_HD/${mainFolder}`;
 
     const existingRemoteFiles = getRemoteFolderFiles(remoteDir);
+    const driveEntry = driveData[anime.id] || driveData[anime.id.replace(/^tioanime-/, "")];
 
     console.log(`\n------------------------------------------------------------------------`);
     console.log(`🎬 [${aIdx + 1}/${animeQueue.length}] "${anime.title}"`);
@@ -235,12 +272,33 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
     console.log(`📺 Total Episodios de Temporada: ${anime.maxEps}`);
     console.log(`------------------------------------------------------------------------`);
 
+    // Check if whole anime is already complete in Drive
+    let missingCount = 0;
+    for (let ep = 1; ep <= anime.maxEps; ep++) {
+      const filename = `${sanitizeFolderName(anime.title)} - Episodio ${String(ep).padStart(2, '0')}.mp4`;
+      const inDriveJson = driveEntry?.episodes?.[`ep-${ep}`]?.fileId && parseFloat(driveEntry.episodes[`ep-${ep}`].sizeMB || "0") > 10;
+      const inRemote = existingRemoteFiles.has(filename);
+      if (!inDriveJson && !inRemote) {
+        missingCount++;
+      }
+    }
+
+    if (missingCount === 0) {
+      globalProcessedEpisodes += anime.maxEps;
+      const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
+      console.log(`   ✨ [COMPLETO] "${anime.title}" ya tiene sus ${anime.maxEps} episodios en Google Drive sin duplicados. Pasando al siguiente anime... | Total Global: ${globalBar}`);
+      continue;
+    }
+
     for (let ep = 1; ep <= anime.maxEps; ep++) {
       const filename = `${sanitizeFolderName(anime.title)} - Episodio ${String(ep).padStart(2, '0')}.mp4`;
       const remoteFilePath = `${remoteDir}/${filename}`;
 
-      // Check if already in Google Drive
-      if (existingRemoteFiles.has(filename)) {
+      // Check if already in Google Drive or drive_episodes.json
+      const inDriveJson = driveEntry?.episodes?.[`ep-${ep}`]?.fileId && parseFloat(driveEntry.episodes[`ep-${ep}`].sizeMB || "0") > 10;
+      const inRemote = existingRemoteFiles.has(filename);
+
+      if (inDriveJson || inRemote) {
         globalProcessedEpisodes++;
         const epBar = renderProgressBar(100, 15);
         const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
@@ -263,64 +321,50 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
         const epData = await apiRes.json();
         const servers = epData.videoServers || [];
 
-        let directStream = null;
-        let usedServer = null;
-
+        let streamSuccess = false;
         for (const server of servers) {
           const resolved = await resolveDirectVideoUrl(server.name, server.url);
           if (resolved && resolved.url && !resolved.isHls) {
-            directStream = resolved.url;
-            usedServer = server;
-            break;
+            console.log(`   🚀 Enlace 1080p obtenido desde ${server.name}! Iniciando streaming directo a Drive...`);
+            try {
+              const referer = resolved.url.includes("mp4upload") ? "https://www.mp4upload.com/" : (server.url || "https://tioanime.com/");
+              await streamToGoogleDrive(resolved.url, remoteFilePath, referer, (percent, currMB, totalMB) => {
+                const epBar = renderProgressBar(percent, 18);
+                const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
+                process.stdout.write(`\r   ☁️ [Ep ${ep}/${anime.maxEps}] ${epBar} (${currMB}/${totalMB}MB) | Total: ${globalBar} `);
+              });
+
+              globalProcessedEpisodes++;
+              const epBar = renderProgressBar(100, 15);
+              const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
+              console.log(`\n   ✅ [Ep ${ep}/${anime.maxEps}] Guardado en Drive e Implementado en la Web! | Total Global: ${globalBar} (${globalProcessedEpisodes}/${grandTotalEpisodes} eps)`);
+
+              // Update manifest
+              if (!driveData[anime.id]) {
+                driveData[anime.id] = { title: anime.title, episodes: {} };
+              }
+              driveData[anime.id].episodes[`ep-${ep}`] = {
+                gdrivePath: remoteFilePath.replace("gdrive:MegaAnime_HD/", ""),
+                filename: filename,
+                uploadedAt: new Date().toISOString()
+              };
+
+              fs.writeFileSync(MANIFEST_FILE, JSON.stringify(driveData, null, 2), "utf-8");
+              const distManifest = path.join(process.cwd(), "dist/drive_episodes.json");
+              if (fs.existsSync(path.dirname(distManifest))) {
+                fs.writeFileSync(distManifest, JSON.stringify(driveData, null, 2), "utf-8");
+              }
+              streamSuccess = true;
+              break;
+            } catch (streamErr) {
+              console.warn(`\n   ⚠️ Falló descarga desde ${server.name} (${streamErr.message}), probando servidor alternativo...`);
+            }
           }
         }
 
-        if (directStream) {
-          console.log(`   🚀 Enlace 1080p obtenido desde ${usedServer.name}! Iniciando streaming directo a Drive...`);
-          
-          await streamToGoogleDrive(directStream, remoteFilePath, usedServer.url, (epPercent, mbTransferred, mbTotal) => {
-            const epBar = renderProgressBar(epPercent, 18);
-            const globalPercent = ((globalProcessedEpisodes + (epPercent / 100)) / grandTotalEpisodes) * 100;
-            const globalBar = renderProgressBar(globalPercent, 20);
-
-            process.stdout.write(`\r   ☁️ [Ep ${ep}/${anime.maxEps}] ${epBar} (${mbTransferred}/${mbTotal}MB) | Total: ${globalBar} `);
-
-            updateProgressState({
-              currentAnimeIndex: aIdx + 1,
-              totalAnimes: animeQueue.length,
-              currentAnimeTitle: anime.title,
-              mainFolder,
-              seasonFolder,
-              currentEpisode: ep,
-              totalEpisodesInAnime: anime.maxEps,
-              episodePercentage: `${epPercent.toFixed(1)}%`,
-              globalProcessedEpisodes: globalProcessedEpisodes,
-              grandTotalEpisodes: grandTotalEpisodes,
-              globalPercentage: `${globalPercent.toFixed(1)}%`,
-              lastUpdated: new Date().toISOString()
-            });
-          });
-
+        if (!streamSuccess) {
           globalProcessedEpisodes++;
-          existingRemoteFiles.add(filename);
-          
-          // Save to drive_episodes.json manifest for instant player streaming
-          try {
-            const manifest = fs.existsSync(MANIFEST_FILE) ? JSON.parse(fs.readFileSync(MANIFEST_FILE, "utf-8")) : {};
-            manifest[anime.id] = manifest[anime.id] || { title: anime.title, episodes: {} };
-            manifest[anime.id].episodes[`ep-${ep}`] = {
-              gdrivePath: remoteFilePath.replace(/^gdrive:MegaAnime_HD\//, ''),
-              filename: filename,
-              uploadedAt: new Date().toISOString()
-            };
-            fs.writeFileSync(MANIFEST_FILE, JSON.stringify(manifest, null, 2), "utf-8");
-          } catch(e) {}
-
-          const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
-          process.stdout.write(`\r   ✅ [Ep ${ep}/${anime.maxEps}] Guardado en Drive e Implementado en la Web! | Total Global: ${globalBar} (${globalProcessedEpisodes}/${grandTotalEpisodes} eps)\n`);
-        } else {
-          globalProcessedEpisodes++;
-          console.warn(`   ⚠️ Servidor directo no disponible temporalmente para ep ${ep}.`);
+          console.warn(`   ❌ Ningún servidor directo completó ep ${ep}. Pasando al siguiente...`);
         }
       } catch (err) {
         globalProcessedEpisodes++;
