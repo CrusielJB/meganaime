@@ -1524,15 +1524,15 @@ export default function VideoPlayer({
                 </div>
               </div>
 
-              {/* Server Selector List / MegaAnime Drive Exclusive Banner */}
+              {/* Server Selector List / MegaAnime Exclusive Banner */}
               {activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? (
                 <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 space-y-2.5 shadow-lg shadow-rose-950/40">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="h-4 w-4 text-rose-400 animate-pulse" />
-                    <span className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono">⚡ MegaAnime Drive (1080p Ultra HD)</span>
+                    <span className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono">⚡ MegaAnime (1080p Ultra HD)</span>
                   </div>
                   <p className="text-[11px] text-neutral-300 leading-relaxed">
-                    Reproduciendo en calidad nativa Ultra HD directamente desde nuestros servidores en la nube sin anuncios ni ventanas emergentes.
+                    Reproduciendo en calidad nativa Ultra HD directamente desde nuestros servidores oficiales de MegaAnime sin anuncios ni ventanas emergentes.
                   </p>
                 </div>
               ) : (

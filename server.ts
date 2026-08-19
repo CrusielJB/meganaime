@@ -873,12 +873,12 @@ export async function createExpressApp() {
             if (driveEp?.fileId || driveEp?.streamUrl) {
               const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
               servers.unshift({
-                name: "⚡ MegaAnime Drive (1080p Ultra HD)",
+                name: "⚡ MegaAnime (1080p Ultra HD)",
                 url: directDriveUrl
               });
             } else if (driveEp?.gdrivePath) {
               servers.unshift({
-                name: "⚡ MegaAnime Drive (1080p Ultra HD)",
+                name: "⚡ MegaAnime (1080p Ultra HD)",
                 url: `/api/gdrive-stream?path=${encodeURIComponent(driveEp.gdrivePath)}`
               });
             }

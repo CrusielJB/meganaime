@@ -85,7 +85,7 @@ export function generateFacebookPostCaption(item: {
 🎬 Anime: ${item.animeTitle}
 📺 ${epText}
 ⭐ Géneros: ${genresText}
-⚡ Servidor Exclusivo MegaAnime Drive (1080p Ultra HD)
+⚡ Servidor Exclusivo MegaAnime (1080p Ultra HD)
 
 🍿 ¡Disfrútalo ahora mismo en FULL HD nativo, sin anuncios molestos y con la máxima velocidad de streaming!
 

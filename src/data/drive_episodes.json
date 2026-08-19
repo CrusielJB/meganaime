@@ -66,17 +66,17 @@
       "ep-3": {
         "gdrivePath": "Iwamoto-senpai no Suisen/Iwamoto-senpai no Suisen - Episodio 03.mp4",
         "filename": "Iwamoto-senpai no Suisen - Episodio 03.mp4",
-        "uploadedAt": "2026-08-19T16:23:38.355Z"
+        "uploadedAt": "2026-08-19T17:38:50.872Z"
       },
       "ep-4": {
         "gdrivePath": "Iwamoto-senpai no Suisen/Iwamoto-senpai no Suisen - Episodio 04.mp4",
         "filename": "Iwamoto-senpai no Suisen - Episodio 04.mp4",
-        "uploadedAt": "2026-08-19T16:23:44.991Z"
+        "uploadedAt": "2026-08-19T17:38:57.406Z"
       },
       "ep-6": {
         "gdrivePath": "Iwamoto-senpai no Suisen/Iwamoto-senpai no Suisen - Episodio 06.mp4",
         "filename": "Iwamoto-senpai no Suisen - Episodio 06.mp4",
-        "uploadedAt": "2026-08-19T16:23:51.178Z"
+        "uploadedAt": "2026-08-19T17:39:02.456Z"
       }
     }
   },
@@ -490,12 +490,17 @@
       "ep-4": {
         "gdrivePath": "Tetsunabe no Jan!/Tetsunabe no Jan! - Episodio 04.mp4",
         "filename": "Tetsunabe no Jan! - Episodio 04.mp4",
-        "uploadedAt": "2026-08-19T16:22:58.802Z"
+        "uploadedAt": "2026-08-19T17:34:42.475Z"
       },
       "ep-6": {
         "gdrivePath": "Tetsunabe no Jan!/Tetsunabe no Jan! - Episodio 06.mp4",
         "filename": "Tetsunabe no Jan! - Episodio 06.mp4",
-        "uploadedAt": "2026-08-19T16:23:04.318Z"
+        "uploadedAt": "2026-08-19T17:34:49.744Z"
+      },
+      "ep-7": {
+        "gdrivePath": "Tetsunabe no Jan!/Tetsunabe no Jan! - Episodio 07.mp4",
+        "filename": "Tetsunabe no Jan! - Episodio 07.mp4",
+        "uploadedAt": "2026-08-19T17:34:56.696Z"
       }
     }
   },
@@ -98979,6 +98984,31 @@
         "gdrivePath": "The Ghost in the Shell (Science Saru)/The Ghost in the Shell (Science Saru) - Episodio 01.mp4",
         "filename": "The Ghost in the Shell (Science Saru) - Episodio 01.mp4",
         "uploadedAt": "2026-08-19T16:35:55.026Z"
+      }
+    }
+  },
+  "tioanime-kore-kaite-shine": {
+    "title": "Kore Kaite Shine",
+    "episodes": {
+      "ep-2": {
+        "gdrivePath": "Kore Kaite Shine/Kore Kaite Shine - Episodio 02.mp4",
+        "filename": "Kore Kaite Shine - Episodio 02.mp4",
+        "uploadedAt": "2026-08-19T17:48:42.274Z"
+      },
+      "ep-3": {
+        "gdrivePath": "Kore Kaite Shine/Kore Kaite Shine - Episodio 03.mp4",
+        "filename": "Kore Kaite Shine - Episodio 03.mp4",
+        "uploadedAt": "2026-08-19T17:48:47.663Z"
+      },
+      "ep-4": {
+        "gdrivePath": "Kore Kaite Shine/Kore Kaite Shine - Episodio 04.mp4",
+        "filename": "Kore Kaite Shine - Episodio 04.mp4",
+        "uploadedAt": "2026-08-19T17:48:52.738Z"
+      },
+      "ep-5": {
+        "gdrivePath": "Kore Kaite Shine/Kore Kaite Shine - Episodio 05.mp4",
+        "filename": "Kore Kaite Shine - Episodio 05.mp4",
+        "uploadedAt": "2026-08-19T17:48:58.092Z"
       }
     }
   }
