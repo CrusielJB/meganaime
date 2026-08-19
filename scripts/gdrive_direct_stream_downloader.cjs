@@ -339,13 +339,25 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
               const globalBar = renderProgressBar((globalProcessedEpisodes / grandTotalEpisodes) * 100, 20);
               console.log(`\n   ✅ [Ep ${ep}/${anime.maxEps}] Guardado en Drive e Implementado en la Web! | Total Global: ${globalBar} (${globalProcessedEpisodes}/${grandTotalEpisodes} eps)`);
 
-              // Update manifest
+              let fileId = null;
+              let sizeMB = currMB;
+              try {
+                const infoOut = execSync(`rclone lsjson "${remoteFilePath}" 2>/dev/null`, { encoding: "utf-8" });
+                const info = JSON.parse(infoOut)[0];
+                if (info && info.ID) fileId = info.ID;
+                if (info && info.Size) sizeMB = (info.Size / (1024 * 1024)).toFixed(2);
+              } catch(e) {}
+
+              // Update manifest with verified streamUrl
               if (!driveData[anime.id]) {
                 driveData[anime.id] = { title: anime.title, episodes: {} };
               }
               driveData[anime.id].episodes[`ep-${ep}`] = {
+                fileId: fileId,
+                streamUrl: fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null,
                 gdrivePath: remoteFilePath.replace("gdrive:MegaAnime_HD/", ""),
                 filename: filename,
+                sizeMB: sizeMB,
                 uploadedAt: new Date().toISOString()
               };
 
@@ -357,7 +369,10 @@ function streamToGoogleDrive(fileUrl, remoteDestPath, refererUrl = "", onProgres
               streamSuccess = true;
               break;
             } catch (streamErr) {
-              console.warn(`\n   ⚠️ Falló descarga desde ${server.name} (${streamErr.message}), probando servidor alternativo...`);
+              console.warn(`\n   ⚠️ Falló descarga desde ${server.name} (${streamErr.message}), limpiando y probando servidor alternativo...`);
+              try {
+                execSync(`rclone deletefile --max-size 10M "${remoteFilePath}" 2>/dev/null`);
+              } catch(e) {}
             }
           }
         }
