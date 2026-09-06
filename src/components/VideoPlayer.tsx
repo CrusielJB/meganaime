@@ -614,8 +614,9 @@ export default function VideoPlayer({
 
         if (fileMatch) {
           const fileId = fileMatch[1];
-          // Stream directly through our authenticated GDrive OAuth2 proxy in native player
-          setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
+          // Stream directly from Google's high-speed CDN in custom player (0 CF bandwidth, ultra fast)
+          const directDriveUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`;
+          setResolvedStreamUrl(directDriveUrl);
           setUseResolvedPlayer(true);  // ← tu reproductor nativo, no iframe de Google
           setResolvedIsHls(false);
           setIsResolving(false);
@@ -975,11 +976,16 @@ export default function VideoPlayer({
       const fileId = fileMatch ? fileMatch[1] : null;
 
       if (fileId) {
-        // Never switch to Google Drive preview iframe because Google blocks external iframes with CSP frame-ancestors.
-        // Maintain native player with retry capability.
+        // If direct Google CDN had an error, fallback to /api/gdrive-stream proxy
+        if (!resolvedStreamUrl.includes("/api/gdrive-stream")) {
+          console.warn("[Drive Fallback] Direct Google CDN failed, switching to /api/gdrive-stream proxy");
+          setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
+          setUseResolvedPlayer(true);
+          return;
+        }
         console.warn("[Drive Fallback] Stream error on GDrive file. Maintaining native player.");
         setUseResolvedPlayer(true);
-        setVideoError("Error al conectar con Google Drive. Reintentando...");
+        setVideoError("Error al conectar con el servidor de video. Reintentando...");
         return;
       }
 
