@@ -1,4 +1,6 @@
 const dotenv = require("dotenv");
+const fs = require("fs");
+const path = require("path");
 dotenv.config();
 
 const pageId = process.env.FACEBOOK_PAGE_ID || "1375353446122077";
@@ -153,6 +155,22 @@ async function publishAll() {
           postId: postId,
           status: "SUCCESS"
         });
+
+        // Record to facebook_posted.json
+        try {
+          const postedFile = path.resolve(__dirname, "../src/utils/facebook_posted.json");
+          let currentList = [];
+          if (fs.existsSync(postedFile)) {
+            currentList = JSON.parse(fs.readFileSync(postedFile, "utf-8"));
+          }
+          const entryKey = `${item.slug}-ep-${item.episodeNumber}-mega-anime`;
+          if (!currentList.includes(entryKey)) {
+            currentList.push(entryKey);
+            fs.writeFileSync(postedFile, JSON.stringify(currentList, null, 2), "utf-8");
+          }
+        } catch (e) {
+          console.warn("Error actualizando facebook_posted.json:", e.message);
+        }
       } else {
         console.error(`❌ Error en "${item.title}":`, resData);
         results.push({
