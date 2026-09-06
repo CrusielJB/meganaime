@@ -2380,110 +2380,94 @@ export async function createExpressApp() {
     }
   });
 
-  // ── Google Drive Token Resolver — returns direct stream URL (no server-side video proxying) ──
-  // Client calls this to get a short-lived direct URL from Google, then streams video directly.
-  // This avoids routing video bytes through Cloud Function → lower billing at scale.
+  // ── Google Drive OAuth2 Helper ──────────────────────────────────────────────
+  // Uses the rclone refresh_token (or .env GDRIVE_REFRESH_TOKEN) to get
+  // a short-lived access token so we can serve Drive files without anonymous
+  // blocks from Google.
+  const GDRIVE_CLIENT_ID     = process.env.GDRIVE_CLIENT_ID     || "202264815644.apps.googleusercontent.com";
+  const GDRIVE_CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET || "X4Z3ca8xfWqXATe00mKyyqgo1d";
+  // IMPORTANT: Set GDRIVE_REFRESH_TOKEN in Firebase .env / Cloud Function env vars.
+  // Obtain it from rclone.conf: token → refresh_token field.
+  const GDRIVE_REFRESH_TOKEN = process.env.GDRIVE_REFRESH_TOKEN || "";
+
+  let _cachedAccessToken: string | null = null;
+  let _tokenExpiry = 0;
+
+  async function getGDriveAccessToken(): Promise<string> {
+    const now = Date.now();
+    if (_cachedAccessToken && now < _tokenExpiry - 60000) return _cachedAccessToken;
+
+    const body = new URLSearchParams({
+      client_id: GDRIVE_CLIENT_ID,
+      client_secret: GDRIVE_CLIENT_SECRET,
+      refresh_token: GDRIVE_REFRESH_TOKEN,
+      grant_type: "refresh_token",
+    });
+
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`GDrive token refresh failed: ${err}`);
+    }
+
+    const data = await res.json() as { access_token: string; expires_in: number };
+    _cachedAccessToken = data.access_token;
+    _tokenExpiry = Date.now() + (data.expires_in * 1000);
+    return _cachedAccessToken;
+  }
+
+  // ── GET /api/gdrive-token — returns a short-lived authenticated stream URL ──
+  // The client receives the URL and streams video DIRECTLY from Google (no CF bandwidth used).
   app.get("/api/gdrive-token", async (req, res) => {
     const fileId = req.query.fileId as string;
     if (!fileId) return res.status(400).json({ error: "Missing fileId" });
 
-    // Serve from cache to avoid repeated resolution of the same file
-    const cacheKey = `gdrive_token_${fileId}`;
+    const cacheKey = `gdrive_token2_${fileId}`;
     const cached = apiCache.get<{ streamUrl: string }>(cacheKey);
     if (cached) {
       res.setHeader("X-Cache", "HIT");
       return res.json(cached);
     }
 
-    // Recursively follow redirects + handle Google's virus-scan confirmation page
-    const resolveStreamUrl = (url: string, cookies: string, attempt: number): Promise<string> => {
-      return new Promise((resolve, reject) => {
-        if (attempt > 8) return reject(new Error("Too many redirects from Google Drive"));
-
-        const parsedUrl = new URL(url);
-        const options: import("https").RequestOptions = {
-          hostname: parsedUrl.hostname,
-          path: parsedUrl.pathname + parsedUrl.search,
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            ...(cookies ? { "Cookie": cookies } : {})
-          }
-        };
-
-        const request = https.get(options, (upstream) => {
-          const status = upstream.statusCode || 200;
-          const newCookies = [cookies, ...(upstream.headers["set-cookie"] as string[] || [])].filter(Boolean).join("; ");
-
-          // Follow HTTP redirects
-          if ([301, 302, 303, 307, 308].includes(status) && upstream.headers.location) {
-            upstream.resume();
-            const redirectUrl = (upstream.headers.location as string).startsWith("http")
-              ? upstream.headers.location as string
-              : `https://${parsedUrl.hostname}${upstream.headers.location}`;
-            resolveStreamUrl(redirectUrl, newCookies, attempt + 1).then(resolve).catch(reject);
-            return;
-          }
-
-          const contentType = (upstream.headers["content-type"] || "").toLowerCase();
-
-          // Video stream found — return this URL without consuming the body
-          if (contentType.includes("video") || contentType.includes("octet-stream") || contentType.includes("mp4")) {
-            try { upstream.destroy(); request.destroy(); } catch (_) {}
-            resolve(url);
-            return;
-          }
-
-          // Google's antivirus scan confirmation page (HTML) — extract confirm + uuid tokens
-          if (contentType.includes("text/html")) {
-            let html = "";
-            upstream.on("data", (chunk: Buffer) => {
-              html += chunk.toString();
-              // Stop reading after 80KB — we only need the form tokens near the top
-              if (html.length > 80000) { try { request.destroy(); } catch (_) {} }
-            });
-            upstream.on("end", () => {
-              const confirmMatch = html.match(/name="confirm"\s+value="([^"]+)"/) ||
-                                   html.match(/confirm=([tT][a-zA-Z0-9_-]*)/) ||
-                                   [null, "t"];
-              const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/) ||
-                                html.match(/uuid=([a-zA-Z0-9_-]+)/);
-              const confirmVal = confirmMatch?.[1] || "t";
-              const uuidVal   = uuidMatch?.[1] || "";
-              const confirmedUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=${confirmVal}${uuidVal ? `&uuid=${uuidVal}` : ""}`;
-              resolveStreamUrl(confirmedUrl, newCookies, attempt + 1).then(resolve).catch(reject);
-            });
-            upstream.on("error", reject);
-            return;
-          }
-
-          // Unknown content — return URL as-is
-          upstream.resume();
-          resolve(url);
-        });
-
-        request.on("error", reject);
-        request.setTimeout(10000, () => { try { request.destroy(); } catch (_) {} reject(new Error("Timeout resolving Drive URL")); });
-      });
-    };
-
     try {
-      const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-      const streamUrl = await resolveStreamUrl(initialUrl, "", 0);
+      const accessToken = await getGDriveAccessToken();
+
+      // Step 1: get file metadata to confirm it's accessible
+      const metaRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,size`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      if (!metaRes.ok) {
+        const err = await metaRes.text();
+        console.error(`[GDrive Token] Metadata error for ${fileId}:`, err);
+        return res.json({ streamUrl: null, fallback: `/api/gdrive-stream?fileId=${fileId}`, error: err });
+      }
+
+      // Step 2: Build the authenticated download URL — browser will receive a 
+      // redirect to Google's CDN with a short-lived token embedded in the URL.
+      // We redirect the client browser to this URL — they stream directly from Google.
+      const streamUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${accessToken}`;
+
       const result = { streamUrl };
-      // Cache for 20 minutes (Drive URLs expire; err on the side of freshness)
-      apiCache.set(cacheKey, result, 1200);
-      res.setHeader("Cache-Control", "private, max-age=1200");
+      // Cache for 45 min (access tokens last 1 hour)
+      apiCache.set(cacheKey, result, 2700);
+      res.setHeader("Cache-Control", "private, max-age=2700");
       return res.json(result);
     } catch (e: any) {
-      console.error(`[GDrive Token] Failed to resolve fileId=${fileId}:`, e.message);
-      // Return the proxy fallback URL so VideoPlayer can stream via our server
+      console.error(`[GDrive Token] Failed for fileId=${fileId}:`, e.message);
       return res.json({ streamUrl: null, fallback: `/api/gdrive-stream?fileId=${fileId}`, error: e.message });
     }
   });
 
-  // ── Google Drive Direct Video Stream Endpoint (Zero ads, native player, Full HD 1080p) ──
+  // ── GET /api/gdrive-stream — authenticated server-side proxy stream ──
+  // Fallback when the client can't play the direct URL (e.g. CORS on some browsers).
+  // Streams video bytes through this server using the OAuth2 access token.
   app.get("/api/gdrive-stream", async (req, res) => {
     let fileId = req.query.fileId as string;
     const rawUrl = req.query.url as string;
@@ -2497,98 +2481,82 @@ export async function createExpressApp() {
       return res.status(400).json({ error: "Missing fileId parameter" });
     }
 
-    // Set CORS headers for custom HTML5 video player
+    // CORS headers for HTML5 video element
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Range, Origin, Content-Type, Accept");
     res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type, Accept-Ranges");
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
-    const reqRange = req.headers.range as string | undefined;
+    try {
+      const accessToken = await getGDriveAccessToken();
+      const reqRange = req.headers.range as string | undefined;
 
-    const makeRequest = (url: string, cookies: string = "", attempt: number = 0) => {
-      if (attempt > 6) {
-        if (!res.headersSent) res.status(500).send("Too many redirects from Google Drive");
+      const upstreamRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            ...(reqRange ? { Range: reqRange } : {}),
+          },
+        }
+      );
+
+      if (!upstreamRes.ok && upstreamRes.status !== 206) {
+        const errBody = await upstreamRes.text();
+        console.error(`[GDrive Stream] Upstream ${upstreamRes.status} for ${fileId}:`, errBody);
+        if (!res.headersSent) res.status(upstreamRes.status).send(errBody);
         return;
       }
 
-      const parsedUrl = new URL(url);
-      const options = {
-        hostname: parsedUrl.hostname,
-        path: parsedUrl.pathname + parsedUrl.search,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "*/*",
-          "Connection": "keep-alive",
-          ...(reqRange ? { "Range": reqRange } : {}),
-          ...(cookies ? { "Cookie": cookies } : {}),
+      const contentType = upstreamRes.headers.get("content-type") || "video/mp4";
+      const contentLength = upstreamRes.headers.get("content-length");
+      const contentRange  = upstreamRes.headers.get("content-range");
+
+      if (!res.headersSent) {
+        res.status(upstreamRes.status);
+        res.setHeader("Content-Type", contentType.includes("video") ? contentType : "video/mp4");
+        res.setHeader("Accept-Ranges", "bytes");
+        if (contentLength) res.setHeader("Content-Length", contentLength);
+        if (contentRange)  res.setHeader("Content-Range",  contentRange);
+        res.setHeader("Cache-Control", "public, max-age=7200");
+      }
+
+      if (!upstreamRes.body) {
+        res.end();
+        return;
+      }
+
+      // Stream body to client
+      const reader = upstreamRes.body.getReader();
+      req.on("close", () => reader.cancel().catch(() => {}));
+
+      const pump = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) { res.end(); break; }
+            if (!res.write(value)) {
+              await new Promise(r => res.once("drain", r));
+            }
+          }
+        } catch (e: any) {
+          console.error("[GDrive Stream] Pipe error:", e.message);
+          if (!res.headersSent) res.status(500).end();
         }
       };
 
-      const request = https.get(options, (upstream) => {
-        const status = upstream.statusCode || 200;
-
-        // Follow standard redirects (301, 302, 303, 307, 308)
-        if ((status === 301 || status === 302 || status === 303 || status === 307 || status === 308) && upstream.headers.location) {
-          upstream.resume();
-          const redirectUrl = upstream.headers.location.startsWith("http")
-            ? upstream.headers.location
-            : `https://${parsedUrl.hostname}${upstream.headers.location}`;
-          const newCookies = upstream.headers["set-cookie"]
-            ? [cookies, ...(upstream.headers["set-cookie"] as string[])].filter(Boolean).join("; ")
-            : cookies;
-          makeRequest(redirectUrl, newCookies, attempt + 1);
-          return;
-        }
-
-        const setCookies = upstream.headers["set-cookie"]
-          ? [cookies, ...(upstream.headers["set-cookie"] as string[])].filter(Boolean).join("; ")
-          : cookies;
-
-        const contentType = upstream.headers["content-type"] || "";
-
-        // Google Drive virus scan prompt for large video files (>100MB) — resolve confirm + uuid tokens
-        if (contentType.includes("text/html")) {
-          let html = "";
-          upstream.on("data", (chunk: Buffer) => html += chunk.toString());
-          upstream.on("end", () => {
-            const confirmMatch = html.match(/name="confirm"\s+value="([^"]+)"/) || html.match(/confirm=([a-zA-Z0-9_-]+)/);
-            const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/) || html.match(/uuid=([a-zA-Z0-9_-]+)/);
-            const confirmVal = confirmMatch ? confirmMatch[1] : "t";
-            const uuidVal = uuidMatch ? uuidMatch[1] : "";
-            const confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=${confirmVal}${uuidVal ? `&uuid=${uuidVal}` : ""}`;
-            makeRequest(confirmUrl, setCookies, attempt + 1);
-          });
-          return;
-        }
-
-        // Success: pipe video stream directly to client
-        if (!res.headersSent) {
-          res.status(status);
-          res.setHeader("Content-Type", contentType.includes("video") ? contentType : "video/mp4");
-          res.setHeader("Accept-Ranges", "bytes");
-          if (upstream.headers["content-length"]) res.setHeader("Content-Length", upstream.headers["content-length"] as string);
-          if (upstream.headers["content-range"]) res.setHeader("Content-Range", upstream.headers["content-range"] as string);
-          res.setHeader("Cache-Control", "public, max-age=7200");
-        }
-
-        upstream.pipe(res);
-        req.on("close", () => {
-          try { request.destroy(); upstream.destroy(); } catch (_) {}
-        });
-      });
-
-      request.on("error", (err: Error) => {
-        console.error("GDrive stream error:", err.message);
-        if (!res.headersSent) res.status(500).send("Stream error: " + err.message);
-      });
-    };
-
-    // Always start with drive.google.com/uc which resolves reliably in all Node environments
-    const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-    makeRequest(initialUrl, "", 0);
+      pump();
+    } catch (e: any) {
+      console.error("[GDrive Stream] Error:", e.message);
+      if (!res.headersSent) res.status(500).send("Stream error: " + e.message);
+    }
   });
 
+
+
+
   // 2. Comprehensive Embed URL Resolver — supports 12+ server types
+
   app.get("/api/admin/resolve", async (req, res) => {
     const serverName = (req.query.server as string || "").toLowerCase();
     const embedUrl = req.query.url as string;
