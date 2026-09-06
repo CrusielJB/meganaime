@@ -41,6 +41,52 @@ const emailTransporter = nodemailer.createTransport({
   }
 });
 
+// ── Drive manifest: loaded ONCE at startup, kept in memory ──
+// Avoids fs.readFileSync on every /api/episode/:id request under high concurrency
+let DRIVE_MANIFEST: Record<string, any> = {};
+(function loadDriveManifest() {
+  const manifestPaths = [
+    path.join(process.cwd(), "dist/drive_episodes.json"),
+    path.join(process.cwd(), "src/data/drive_episodes.json")
+  ];
+  for (const mp of manifestPaths) {
+    try {
+      if (fs.existsSync(mp)) {
+        DRIVE_MANIFEST = JSON.parse(fs.readFileSync(mp, "utf-8"));
+        console.log(`[Manifest] Loaded drive_episodes.json (${Object.keys(DRIVE_MANIFEST).length} series) from ${mp}`);
+        break;
+      }
+    } catch (e) {
+      console.warn("[Manifest] Failed to load drive_episodes.json:", e);
+    }
+  }
+})();
+
+// ── OTP Rate Limiter: max 3 OTP requests per IP per 10 minutes ──
+const OTP_RATE_LIMITER: Record<string, { count: number; resetAt: number }> = {};
+function checkOtpRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = OTP_RATE_LIMITER[ip];
+  if (!record || now > record.resetAt) {
+    OTP_RATE_LIMITER[ip] = { count: 1, resetAt: now + 10 * 60 * 1000 };
+    return true; // allowed
+  }
+  if (record.count >= 3) return false; // blocked
+  record.count++;
+  return true; // allowed
+}
+
+// Periodically purge expired OTP and rate limiter entries (every 5 min)
+setInterval(() => {
+  const now = Date.now();
+  for (const email of Object.keys(OTP_STORE)) {
+    if (OTP_STORE[email].expiresAt < now) delete OTP_STORE[email];
+  }
+  for (const ip of Object.keys(OTP_RATE_LIMITER)) {
+    if (OTP_RATE_LIMITER[ip].resetAt < now) delete OTP_RATE_LIMITER[ip];
+  }
+}, 5 * 60 * 1000);
+
 export async function createExpressApp() {
   const app = express();
 
@@ -377,7 +423,7 @@ export async function createExpressApp() {
 
   app.get("/robots.txt", (req, res) => {
     res.header("Content-Type", "text/plain");
-    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://megaanime.net/sitemap.xml\n`);
+    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://megaanime-1c250.web.app/sitemap.xml\n`);
   });
 
   // ── 0. OTP Email Verification Endpoints for Registration ──
@@ -385,6 +431,16 @@ export async function createExpressApp() {
     const email = (req.body?.email as string || "").toLowerCase().trim();
     if (!email || !email.includes("@")) {
       return res.status(400).json({ error: "Dirección de correo electrónico inválida." });
+    }
+
+    // Rate limiting: max 3 OTP requests per IP per 10 minutes
+    const clientIp = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
+      || req.headers["x-real-ip"] as string
+      || req.socket.remoteAddress
+      || "unknown";
+    if (!checkOtpRateLimit(clientIp)) {
+      console.warn(`[OTP Engine] ⛔ Rate limit exceeded for IP ${clientIp} (email: ${email})`);
+      return res.status(429).json({ error: "Demasiados intentos. Por favor espera 10 minutos antes de solicitar un nuevo código." });
     }
 
     // Generate random 6-digit OTP code
@@ -646,7 +702,7 @@ export async function createExpressApp() {
   app.all("/api/admin/flush-cache", (req, res) => {
     apiCache.flushAll();
     console.log("[Cache] 🧹 Server apiCache flushed completely!");
-    return res.json({ success: true, message: "Cache de servidor vaciada en megaanime.net" });
+    return res.json({ success: true, message: "Cache de servidor vaciada en megaAnime" });
   });
 
   // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from node-cron, external cron, or GET link) ──
@@ -986,17 +1042,8 @@ export async function createExpressApp() {
 
     try {
       // 1. Check if this episode exists in Google Drive manifest with STRICT matching
-      let manifest: any = {};
-      const manifestPaths = [
-        path.join(process.cwd(), "dist/drive_episodes.json"),
-        path.join(process.cwd(), "src/data/drive_episodes.json")
-      ];
-      for (const mp of manifestPaths) {
-        if (fs.existsSync(mp)) {
-          manifest = JSON.parse(fs.readFileSync(mp, "utf-8"));
-          break;
-        }
-      }
+      // Using module-level DRIVE_MANIFEST (loaded once at startup, not per-request)
+      const manifest = DRIVE_MANIFEST;
 
       let rawSlug = "";
       let epNum = 1;
@@ -1159,7 +1206,12 @@ export async function createExpressApp() {
       };
 
       if (combinedServers.length > 0) {
+        // Cache successful responses for 2 hours
         apiCache.set(cacheKey, epData, 7200);
+      } else {
+        // Cache empty responses for 2 minutes to absorb thundering-herd traffic
+        // when scraper is temporarily unavailable (prevents N simultaneous scrape calls for same episode)
+        apiCache.set(cacheKey, epData, 120);
       }
       return res.json(epData);
     } catch (error: any) {
@@ -3069,7 +3121,7 @@ export async function createExpressApp() {
       let urlsXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://megaanime.net/</loc>
+    <loc>https://megaanime-1c250.web.app/</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -3079,7 +3131,7 @@ export async function createExpressApp() {
         const cleanId = encodeURIComponent(anime.id);
         urlsXml += `
   <url>
-    <loc>https://megaanime.net/anime/${cleanId}</loc>
+    <loc>https://megaanime-1c250.web.app/anime/${cleanId}</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -3121,11 +3173,11 @@ export async function createExpressApp() {
         if (found) {
           const ogTitle = `${found.title} - Ver Online en HD | megaAnime`;
           const ogDesc = found.synopsis ? found.synopsis.slice(0, 200) + "..." : `Disfruta de ${found.title} en HD en megaAnime.`;
-          let ogImage = found.coverUrl || "https://megaanime.net/icon-512.png";
+          let ogImage = found.coverUrl || "https://megaanime-1c250.web.app/icon-512.png";
           if (ogImage.includes("tioanime.com")) {
-            ogImage = `https://megaanime.net/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+            ogImage = `https://megaanime-1c250.web.app/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
           }
-          const ogUrl = `https://megaanime.net/ver/${encodeURIComponent(cleanSlug)}`;
+          const ogUrl = `https://megaanime-1c250.web.app/ver/${encodeURIComponent(cleanSlug)}`;
 
           html = html.replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`);
           html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`);

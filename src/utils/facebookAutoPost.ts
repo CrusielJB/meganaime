@@ -103,7 +103,7 @@ export async function postNewReleaseToFacebook(
 ): Promise<{ success: boolean; postId?: string; error?: string }> {
   const pageId = process.env.FACEBOOK_PAGE_ID || "1375353446122077";
   const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "EAAPY6fJZB22ABSCkBRNDTaALhaLA5xUKDOW02qfT6q838T0mjwk7LZCOyZC4d1jYoAhV7ZCist1lVVpdlWGBbu15L4P9YZCki9D4UYZAFYlG6y5eHo6NDBdvHFxHx6D9IgDdUkcBthE8srQtv9b3W1aRHjtWIZAX7IHEo9CxdEeHMBpQWIacZAyBDNBekI7jttTjDo8U";
-  const domain = "https://megaanime.net";
+  const domain = "https://megaanime-1c250.web.app";
 
   if (!pageId || !pageToken) {
     console.log(`[FB Auto-Post] Skipped for "${payload.animeTitle}" Ep ${payload.episodeNumber} (FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN missing in .env)`);
@@ -137,7 +137,7 @@ export async function postNewReleaseToFacebook(
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  const directAnimeUrl = `https://megaanime.net/ver/${cleanSlug}`;
+  const directAnimeUrl = `https://megaanime-1c250.web.app/ver/${cleanSlug}`;
 
   const caption = generateFacebookPostCaption({
     animeTitle: payload.animeTitle,
