@@ -614,29 +614,9 @@ export default function VideoPlayer({
 
         if (fileMatch) {
           const fileId = fileMatch[1];
-          setIsResolving(true);
-
-          try {
-            // Step 1: Ask our server to resolve Google's confirmation flow and return a direct URL.
-            // The video then streams directly from Google to the user — no Cloud Function bandwidth used.
-            const tokenRes = await fetch(getApiUrl(`/api/gdrive-token?fileId=${fileId}`));
-            if (tokenRes.ok) {
-              const data = await tokenRes.json();
-              if (data.streamUrl) {
-                setResolvedStreamUrl(data.streamUrl);
-                setUseResolvedPlayer(true);  // ← tu reproductor nativo, no iframe de Google
-                setResolvedIsHls(false);
-                setIsResolving(false);
-                return;
-              }
-            }
-          } catch (e) {
-            console.warn("[Drive] Token resolver failed, falling back to proxy:", e);
-          }
-
-          // Step 2 fallback: stream via our server proxy (still native player, just goes through CF)
+          // Stream directly through our authenticated GDrive OAuth2 proxy in native player
           setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
-          setUseResolvedPlayer(true);  // ← still native player
+          setUseResolvedPlayer(true);  // ← tu reproductor nativo, no iframe de Google
           setResolvedIsHls(false);
           setIsResolving(false);
           return;
@@ -994,22 +974,12 @@ export default function VideoPlayer({
 
       const fileId = fileMatch ? fileMatch[1] : null;
 
-      // Tier 1 fallback: If this was a Drive episode playing via direct Google token URL and it failed,
-      // switch to our server-side streaming proxy (still in native player)
-      if (fileId && !resolvedStreamUrl.includes("/api/gdrive-stream")) {
-        console.log("[Drive Fallback] Switching from direct Google stream to MegaAnime proxy stream in native player");
-        setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
-        setUseResolvedPlayer(true);
-        return;
-      }
-
-      // Tier 2 fallback: If even the proxy stream failed, switch to Google Drive embed iframe
       if (fileId) {
-        console.log("[Drive Fallback] Switching to Google Drive preview iframe embed");
-        setResolvedStreamUrl(`https://drive.google.com/file/d/${fileId}/preview?rm=minimal`);
-        setUseResolvedPlayer(false);
-        setVideoError(null);
-        setIsAutoAdvancing(false);
+        // Never switch to Google Drive preview iframe because Google blocks external iframes with CSP frame-ancestors.
+        // Maintain native player with retry capability.
+        console.warn("[Drive Fallback] Stream error on GDrive file. Maintaining native player.");
+        setUseResolvedPlayer(true);
+        setVideoError("Error al conectar con Google Drive. Reintentando...");
         return;
       }
 

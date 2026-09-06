@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import http from "http";
 import https from "https";
+import { Readable } from "stream";
 import { parse as parseUrl } from "url";
 import { scrapeHome, scrapeAnime, scrapeSearch, scrapeEpisode, scrapeEpisodeFromTioAnime, getRealAiredEpCount, updateEpisodesRepository, fetchAniListMovies, verifyVideoServers, queryAniListGraphQL, AnimeApiAggregator } from "./src/utils/scraper";
 import { GENRES_LIST, Manga } from "./src/types";
@@ -2381,13 +2382,12 @@ export async function createExpressApp() {
   });
 
   // ── Google Drive OAuth2 Helper ──────────────────────────────────────────────
+  // ── Google Drive OAuth2 Helper ──────────────────────────────────────────────
   // Uses the rclone refresh_token (or .env GDRIVE_REFRESH_TOKEN) to get
   // a short-lived access token so we can serve Drive files without anonymous
   // blocks from Google.
   const GDRIVE_CLIENT_ID     = process.env.GDRIVE_CLIENT_ID     || "202264815644.apps.googleusercontent.com";
-  const GDRIVE_CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET || "X4Z3ca8xfWqXATe00mKyyqgo1d";
-  // IMPORTANT: Set GDRIVE_REFRESH_TOKEN in Firebase .env / Cloud Function env vars.
-  // Obtain it from rclone.conf: token → refresh_token field.
+  const GDRIVE_CLIENT_SECRET = process.env.GDRIVE_CLIENT_SECRET || "X4Z3ca8xfWDb1Voo-F9a7ZxJ";
   const GDRIVE_REFRESH_TOKEN = process.env.GDRIVE_REFRESH_TOKEN || "";
 
   let _cachedAccessToken: string | null = null;
@@ -2421,53 +2421,15 @@ export async function createExpressApp() {
     return _cachedAccessToken;
   }
 
-  // ── GET /api/gdrive-token — returns a short-lived authenticated stream URL ──
-  // The client receives the URL and streams video DIRECTLY from Google (no CF bandwidth used).
+  // ── GET /api/gdrive-token — returns stream URL for VideoPlayer ──
   app.get("/api/gdrive-token", async (req, res) => {
     const fileId = req.query.fileId as string;
     if (!fileId) return res.status(400).json({ error: "Missing fileId" });
-
-    const cacheKey = `gdrive_token2_${fileId}`;
-    const cached = apiCache.get<{ streamUrl: string }>(cacheKey);
-    if (cached) {
-      res.setHeader("X-Cache", "HIT");
-      return res.json(cached);
-    }
-
-    try {
-      const accessToken = await getGDriveAccessToken();
-
-      // Step 1: get file metadata to confirm it's accessible
-      const metaRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType,size`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-
-      if (!metaRes.ok) {
-        const err = await metaRes.text();
-        console.error(`[GDrive Token] Metadata error for ${fileId}:`, err);
-        return res.json({ streamUrl: null, fallback: `/api/gdrive-stream?fileId=${fileId}`, error: err });
-      }
-
-      // Step 2: Build the authenticated download URL — browser will receive a 
-      // redirect to Google's CDN with a short-lived token embedded in the URL.
-      // We redirect the client browser to this URL — they stream directly from Google.
-      const streamUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${accessToken}`;
-
-      const result = { streamUrl };
-      // Cache for 45 min (access tokens last 1 hour)
-      apiCache.set(cacheKey, result, 2700);
-      res.setHeader("Cache-Control", "private, max-age=2700");
-      return res.json(result);
-    } catch (e: any) {
-      console.error(`[GDrive Token] Failed for fileId=${fileId}:`, e.message);
-      return res.json({ streamUrl: null, fallback: `/api/gdrive-stream?fileId=${fileId}`, error: e.message });
-    }
+    return res.json({ streamUrl: `/api/gdrive-stream?fileId=${fileId}` });
   });
 
   // ── GET /api/gdrive-stream — authenticated server-side proxy stream ──
-  // Fallback when the client can't play the direct URL (e.g. CORS on some browsers).
-  // Streams video bytes through this server using the OAuth2 access token.
+  // Streams video bytes with Range support directly to HTML5 video player.
   app.get("/api/gdrive-stream", async (req, res) => {
     let fileId = req.query.fileId as string;
     const rawUrl = req.query.url as string;
@@ -2526,26 +2488,7 @@ export async function createExpressApp() {
         return;
       }
 
-      // Stream body to client
-      const reader = upstreamRes.body.getReader();
-      req.on("close", () => reader.cancel().catch(() => {}));
-
-      const pump = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) { res.end(); break; }
-            if (!res.write(value)) {
-              await new Promise(r => res.once("drain", r));
-            }
-          }
-        } catch (e: any) {
-          console.error("[GDrive Stream] Pipe error:", e.message);
-          if (!res.headersSent) res.status(500).end();
-        }
-      };
-
-      pump();
+      Readable.fromWeb(upstreamRes.body as any).pipe(res);
     } catch (e: any) {
       console.error("[GDrive Stream] Error:", e.message);
       if (!res.headersSent) res.status(500).send("Stream error: " + e.message);
