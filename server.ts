@@ -2428,9 +2428,11 @@ export async function createExpressApp() {
     return res.json({ streamUrl: `/api/gdrive-stream?fileId=${fileId}` });
   });
 
-  // ── GET /api/gdrive-stream — authenticated server-side proxy stream ──
-  // Streams video bytes with Range support directly to HTML5 video player.
-  app.get("/api/gdrive-stream", async (req, res) => {
+  // ── GET & HEAD /api/gdrive-stream — authenticated server-side proxy stream ──
+  // Streams video bytes in safe chunks (max 4MB per request) to comply with
+  // Firebase Cloud Functions 32MB response payload limit, while enabling fast
+  // seeking and smooth playback in the native HTML5 player.
+  app.all("/api/gdrive-stream", async (req, res) => {
     let fileId = req.query.fileId as string;
     const rawUrl = req.query.url as string;
 
@@ -2451,14 +2453,73 @@ export async function createExpressApp() {
 
     try {
       const accessToken = await getGDriveAccessToken();
+
+      // 1. Get file size from cache or Google Drive metadata API
+      const sizeCacheKey = `gdrive_size_${fileId}`;
+      let totalSize = apiCache.get<number>(sizeCacheKey);
+      if (!totalSize) {
+        const metaRes = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${fileId}?fields=size`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        if (metaRes.ok) {
+          const metaData = await metaRes.json() as { size?: string };
+          totalSize = metaData.size ? parseInt(metaData.size, 10) : 0;
+          if (totalSize > 0) apiCache.set(sizeCacheKey, totalSize, 86400); // 24 hours
+        }
+      }
+
+      // Max 4MB per chunk — prevents Cloud Function 32MB payload limit crash
+      const MAX_CHUNK_SIZE = 4 * 1024 * 1024;
       const reqRange = req.headers.range as string | undefined;
+
+      let start = 0;
+      let end = totalSize ? Math.min(start + MAX_CHUNK_SIZE - 1, totalSize - 1) : MAX_CHUNK_SIZE - 1;
+
+      if (reqRange) {
+        const match = reqRange.match(/bytes=(\d+)-(\d*)/);
+        if (match) {
+          start = parseInt(match[1], 10);
+          if (match[2]) {
+            end = parseInt(match[2], 10);
+          } else if (totalSize) {
+            end = Math.min(start + MAX_CHUNK_SIZE - 1, totalSize - 1);
+          } else {
+            end = start + MAX_CHUNK_SIZE - 1;
+          }
+        }
+      }
+
+      // Enforce chunk cap
+      if (end - start + 1 > MAX_CHUNK_SIZE) {
+        end = start + MAX_CHUNK_SIZE - 1;
+      }
+      if (totalSize && end >= totalSize) {
+        end = totalSize - 1;
+      }
+
+      const contentLength = end - start + 1;
+      const contentRange = totalSize
+        ? `bytes ${start}-${end}/${totalSize}`
+        : `bytes ${start}-${end}/*`;
+
+      res.status(206);
+      res.setHeader("Content-Type", "video/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Content-Length", contentLength.toString());
+      res.setHeader("Content-Range", contentRange);
+      res.setHeader("Cache-Control", "public, max-age=7200");
+
+      if (req.method === "HEAD") {
+        return res.end();
+      }
 
       const upstreamRes = await fetch(
         `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            ...(reqRange ? { Range: reqRange } : {}),
+            Range: `bytes=${start}-${end}`,
           },
         }
       );
@@ -2470,22 +2531,8 @@ export async function createExpressApp() {
         return;
       }
 
-      const contentType = upstreamRes.headers.get("content-type") || "video/mp4";
-      const contentLength = upstreamRes.headers.get("content-length");
-      const contentRange  = upstreamRes.headers.get("content-range");
-
-      if (!res.headersSent) {
-        res.status(upstreamRes.status);
-        res.setHeader("Content-Type", contentType.includes("video") ? contentType : "video/mp4");
-        res.setHeader("Accept-Ranges", "bytes");
-        if (contentLength) res.setHeader("Content-Length", contentLength);
-        if (contentRange)  res.setHeader("Content-Range",  contentRange);
-        res.setHeader("Cache-Control", "public, max-age=7200");
-      }
-
       if (!upstreamRes.body) {
-        res.end();
-        return;
+        return res.end();
       }
 
       Readable.fromWeb(upstreamRes.body as any).pipe(res);
