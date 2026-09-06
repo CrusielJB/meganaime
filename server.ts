@@ -1142,10 +1142,10 @@ export async function createExpressApp() {
       if (driveEp && (driveEp.fileId || driveEp.streamUrl) && (isNaN(driveSize) || driveSize >= 20)) {
         const fileId = driveEp.fileId || (driveEp.streamUrl ? driveEp.streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] : null);
         if (fileId) {
-          // Dedicated MegaAnime HD Drive server: strictly exclusive without ad servers
+          // Dedicated MegaAnime HD Drive server: use our own endpoint so the native player handles it
           combinedServers = [{
             name: "⚡ MegaAnime HD (Sin Anuncios)",
-            url: `https://drive.google.com/file/d/${fileId}/preview?rm=minimal`
+            url: `/api/gdrive-stream?fileId=${fileId}`
           }];
         }
       }
@@ -2377,6 +2377,109 @@ export async function createExpressApp() {
       if (!res.headersSent) {
         res.status(502).send("Upstream stream error: " + err.message);
       }
+    }
+  });
+
+  // ── Google Drive Token Resolver — returns direct stream URL (no server-side video proxying) ──
+  // Client calls this to get a short-lived direct URL from Google, then streams video directly.
+  // This avoids routing video bytes through Cloud Function → lower billing at scale.
+  app.get("/api/gdrive-token", async (req, res) => {
+    const fileId = req.query.fileId as string;
+    if (!fileId) return res.status(400).json({ error: "Missing fileId" });
+
+    // Serve from cache to avoid repeated resolution of the same file
+    const cacheKey = `gdrive_token_${fileId}`;
+    const cached = apiCache.get<{ streamUrl: string }>(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      return res.json(cached);
+    }
+
+    // Recursively follow redirects + handle Google's virus-scan confirmation page
+    const resolveStreamUrl = (url: string, cookies: string, attempt: number): Promise<string> => {
+      return new Promise((resolve, reject) => {
+        if (attempt > 8) return reject(new Error("Too many redirects from Google Drive"));
+
+        const parsedUrl = new URL(url);
+        const options: import("https").RequestOptions = {
+          hostname: parsedUrl.hostname,
+          path: parsedUrl.pathname + parsedUrl.search,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            ...(cookies ? { "Cookie": cookies } : {})
+          }
+        };
+
+        const request = https.get(options, (upstream) => {
+          const status = upstream.statusCode || 200;
+          const newCookies = [cookies, ...(upstream.headers["set-cookie"] as string[] || [])].filter(Boolean).join("; ");
+
+          // Follow HTTP redirects
+          if ([301, 302, 303, 307, 308].includes(status) && upstream.headers.location) {
+            upstream.resume();
+            const redirectUrl = (upstream.headers.location as string).startsWith("http")
+              ? upstream.headers.location as string
+              : `https://${parsedUrl.hostname}${upstream.headers.location}`;
+            resolveStreamUrl(redirectUrl, newCookies, attempt + 1).then(resolve).catch(reject);
+            return;
+          }
+
+          const contentType = (upstream.headers["content-type"] || "").toLowerCase();
+
+          // Video stream found — return this URL without consuming the body
+          if (contentType.includes("video") || contentType.includes("octet-stream") || contentType.includes("mp4")) {
+            try { upstream.destroy(); request.destroy(); } catch (_) {}
+            resolve(url);
+            return;
+          }
+
+          // Google's antivirus scan confirmation page (HTML) — extract confirm + uuid tokens
+          if (contentType.includes("text/html")) {
+            let html = "";
+            upstream.on("data", (chunk: Buffer) => {
+              html += chunk.toString();
+              // Stop reading after 80KB — we only need the form tokens near the top
+              if (html.length > 80000) { try { request.destroy(); } catch (_) {} }
+            });
+            upstream.on("end", () => {
+              const confirmMatch = html.match(/name="confirm"\s+value="([^"]+)"/) ||
+                                   html.match(/confirm=([tT][a-zA-Z0-9_-]*)/) ||
+                                   [null, "t"];
+              const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/) ||
+                                html.match(/uuid=([a-zA-Z0-9_-]+)/);
+              const confirmVal = confirmMatch?.[1] || "t";
+              const uuidVal   = uuidMatch?.[1] || "";
+              const confirmedUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=${confirmVal}${uuidVal ? `&uuid=${uuidVal}` : ""}`;
+              resolveStreamUrl(confirmedUrl, newCookies, attempt + 1).then(resolve).catch(reject);
+            });
+            upstream.on("error", reject);
+            return;
+          }
+
+          // Unknown content — return URL as-is
+          upstream.resume();
+          resolve(url);
+        });
+
+        request.on("error", reject);
+        request.setTimeout(10000, () => { try { request.destroy(); } catch (_) {} reject(new Error("Timeout resolving Drive URL")); });
+      });
+    };
+
+    try {
+      const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      const streamUrl = await resolveStreamUrl(initialUrl, "", 0);
+      const result = { streamUrl };
+      // Cache for 20 minutes (Drive URLs expire; err on the side of freshness)
+      apiCache.set(cacheKey, result, 1200);
+      res.setHeader("Cache-Control", "private, max-age=1200");
+      return res.json(result);
+    } catch (e: any) {
+      console.error(`[GDrive Token] Failed to resolve fileId=${fileId}:`, e.message);
+      // Return the proxy fallback URL so VideoPlayer can stream via our server
+      return res.json({ streamUrl: null, fallback: `/api/gdrive-stream?fileId=${fileId}`, error: e.message });
     }
   });
 

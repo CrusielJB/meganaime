@@ -495,7 +495,7 @@ export default function VideoPlayer({
     const findAndSelectCustomPlayerServer = async () => {
       // 0. If Google Drive / MegaAnime Direct server exists, select it IMMEDIATELY as top priority
       const driveIdx = servers.findIndex(s => s && (
-        (s.url && (s.url.includes("drive.google.com") || s.url.includes("gdrive-stream") || s.url.includes("google.com/file"))) ||
+        (s.url && (s.url.includes("drive.google.com") || s.url.includes("gdrive-stream") || s.url.includes("gdrive-token") || s.url.includes("google.com/file"))) ||
         (s.name && (s.name.toLowerCase().includes("megaanime") || s.name.toLowerCase().includes("drive") || s.name.toLowerCase().includes("exclusivo")))
       ));
       if (driveIdx !== -1) {
@@ -596,20 +596,47 @@ export default function VideoPlayer({
     setResolvedIsHls(false);
 
     const checkAndResolve = async () => {
-      // 0. Dedicated Google Drive Server: use clean embed player with header mask
-      const isDrive = (activeServer.url || "").includes("drive.google.com") || 
+      // Dedicated Google Drive / MegaAnime HD server — use native player
+      const isDrive = (activeServer.url || "").includes("drive.google.com") ||
                       (activeServer.url || "").includes("drive.usercontent.google.com") ||
+                      (activeServer.url || "").includes("gdrive-stream") ||
+                      (activeServer.url || "").includes("gdrive-token") ||
                       (activeServer.name || "").toLowerCase().includes("megaanime") ||
                       (activeServer.name || "").toLowerCase().includes("sin anuncios");
 
       if (isDrive) {
-        const fileMatch = activeServer.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-                          activeServer.url.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
-                          activeServer.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        // Extract fileId from any URL format we send from the server
+        const fileMatch =
+          (activeServer.url || "").match(/[?&]fileId=([a-zA-Z0-9_-]+)/) ||
+          (activeServer.url || "").match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+          (activeServer.url || "").match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+          (activeServer.url || "").match(/[?&]id=([a-zA-Z0-9_-]+)/);
+
         if (fileMatch) {
-          const previewUrl = `https://drive.google.com/file/d/${fileMatch[1]}/preview?rm=minimal`;
-          setResolvedStreamUrl(previewUrl);
-          setUseResolvedPlayer(false);
+          const fileId = fileMatch[1];
+          setIsResolving(true);
+
+          try {
+            // Step 1: Ask our server to resolve Google's confirmation flow and return a direct URL.
+            // The video then streams directly from Google to the user — no Cloud Function bandwidth used.
+            const tokenRes = await fetch(getApiUrl(`/api/gdrive-token?fileId=${fileId}`));
+            if (tokenRes.ok) {
+              const data = await tokenRes.json();
+              if (data.streamUrl) {
+                setResolvedStreamUrl(data.streamUrl);
+                setUseResolvedPlayer(true);  // ← tu reproductor nativo, no iframe de Google
+                setResolvedIsHls(false);
+                setIsResolving(false);
+                return;
+              }
+            }
+          } catch (e) {
+            console.warn("[Drive] Token resolver failed, falling back to proxy:", e);
+          }
+
+          // Step 2 fallback: stream via our server proxy (still native player, just goes through CF)
+          setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
+          setUseResolvedPlayer(true);  // ← still native player
           setResolvedIsHls(false);
           setIsResolving(false);
           return;
@@ -917,9 +944,13 @@ export default function VideoPlayer({
 
 
   const embedUrlWithTime = React.useMemo(() => {
-    if (!activeServer || !isEmbedUrl(activeServer.url)) return "";
+    const rawTarget = (!useResolvedPlayer && resolvedStreamUrl) ? resolvedStreamUrl : (activeServer?.url || "");
+    if (!rawTarget) return "";
+
+    // Check if it's an embed or drive preview
+    if (!isEmbedUrl(rawTarget) && !rawTarget.includes("drive.google.com")) return "";
     
-    let url = activeServer.url;
+    let url = rawTarget;
     const isDrive = url.toLowerCase().includes("drive.google.com/file/d/");
     
     // Drive preview URLs don't accept external start/autoplay params — return as-is
@@ -938,7 +969,7 @@ export default function VideoPlayer({
       url += `${connector}autoplay=1&autostart=true`;
     }
     return url;
-  }, [activeServer, episodeId, animeId, currentUser, resolvedTitle]);
+  }, [activeServer, resolvedStreamUrl, useResolvedPlayer, episodeId, animeId, currentUser, resolvedTitle]);
 
   // Direct video load & HLS support with auto-advance on fatal error
   useEffect(() => {
@@ -953,7 +984,35 @@ export default function VideoPlayer({
     const isHls = resolvedIsHls || resolvedStreamUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
 
     const handleVideoError = () => {
-      console.warn(`[Auto-Player] Direct stream error on ${activeServer?.name}. Switching to clean embed player.`);
+      console.warn(`[Auto-Player] Direct stream error on ${activeServer?.name}. Checking fallback options.`);
+
+      const fileMatch =
+        (activeServer?.url || "").match(/[?&]fileId=([a-zA-Z0-9_-]+)/) ||
+        (activeServer?.url || "").match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+        (activeServer?.url || "").match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+        (activeServer?.url || "").match(/[?&]id=([a-zA-Z0-9_-]+)/);
+
+      const fileId = fileMatch ? fileMatch[1] : null;
+
+      // Tier 1 fallback: If this was a Drive episode playing via direct Google token URL and it failed,
+      // switch to our server-side streaming proxy (still in native player)
+      if (fileId && !resolvedStreamUrl.includes("/api/gdrive-stream")) {
+        console.log("[Drive Fallback] Switching from direct Google stream to MegaAnime proxy stream in native player");
+        setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
+        setUseResolvedPlayer(true);
+        return;
+      }
+
+      // Tier 2 fallback: If even the proxy stream failed, switch to Google Drive embed iframe
+      if (fileId) {
+        console.log("[Drive Fallback] Switching to Google Drive preview iframe embed");
+        setResolvedStreamUrl(`https://drive.google.com/file/d/${fileId}/preview?rm=minimal`);
+        setUseResolvedPlayer(false);
+        setVideoError(null);
+        setIsAutoAdvancing(false);
+        return;
+      }
+
       setUseResolvedPlayer(false);
       setResolvedStreamUrl(activeServer?.url || "");
       setVideoError(null);
@@ -1358,13 +1417,13 @@ export default function VideoPlayer({
                     </div>
                   )}
                 </div>
-              ) : isEmbed && !useResolvedPlayer ? (
+              ) : (isEmbed || Boolean(embedUrlWithTime)) && !useResolvedPlayer ? (
                 <div ref={playerWrapperRef} className="w-full h-full relative overflow-hidden shadow-2xl bg-black flex items-center justify-center">
                   <iframe
                     key={embedUrlWithTime}
                     src={embedUrlWithTime}
                     className={`w-full border-0 ${
-                      (activeServer.url || "").includes("drive.google.com")
+                      ((embedUrlWithTime || activeServer.url) || "").includes("drive.google.com")
                         ? "h-[calc(100%+56px)] -mt-[56px]"
                         : "h-full"
                     }`}
@@ -1379,7 +1438,7 @@ export default function VideoPlayer({
                   />
 
                   {/* Top Header Mask for Drive Preview (Prevents seeing Google Drive header & popout button) */}
-                  {(activeServer.url || "").includes("drive.google.com") && (
+                  {((embedUrlWithTime || activeServer.url) || "").includes("drive.google.com") && (
                     <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-neutral-950/80 to-transparent pointer-events-none z-10" />
                   )}
 
