@@ -74,21 +74,22 @@ export function generateFacebookPostCaption(item: {
   isMovie?: boolean;
   webUrl: string;
 }): string {
-  const epText = item.isMovie ? "¡PELÍCULA ESTRENO!" : `Capítulo ${item.episodeNumber}`;
+  const epText = item.isMovie ? "¡PELÍCULA ESTRENO!" : (item.episodeNumber > 0 ? `Capítulo ${item.episodeNumber}` : "Temporada Completa");
   const genresText = item.genres && item.genres.length > 0 ? item.genres.slice(0, 3).join(", ") : "Anime";
   const hashtagAnime = item.animeTitle.replace(/[^a-zA-Z0-9]/g, "");
 
-  const cleanWebUrl = "https://megaanime.net";
+  const cleanWebUrl = item.webUrl || "https://megaanime.net";
 
-  return `🔥 ¡NUEVO ESTRENO DISPONIBLE EN megaAnime! 🔥
+  return `🔥 ¡YA DISPONIBLE EN megaAnime SIN ANUNCIOS! 🔥
 
 🎬 Anime: ${item.animeTitle}
 📺 ${epText}
 ⭐ Géneros: ${genresText}
+⚡ Servidor Exclusivo MegaAnime (1080p Ultra HD)
 
-🍿 ¡Disfrútalo ahora mismo en FULL HD, sin anuncios molestos y con la mejor velocidad de reproducción!
+🍿 ¡Disfrútalo ahora mismo en FULL HD nativo, sin anuncios molestos y con la máxima velocidad de streaming!
 
-🌐 Ver en la Web:
+🌐 Ver Directo Aquí:
 ${cleanWebUrl}
 
 #megaAnime #AnimeEnEspañol #${hashtagAnime} #EstrenoAnime #Otaku #AnimeHD`;
@@ -129,12 +130,21 @@ export async function postNewReleaseToFacebook(
     }
   }
 
+  const cleanSlug = payload.animeTitle
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const directAnimeUrl = `https://megaanime.net/ver/${cleanSlug}`;
+
   const caption = generateFacebookPostCaption({
     animeTitle: payload.animeTitle,
     episodeNumber: payload.episodeNumber,
     genres: payload.genres,
     isMovie: payload.isMovie,
-    webUrl: domain
+    webUrl: directAnimeUrl
   });
 
   try {
@@ -212,11 +222,46 @@ export async function postNewReleaseToFacebook(
         savePostedId(payload.episodeId);
         console.log(`[FB Auto-Post] 🎉 Publicación de foto exitosa en Facebook! Post ID: ${postId}`);
       }
+    } else if (targetCoverUrl && targetCoverUrl.startsWith("http")) {
+      const formData = new FormData();
+      formData.append("url", targetCoverUrl);
+      formData.append("caption", caption);
+      formData.append("access_token", pageToken);
+
+      const fbUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
+      const response = await fetch(fbUrl, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.id || data.post_id)) {
+        postId = data.id || data.post_id;
+        savePostedId(payload.episodeId);
+        console.log(`[FB Auto-Post] 🎉 Publicación de foto exitosa en Facebook via URL! Post ID: ${postId}`);
+      }
+    } else {
+      // Feed text post fallback
+      const response = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: caption,
+          link: directAnimeUrl,
+          access_token: pageToken
+        })
+      });
+      const data = await response.json();
+      if (response.ok && (data.id || data.post_id)) {
+        postId = data.id || data.post_id;
+        savePostedId(payload.episodeId);
+        console.log(`[FB Auto-Post] 🎉 Publicación de feed exitosa en Facebook! Post ID: ${postId}`);
+      }
     }
 
     if (!postId) {
-      console.warn(`[FB Auto-Post] ⚠️ Skipping Facebook post for "${payload.animeTitle}" because cover image binary blob was unavailable (prevents link preview cards).`);
-      return { success: false, error: "No se pudo obtener la imagen de portada en HD para la foto." };
+      console.warn(`[FB Auto-Post] ⚠️ Skipping Facebook post for "${payload.animeTitle}".`);
+      return { success: false, error: "No se pudo completar la publicación en Facebook." };
     }
 
     // Optional: Auto-share to Facebook Groups configured in FACEBOOK_GROUP_IDS

@@ -45,6 +45,19 @@ const lastSaveTime: Record<string, number> = {};
 export function normalizeAnimeId(animeId: string, animeTitle?: string): string {
   if (!animeId) return animeId;
 
+  const cleanNorm = animeId.toLowerCase().trim();
+  if (
+    cleanNorm === "one-piece" ||
+    cleanNorm === "one-piece-tv" ||
+    cleanNorm === "tioanime-one-piece" ||
+    cleanNorm === "tioanime-one-piece-tv" ||
+    cleanNorm === "consumet-21" ||
+    cleanNorm === "21" ||
+    (animeTitle && animeTitle.toLowerCase().trim() === "one piece")
+  ) {
+    return "tioanime-one-piece-tv";
+  }
+
   // Helper: find a local catalog entry by title with multi-language support
   const findByTitle = (title: string): string | null => {
     if (!title) return null;
@@ -52,22 +65,29 @@ export function normalizeAnimeId(animeId: string, animeTitle?: string): string {
     const baseLower = getBaseTitle(title).toLowerCase().trim();
     try {
       const localAnimes = getAnimesWithEpisodes();
+      
+      // Phase 1: Exact title match across ALL items first
       for (const a of localAnimes as any[]) {
         const candidates: string[] = [
           a.title, a.title_english, a.title_romaji, a.title_native
         ].filter(Boolean);
 
-        // Exact title match
         if (candidates.some((t: string) => t.toLowerCase().trim() === lower)) {
           return a.id;
         }
+      }
 
-        // getBaseTitle-normalized match (catches cross-language variants)
+      // Phase 2: Exact ID match (e.g. "one-piece", "tioanime-one-piece-tv")
+      for (const a of localAnimes as any[]) {
+        if (a.id === lower || a.id === `tioanime-${lower}` || a.external_id === lower) {
+          return a.id;
+        }
+      }
+
+      // Phase 3: Base Title match only if no exact match exists anywhere
+      for (const a of localAnimes as any[]) {
         const aBase = getBaseTitle(a.title).toLowerCase().trim();
-        if (
-          (baseLower && baseLower === aBase) ||
-          candidates.some((t: string) => getBaseTitle(t).toLowerCase().trim() === baseLower)
-        ) {
+        if (aBase && aBase === baseLower && Math.abs(a.title.length - title.length) < 4) {
           return a.id;
         }
       }

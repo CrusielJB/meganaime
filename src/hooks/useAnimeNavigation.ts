@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { Anime, Episode, Manga } from "../types";
+import { getApiUrl } from "../utils/apiConfig";
+import { generateEpisodesForAnime } from "../utils/animeDb";
 
 export function useAnimeNavigation() {
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
@@ -7,50 +9,38 @@ export function useAnimeNavigation() {
   const [activeEpisodeId, setActiveEpisodeId] = useState<string | null>(null);
 
   const handleSelectAnime = useCallback(async (anime: Anime) => {
-    const isMovie = anime.type === "Película";
-    const isOVA = anime.type === "OVA";
-    const count = isMovie ? 1 : isOVA ? 1 : (anime.episodesCount || 12);
-
-    const fallbackEpisodes: Episode[] = Array.from({ length: count }, (_, i) => ({
-      id: `${anime.id}-ep-${i + 1}`,
-      title: isMovie ? anime.title : isOVA ? `${anime.title} - OVA ${i + 1}` : `${anime.title} - Episodio ${i + 1}`,
-      number: i + 1,
-      animeId: anime.id,
-      animeTitle: anime.title,
-      coverUrl: anime.coverUrl,
-      videoUrl: `/api/episode/${anime.id}-ep-${i + 1}`
-    }));
-
     const baseAnime: Anime = {
       ...anime,
-      episodes: Array.isArray(anime.episodes) && anime.episodes.length > 0 ? anime.episodes : fallbackEpisodes
+      episodes: Array.isArray(anime.episodes) && anime.episodes.length > 0 ? anime.episodes : generateEpisodesForAnime(anime)
     };
 
     setSelectedAnime(baseAnime);
 
     try {
-      const res = await fetch(`/api/anime/${anime.id}`);
-      const freshDetails = await res.json();
-      if (freshDetails && !freshDetails.error) {
-        setSelectedAnime(prev => {
-          if (!prev || prev.id !== anime.id) return prev;
-          const freshEps = Array.isArray(freshDetails.episodes) && freshDetails.episodes.length > 0
-            ? freshDetails.episodes
-            : baseAnime.episodes;
+      const res = await fetch(getApiUrl(`/api/anime/${anime.id}`), { signal: AbortSignal.timeout(5000) });
+      if (res.ok) {
+        const freshDetails = await res.json();
+        if (freshDetails && !freshDetails.error) {
+          setSelectedAnime(prev => {
+            if (!prev || prev.id !== anime.id) return prev;
+            const freshEps = Array.isArray(freshDetails.episodes) && freshDetails.episodes.length > 0
+              ? freshDetails.episodes
+              : baseAnime.episodes;
 
-          return {
-            ...baseAnime,
-            ...freshDetails,
-            episodes: freshEps,
-            title: anime.title || freshDetails.title,
-            coverUrl: anime.coverUrl || freshDetails.coverUrl,
-            bannerUrl: anime.bannerUrl || freshDetails.bannerUrl,
-            seasons: anime.seasons || freshDetails.seasons,
-          };
-        });
+            return {
+              ...baseAnime,
+              ...freshDetails,
+              episodes: freshEps,
+              title: anime.title || freshDetails.title,
+              coverUrl: anime.coverUrl || freshDetails.coverUrl,
+              bannerUrl: anime.bannerUrl || freshDetails.bannerUrl,
+              seasons: anime.seasons || freshDetails.seasons,
+            };
+          });
+        }
       }
     } catch (err) {
-      console.warn("Could not fetch absolute fresh details, using standard catalog card:", err);
+      console.warn("Could not fetch fresh details, using standard catalog card:", err);
     }
   }, []);
 

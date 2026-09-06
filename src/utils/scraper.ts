@@ -604,7 +604,7 @@ async function getAniListTitlesDetailed(anilistId: string): Promise<AniListTitle
 
 
 
-const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
+export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "the-exiled-heavy-knight": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "youjo-senki-1": "youjo-senki",
   "your-name": "kimi-no-na-wa",
@@ -625,6 +625,10 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "consumet-199748": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "i-became-a-legend-after-my-10-year-long-last-stand": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
   "koko-wa-ore-ni-makasete-saki-ni-ike-to-ittekara-10-nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "tioanime-koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10nen-ga-tattara-densetsu-ni-natteita": "koko-wa-ore-ni-makasete-saki-ni-ike-to-itte-kara-10-nen-ga-tattara-densetsu-ni-natteita",
+  "tioanime-sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
+  "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha": "sekai-saikyou-no-kouei-meikyuukoku-no-shinjin-tansakusha",
   "one-piece-pelicula-gigantes": "one-piece-film-red",
   "black-torch": "black-torch-sub-espanol",
   "black-torch-sub-espanol": "black-torch-sub-espanol",
@@ -656,8 +660,11 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "one-punch-man": "one-punch-man",
   "one-punch-man-2": "one-punch-man-2nd-season",
   "one-punch-man-ii": "one-punch-man-2nd-season",
-  "bleach-tybw-3": "bleach-sennen-kessen-hen-3",
-  "bleach-tybw-2": "bleach-sennen-kessen-hen-2",
+  "bleach-tybw-3": "bleach-sennen-kessenhen",
+  "bleach-tybw-2": "bleach-sennen-kessenhen",
+  "bleach-sennen-kessenhen": "bleach-sennen-kessenhen",
+  "tioanime-bleach-sennen-kessenhen": "bleach-sennen-kessenhen",
+  "185874": "bleach-sennen-kessenhen",
   "blue-lock-2": "blue-lock-2nd-season",
   "blue-lock-season-2": "blue-lock-2nd-season",
   "danmachi-5": "dungeon-ni-deai-wo-motomeru-no-wa-machigatteiru-darou-ka-v",
@@ -670,7 +677,10 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "178789": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
   "mushoku-tensei-3": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
   "mushoku-tensei-iii-isekai-ittara-honki-dasu": "mushoku-tensei-isekai-ittara-honki-dasu-temporada-3",
-  "one-piece": "one-piece",
+  "one-piece": "one-piece-tv",
+  "tioanime-one-piece-tv": "one-piece-tv",
+  "consumet-21": "one-piece-tv",
+  "21": "one-piece-tv",
   "that-time-i-got-reincarnated-as-a-slime-1": "tensei-shitara-slime-datta-ken",
   "that-time-i-got-reincarnated-as-a-slime-2": "tensei-shitara-slime-datta-ken-2",
   "that-time-i-got-reincarnated-as-a-slime-3": "tensei-shitara-slime-datta-ken-3rd-season",
@@ -742,26 +752,29 @@ const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "shingeki-no-kyojin": "shingeki-no-kyojin"
 };
 
-export async function verifyVideoServers(servers: Array<{ name: string; url: string }>, domain: string, limit: number = 4): Promise<Array<{ name: string; url: string }>> {
-  const PREFERRED_SERVERS = ["ok", "filemoon", "mp4upload", "mega", "yourupload", "fembed", "mixdrop", "streamtape", "dood", "voe", "burst", "streamsb", "ruvid", "vidguard", "uqload", "vidmoly", "streamvid"];
-  
-  // 1. Sort by preference first
+export const TIOANIME_SLUG_MAP: Record<string, string> = MONOSCHINOS_SLUG_MAP;
+
+export async function verifyVideoServers(servers: Array<{ name: string; url: string }>, domain: string, limit: number = 6): Promise<Array<{ name: string; url: string }>> {
+  // Sort servers by reliability: Voe > Mega > Mp4Upload > Filemoon / Streamtape / OkRu > YourUpload (bottom)
   const sorted = [...servers].sort((a, b) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    let aScore = 99;
-    let bScore = 99;
-    if (aName.includes("ok")) aScore = 0;
-    if (bName.includes("ok")) bScore = 0;
-    if (aName.includes("filemoon")) aScore = Math.min(aScore, 1);
-    if (bName.includes("filemoon")) bScore = Math.min(bScore, 1);
-    if (aName.includes("mega")) aScore = Math.min(aScore, 2);
-    if (bName.includes("mega")) bScore = Math.min(bScore, 2);
-    PREFERRED_SERVERS.forEach((pref, index) => {
-      if (aName.includes(pref)) aScore = Math.min(aScore, index + 10);
-      if (bName.includes(pref)) bScore = Math.min(bScore, index + 10);
-    });
-    return aScore - bScore;
+    const aName = (a.name || "").toLowerCase();
+    const bName = (b.name || "").toLowerCase();
+    const aUrl = (a.url || "").toLowerCase();
+    const bUrl = (b.url || "").toLowerCase();
+
+    const getScore = (name: string, url: string) => {
+      if (url.includes("voe") || name.includes("voe")) return 1;
+      if (url.includes("mega.nz") || url.includes("mega.co.nz") || name.includes("mega")) return 2;
+      if (url.includes("mp4upload") || name.includes("mp4upload")) return 3;
+      if (url.includes("filemoon") || name.includes("filemoon")) return 4;
+      if (url.includes("streamtape") || name.includes("streamtape")) return 5;
+      if (url.includes("ok.ru") || url.includes("okru") || name.includes("ok")) return 6;
+      if (url.includes("savefiles") || url.includes("dsvplay")) return 7;
+      if (url.includes("yourupload") || url.includes("bysekoze") || name.includes("yourupload")) return 99; // Bottom priority
+      return 20;
+    };
+
+    return getScore(aName, aUrl) - getScore(bName, bUrl);
   });
 
   // 2. Verify top candidates in parallel for speed
@@ -787,6 +800,15 @@ export async function verifyVideoServers(servers: Array<{ name: string; url: str
         return null;
       }
       
+      const lowerUrl = server.url.toLowerCase();
+      if (lowerUrl.includes("yourupload") || lowerUrl.includes("bysekoze")) {
+        const text = await response.text();
+        if (text.includes("DMCA") || text.includes("Content Restricted") || text.includes("received DMCA complaint")) {
+          console.warn(`[Server Check] 🚨 Discarding DMCA-restricted server: ${server.url}`);
+          return null;
+        }
+      }
+
       return server;
     } catch {
       // Network error or timeout - assume potentially problematic
@@ -817,9 +839,9 @@ export async function scrapeEpisodeFromMonosChinos(
   alTitles?: AniListTitles | null
 ): Promise<Array<{ name: string; url: string }>> {
   const domains = [
+    "https://monoschinos2.net",
     "https://monoschinos2.com",
     "https://monoschinos3.com",
-    "https://monoschinos2.net",
     "https://monoschinos.net",
     "https://monoschinos.st",
     "https://monoschinos.to",
@@ -876,7 +898,7 @@ export async function scrapeEpisodeFromMonosChinos(
             const finalQueries = Array.from(new Set(queriesToTry)).slice(0, 3);
 
             for (const query of finalQueries) {
-              const searchUrl = `${domain}/buscar?q=${encodeURIComponent(query)}`;
+              const searchUrl = `${domain}/animes?buscar=${encodeURIComponent(query)}`;
               const searchRes = await fetch(searchUrl, { headers: HEADERS, signal: AbortSignal.timeout(3000) });
               if (searchRes.ok) {
                 const searchText = await searchRes.text();
@@ -1374,11 +1396,13 @@ export async function scrapeEpisodeFromTioAnime(
   epNum: number = 1
 ): Promise<Array<{ name: string; url: string }>> {
   // Strip prefixes/suffixes that could break the URL: tioanime-, -pelicula, -sub-espanol, -ep-N, -episodio-N
-  const cleanSlug = slug
+  const rawClean = slug
     .replace(/^tioanime-/, "")
     .replace(/-pelicula$/, "")
     .replace(/-sub-espanol$/, "")
     .replace(/-(?:ep|episodio)-\d+$/i, "");
+
+  const cleanSlug = TIOANIME_SLUG_MAP[rawClean.toLowerCase()] || rawClean;
 
   // For movies try all common movie URL patterns on TioAnime
   const isMovie = slug.includes("-pelicula") || slug.includes("movie") || slug.includes("pelicula");
@@ -1393,6 +1417,7 @@ export async function scrapeEpisodeFromTioAnime(
       ]
     : [
         `https://tioanime.com/ver/${cleanSlug}-${epNum}`,
+        `https://tioanime.com/ver/${rawClean}-${epNum}`,
         `https://tioanime.com/ver/${cleanSlug}-1`,
         `https://tioanime.com/ver/${cleanSlug}`
       ];
@@ -1420,22 +1445,51 @@ export async function scrapeEpisodeFromTioAnime(
               }
             }
             if (servers.length > 0) {
-              // Prioritize reliable active servers: Direct MP4/M3U8 > YourUpload > Voe > Okru > Mega
+              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Mega > Mp4Upload > Okru
               servers.sort((a, b) => {
                 const score = (s: { name: string; url: string }) => {
                   const u = s.url.toLowerCase();
                   const n = s.name.toLowerCase();
                   if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 100;
-                  if (u.includes("yourupload") || n.includes("yourupload")) return 90;
-                  if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 80;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 98;
+                  if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 95;
+                  if (u.includes("mega.nz") || n.includes("mega")) return 90;
+                  if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
                   if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
-                  if (u.includes("mega.nz") || n.includes("mega")) return 60;
-                  if (u.includes("my.mail.ru") || n.includes("maru")) return 50;
-                  return 10;
+                  if (u.includes("bysekoze")) return 10;
+                  return 50;
                 };
                 return score(b) - score(a);
               });
-              return servers;
+
+              let filtered = [...servers];
+
+              // Automatically query and merge MonosChinos servers (VOE, Dsvplay, Savefiles, Mega, etc.)
+              try {
+                const mcServers = await scrapeEpisodeFromMonosChinos(rawClean, rawClean, epNum, isMovie, rawClean, null);
+                if (mcServers && mcServers.length > 0) {
+                  for (const mcs of mcServers) {
+                    if (!filtered.some(s => s.url === mcs.url)) {
+                      filtered.push(mcs);
+                    }
+                  }
+                }
+              } catch (e) {}
+
+              // Filter out Mega.nz when true streaming servers (VOE, Streamwish, Mp4Upload, etc.) exist to avoid download redirects
+              const hasStreaming = filtered.some(s => {
+                const u = s.url.toLowerCase();
+                return !u.includes("mega.nz") && !u.includes("mega.co.nz") && (
+                  u.includes("voe") || u.includes("streamwish") || u.includes("mp4upload") ||
+                  u.includes("savefiles") || u.includes("dsvplay") || u.includes("ok.ru") ||
+                  u.endsWith(".mp4") || u.endsWith(".m3u8")
+                );
+              });
+              if (hasStreaming) {
+                filtered = filtered.filter(s => !s.url.toLowerCase().includes("mega.nz") && !s.url.toLowerCase().includes("mega.co.nz"));
+              }
+
+              return filtered.length > 0 ? filtered : servers;
             }
           } catch (e) {}
         }

@@ -1,45 +1,14 @@
 import { Anime, Episode } from "../types";
+import catalogJson from "../data/catalog.json";
 
-/**
- * CATALOG LOADING STRATEGY:
- * - Server (Node.js): Reads catalog.json from disk — NOT bundled into the JS bundle
- * - Client (Browser): Returns empty array — data comes from /api/home endpoint
- * This keeps the frontend bundle small (~350KB) while the server has the full 4,503-title catalog.
- */
+// Cast catalog items efficiently without generating massive Episode arrays in heap memory
+const _catalog: Anime[] = (catalogJson as any[]).map(a => ({
+  ...a,
+  episodes: a.episodes || []
+}));
 
-const IS_BROWSER = typeof window !== "undefined";
-
-let _catalog: Anime[] | null = null;
-
-function loadCatalog(): Anime[] {
-  if (IS_BROWSER) {
-    return [];
-  }
-  // Server-side: load from JSON file via fs.readFileSync — NOT bundled by esbuild
-  try {
-    const fs = require("fs");
-    const path = require("path");
-    // Try alongside server.cjs in dist/ first (production)
-    const candidates = [
-      path.join(__dirname, "catalog.json"),
-      path.join(process.cwd(), "dist", "catalog.json"),
-      path.join(process.cwd(), "src", "data", "catalog.json")
-    ];
-    for (const p of candidates) {
-      try {
-        _catalog = JSON.parse(fs.readFileSync(p, "utf-8"));
-        if (Array.isArray(_catalog) && _catalog.length > 0) {
-          console.log(`Catalog loaded: ${_catalog.length} titles from ${p}`);
-          return _catalog!;
-        }
-      } catch (e) {}
-    }
-    throw new Error("catalog.json not found in any candidate path");
-  } catch (e) {
-    console.warn("Could not load catalog.json:", e);
-    _catalog = [];
-  }
-  return _catalog!;
+export function loadCatalog(): Anime[] {
+  return _catalog;
 }
 
 // MOCK_ANIMES is empty in the bundle — full catalog loaded at runtime on server
@@ -50,68 +19,43 @@ export function getAvailableEpisodesCountForAiring(anime: Anime): number {
   if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
     return anime.airedEpisodesCount;
   }
-  if (anime.id.includes("one-piece")) return 1172;
-  if (anime.id === "mushoku-tensei-3") {
-    const start = new Date("2026-07-04T08:00:00-04:00");
-    const diff = Date.now() - start.getTime();
-    if (diff < 0) return 2;
-    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
-    return Math.min(2 + weeks, 24);
-  }
-  if (anime.id === "youjo-senki-2") {
-    const start = new Date("2026-07-08T08:00:00-04:00");
-    const diff = Date.now() - start.getTime();
-    if (diff < 0) return 1;
-    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
-    return Math.min(1 + weeks, 12);
-  }
-  if (anime.id === "that-time-i-got-reincarnated-as-a-slime-4") {
-    const start = new Date("2026-04-03T08:00:00-04:00");
-    const diff = Date.now() - start.getTime();
-    if (diff < 0) return 1;
-    const weeks = Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
-    return Math.min(1 + weeks, 24);
-  }
+  if (anime.id.includes("one-piece")) return 1174;
+  if (anime.id === "mushoku-tensei-3") return 7;
+  if (anime.id === "youjo-senki-2") return 6;
+  if (anime.id === "that-time-i-got-reincarnated-as-a-slime-4") return 18;
   return Math.min(5, anime.episodesCount || 5);
 }
 
+export function generateEpisodesForAnime(anime: Anime): Episode[] {
+  if (Array.isArray(anime.episodes) && anime.episodes.length > 0) {
+    return anime.episodes;
+  }
+  const isMovie = anime.type === "Película";
+  const isOVA = anime.type === "OVA";
+  const count = isMovie ? 1 : isOVA ? 1 : (anime.status === "En emisión" ? getAvailableEpisodesCountForAiring(anime) : (anime.episodesCount || 12));
+
+  return Array.from({ length: count }, (_, i) => ({
+    id: `${anime.id}-ep-${i + 1}`,
+    title: isMovie
+      ? anime.title
+      : isOVA
+        ? `${anime.title} - OVA ${i + 1}`
+        : `${anime.title} - Episodio ${i + 1}`,
+    number: i + 1,
+    animeId: anime.id,
+    animeTitle: anime.title,
+    coverUrl: anime.coverUrl,
+    videoUrl: `/api/episode/${anime.id}-ep-${i + 1}`,
+    releaseDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES")
+  }));
+}
+
+/**
+ * Returns catalog animes without allocating 60,000 Episode objects in memory at once.
+ * Prevents WKWebView OOM (Out-Of-Memory) Crashes on iOS.
+ */
 export function getAnimesWithEpisodes(): Anime[] {
-  const catalog = loadCatalog();
-  if (catalog.length === 0) return [];
-
-  return catalog.map((anime: Anime) => {
-    const isMovie = anime.type === "Película";
-    const isOVA = anime.type === "OVA";
-    const episodesCount = isMovie ? 1 : isOVA ? 1 : (anime.episodesCount || 12);
-
-    let availableCount = episodesCount;
-    if (anime.status === "En emisión") {
-      availableCount = getAvailableEpisodesCountForAiring(anime);
-    }
-
-    const episodes: Episode[] = Array.from({ length: availableCount }, (_, i) => ({
-      id: `${anime.id}-ep-${i + 1}`,
-      title: isMovie
-        ? anime.title
-        : isOVA
-          ? `${anime.title} - OVA ${i + 1}`
-          : `${anime.title} - Episodio ${i + 1}`,
-      number: i + 1,
-      animeId: anime.id,
-      animeTitle: anime.title,
-      coverUrl: anime.coverUrl,
-      videoUrl: `/api/episode/${anime.id}-ep-${i + 1}`,
-      releaseDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES")
-    }));
-
-    return {
-      ...anime,
-      episodesCount: anime.status === "En emisión"
-        ? episodes.length
-        : anime.episodesCount,
-      episodes
-    };
-  });
+  return _catalog;
 }
 
 export function generateMockRecentEpisodes(animes: Anime[]): Episode[] {
@@ -147,7 +91,7 @@ export function getBaseTitle(title: string): string {
   if (baseLower.includes("chainsaw man")) return "Chainsaw Man";
   if (baseLower.includes("my hero academia") || baseLower.includes("boku no hero academia")) return "Boku no Hero Academia";
   if (baseLower.includes("solo leveling")) return "Solo Leveling";
-  if (baseLower.includes("one piece")) return "One Piece";
+  if (baseLower === "one piece" || baseLower === "one piece (tv)" || baseLower === "one piece tv" || baseLower.startsWith("one piece (1999)")) return "One Piece";
 
   let base = title;
   base = base.replace(/\s+Temporada\s+\d+/gi, "");

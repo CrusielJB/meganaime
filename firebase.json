@@ -10,6 +10,14 @@
       ".git",
       ".antigravity",
       "scratch",
+      "downloads",
+      "downloads/**",
+      "downloads_temp",
+      "downloads_temp/**",
+      "ios",
+      "ios/**",
+      "android",
+      "android/**",
       "screenshot.png",
       "firebase-debug.log"
     ]
@@ -47,6 +55,14 @@
       },
       {
         "source": "/api/**",
+        "function": "api"
+      },
+      {
+        "source": "/ver/**",
+        "function": "api"
+      },
+      {
+        "source": "/anime/**",
         "function": "api"
       },
       {

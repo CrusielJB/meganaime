@@ -103,48 +103,51 @@ export const MangaDetail: React.FC<MangaDetailProps> = ({
           <div className="relative w-full max-w-4xl rounded-none md:rounded-3xl border-0 md:border border-white/5 bg-neutral-950 text-neutral-100 shadow-2xl overflow-hidden my-0 md:my-8 max-h-screen md:max-h-[92vh] flex flex-col">
             
             {/* Giant Netflix-style Immersive Banner */}
-            <div className="relative h-[240px] sm:h-[320px] md:h-[380px] w-full flex-shrink-0">
+            <div className="relative min-h-[440px] sm:min-h-[480px] md:h-[480px] w-full flex-shrink-0 flex flex-col justify-between p-6 md:p-10 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))]">
               <img
-                src={getProxyImageUrl(details.coverUrl, details.title)}
+                src={getProxyImageUrl(details.coverUrl, details.title, true, "MANGA")}
                 alt={details.title}
-                className="h-full w-full object-cover object-center filter brightness-[0.35] blur-[1px]"
+                className="absolute inset-0 h-full w-full object-cover object-center filter brightness-[0.35] blur-[1px]"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   recoverCoverImageInHotPath(e, details.title, details.id, "MANGA");
                 }}
               />
               {/* Bottom mask gradients */}
-              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-neutral-950/20" />
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/30 to-transparent" />
               
-              {/* Floating Actions on Top Bar */}
-              <div className="absolute top-4 left-6 right-6 flex justify-between items-center z-20">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 border border-rose-500/30 text-rose-400 tracking-wider uppercase">
-                  Manga Oficial
-                </span>
-                <button
-                  onClick={onClose}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-neutral-400 hover:text-white hover:scale-105 hover:bg-neutral-900 transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+              {/* Floating Close Button Top Right */}
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-neutral-300 hover:text-white hover:scale-105 hover:bg-neutral-900 transition cursor-pointer mt-[env(safe-area-inset-top,0px)] shadow-xl"
+                title="Cerrar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Spacer for Top Bar */}
+              <div className="w-full h-8" />
 
               {/* Banner Info Details Overlay */}
-              <div className="absolute bottom-6 left-6 right-6 md:left-10 md:right-10 z-10 max-w-2xl space-y-4">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
+              <div className="relative z-10 max-w-2xl space-y-3.5 mt-auto">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 border border-rose-500/40 text-rose-400 tracking-wider uppercase backdrop-blur-md shadow-sm w-fit">
+                  Manga Oficial
+                </span>
+
+                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white leading-tight tracking-tight drop-shadow-lg">
                   {details.title}
                 </h1>
                 
-                <div className="flex flex-wrap items-center gap-3.5 text-xs md:text-sm text-neutral-200 font-semibold drop-shadow-md">
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5 text-xs md:text-sm text-neutral-200 font-semibold drop-shadow-md">
                   <span className="flex items-center text-amber-400">
-                    <Star className="h-4.5 w-4.5 mr-1 fill-amber-400 text-amber-400" />
+                    <Star className="h-4 w-4 mr-1 fill-amber-400 text-amber-400" />
                     {(Number(details.rating) || 0).toFixed(1)}
                   </span>
                   <span>•</span>
                   <span className="text-neutral-300">{details.year}</span>
                   <span>•</span>
-                  <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/25 border border-rose-500/40 text-rose-400 text-[10px] font-bold uppercase tracking-wider">
                     {details.status}
                   </span>
                   <span>•</span>
@@ -158,7 +161,7 @@ export const MangaDetail: React.FC<MangaDetailProps> = ({
                   <p className={isSynopsisExpanded ? "" : "line-clamp-2 md:line-clamp-3"}>
                     {details.synopsis || "Sumérgete en la asombrosa historia ilustrada de este manga popular. Sigue el viaje y descubre la gran narrativa de sus personajes."}
                   </p>
-                  {details.synopsis && details.synopsis.length > 180 && (
+                  {details.synopsis && details.synopsis.length > 160 && (
                     <button
                       onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
                       className="text-rose-400 hover:text-rose-300 font-bold mt-1 text-xs cursor-pointer focus:outline-none"
@@ -169,10 +172,10 @@ export const MangaDetail: React.FC<MangaDetailProps> = ({
                 </div>
 
                 {/* Call to Action Button */}
-                <div className="flex items-center pt-2">
+                <div className="flex items-center pt-1">
                   <button
                     onClick={() => setShowReader(true)}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs md:text-sm tracking-wider uppercase transition shadow-lg shadow-rose-500/20 cursor-pointer hover:scale-[1.02]"
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-xs md:text-sm tracking-wider uppercase transition shadow-lg shadow-rose-500/25 cursor-pointer hover:scale-[1.02] active:scale-95"
                   >
                     <BookText className="h-4.5 w-4.5 text-white" />
                     <span>Comenzar Lectura</span>

@@ -32,6 +32,7 @@ import { getDownloadedEpisodeBlob } from "../utils/downloadDb";
 import CommentSection from "./CommentSection";
 import { resolveEmbedUrl } from "../utils/resolvers";
 import { sendUserReport } from "../utils/reports";
+import { getApiUrl } from "../utils/apiConfig";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
@@ -261,9 +262,11 @@ export default function VideoPlayer({
     async function fetchEpisodeDetails() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/episode/${encodeURIComponent(episodeId)}`);
-        const data = await res.json();
-        setEpisodeData(data);
+        const res = await fetch(getApiUrl(`/api/episode/${encodeURIComponent(episodeId)}`), { signal: AbortSignal.timeout(15000) });
+        if (res.ok) {
+          const data = await res.json();
+          setEpisodeData(data);
+        }
       } catch (err) {
         console.error("Error loading episode players:", err);
       } finally {
@@ -282,10 +285,46 @@ export default function VideoPlayer({
       : [])
   ];
 
-  // Purge any restricted YouTube embeds to ensure clean video playback
-  const servers = rawServersList.filter(s => 
-    s && s.url && !s.url.toLowerCase().includes("youtube.com") && !s.url.toLowerCase().includes("youtu.be")
-  );
+  // Purge YouTube embeds, YourUpload, and Mega download links (if other streaming servers exist)
+  const filteredServers = rawServersList.filter(s => {
+    if (!s || !s.url) return false;
+    const u = s.url.toLowerCase();
+    const n = (s.name || "").toLowerCase();
+    if (u.includes("youtube.com") || u.includes("youtu.be")) return false;
+    if ((u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) && rawServersList.length > 1) {
+      return false;
+    }
+    // Filter out mega.nz download links if streaming embed servers exist (prevents Mega redirect to download screen)
+    const hasStreamingServer = rawServersList.some(other => {
+      const otherUrl = (other?.url || "").toLowerCase();
+      return !otherUrl.includes("mega.nz") && !otherUrl.includes("mega.co.nz") && (
+        otherUrl.includes("voe") || otherUrl.includes("streamwish") || otherUrl.includes("mp4upload") ||
+        otherUrl.includes("savefiles") || otherUrl.includes("dsvplay") || otherUrl.includes("ok.ru") ||
+        otherUrl.endsWith(".mp4") || otherUrl.endsWith(".m3u8")
+      );
+    });
+    if ((u.includes("mega.nz") || u.includes("mega.co.nz")) && hasStreamingServer) {
+      return false;
+    }
+    return true;
+  });
+
+  // Sort instant autoplay servers (Google Drive, Direct Stream, Voe, Streamwish, Mp4Upload) to the top
+  const servers = [...filteredServers].sort((a, b) => {
+    const getScore = (s: { name: string; url: string }) => {
+      const u = s.url.toLowerCase();
+      const n = (s.name || "").toLowerCase();
+      if (u.includes("drive.google.com") || n.includes("drive") || n.includes("megaanime drive")) return 0;
+      if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 1;
+      if (u.includes("voe") || n.includes("voe")) return 2;
+      if (u.includes("streamwish") || u.includes("filelions") || n.includes("wish")) return 3;
+      if (u.includes("mp4upload") || n.includes("mp4upload")) return 4;
+      if (u.includes("ok.ru") || n.includes("okru")) return 5;
+      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 6;
+      return 10;
+    };
+    return getScore(a) - getScore(b);
+  });
 
   // Auto-select best direct stream server when servers load so our custom player is used
   useEffect(() => {
@@ -294,6 +333,16 @@ export default function VideoPlayer({
     let isMounted = true;
 
     const findAndSelectCustomPlayerServer = async () => {
+      // 0. If Google Drive server exists, select it IMMEDIATELY as top priority
+      const driveIdx = servers.findIndex(s => s && s.url && (s.url.includes("drive.google.com") || (s.name && s.name.toLowerCase().includes("drive"))));
+      if (driveIdx !== -1) {
+        if (isMounted) {
+          setActiveServerIdx(driveIdx);
+          setIsResolving(false);
+        }
+        return;
+      }
+
       // 1. If any server is ALREADY a direct MP4/M3U8 URL, select it instantly
       const directIdx = servers.findIndex(s => s && s.url && !isEmbedUrl(s.url));
       if (directIdx !== -1) {
@@ -369,21 +418,12 @@ export default function VideoPlayer({
       try {
         const resolved = await resolveEmbedUrl(activeServer.name, activeServer.url);
 
-        if (resolved && resolved.dead) {
-          console.warn(`[Auto-Player] Active server (${activeServer.name}) is dead/deleted! Auto-switching to next server...`);
-          const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
-          if (nextWorkingIdx !== -1 && servers.length > 1) {
-            setActiveServerIdx(nextWorkingIdx);
-            return;
-          }
-        }
-
         if (resolved && resolved.url) {
-          setResolvedStreamUrl(resolved.url);
+          setResolvedStreamUrl(getApiUrl(resolved.url));
           setUseResolvedPlayer(true);
           setResolvedIsHls(resolved.isHls);
         } else {
-          // Use real activeServer URL for this episode inside player container
+          // Use direct activeServer URL inside iframe player container
           setResolvedStreamUrl(activeServer.url);
           setUseResolvedPlayer(false);
         }
@@ -697,20 +737,11 @@ export default function VideoPlayer({
     const isHls = resolvedIsHls || resolvedStreamUrl.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8");
 
     const handleVideoError = () => {
-      const hasMoreServers = activeServerIdx < servers.length - 1;
-      if (hasMoreServers) {
-        setVideoError("Cargando reproductor...");
-        setIsAutoAdvancing(true);
-        autoAdvanceTimerRef.current = setTimeout(() => {
-          setActiveServerIdx(prev => Math.min(prev + 1, servers.length - 1));
-          setVideoError(null);
-          setIsAutoAdvancing(false);
-        }, 1500);
-      } else {
-        console.log("[Auto-Player] All servers exhausted for this episode.");
-        setVideoError("No se pudo cargar el video de este servidor. Por favor selecciona otro servidor arriba o intenta de nuevo.");
-        setIsAutoAdvancing(false);
-      }
+      console.warn(`[Auto-Player] Direct stream error on ${activeServer?.name}. Switching to clean embed player.`);
+      setUseResolvedPlayer(false);
+      setResolvedStreamUrl(activeServer?.url || "");
+      setVideoError(null);
+      setIsAutoAdvancing(false);
     };
 
     const startPlayback = (videoEl: HTMLVideoElement) => {
@@ -1038,9 +1069,9 @@ export default function VideoPlayer({
 
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in">
-      {/* Top Controls Bar */}
-      <div className={`flex h-16 items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 ${
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Top Controls Bar with iOS Safe Area Inset Support */}
+      <div className={`flex items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] min-h-[calc(4rem+env(safe-area-inset-top,0px))] pb-2 ${
         isFullscreen && !showControls ? "opacity-0 pointer-events-none -translate-y-full" : "opacity-100"
       }`}>
         <div className="flex items-center space-x-3">
@@ -1067,7 +1098,7 @@ export default function VideoPlayer({
 
         {/* Action controls (Immersive Toggle / Close) */}
         <div className="flex items-center space-x-2">
-          {/* Immersive Servers & Info Toggle Button */}
+          {/* Immersive Info Toggle Button */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`flex h-10 px-4 items-center justify-center gap-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
@@ -1075,10 +1106,10 @@ export default function VideoPlayer({
                 ? "bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/25"
                 : "bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10 hover:text-white"
             }`}
-            title="Ver servidores y episodios"
+            title="Ver información del episodio"
           >
             <Menu className="h-4 w-4" />
-            <span>Servidores e Info</span>
+            <span>{activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? "Episodio e Info" : "Servidores e Info"}</span>
           </button>
 
           <button
@@ -1153,7 +1184,7 @@ export default function VideoPlayer({
                     webkitallowfullscreen="true"
                     // @ts-ignore
                     mozallowfullscreen="true"
-                    allow="fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write; accelerometer; gyroscope"
+                    allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; clipboard-write *; accelerometer *; gyroscope *"
                     referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />
@@ -1168,24 +1199,6 @@ export default function VideoPlayer({
                     <span className="text-[11px] font-semibold">{isFullscreen ? "Salir Fullscreen" : "Pantalla Completa"}</span>
                   </button>
 
-                  {!postMessageActive && (
-                    <div className="absolute top-4 left-4 right-4 bg-rose-500/90 text-white backdrop-blur px-4 py-2.5 rounded-xl border border-rose-400/20 text-xs flex items-center justify-between shadow-2xl animate-slide-in max-w-xl mx-auto z-20">
-                      <div className="flex items-center gap-2">
-                        <Info className="h-4 w-4 flex-shrink-0" />
-                        <span>Este reproductor no comparte eventos de progreso. Guardaremos tu avance automáticamente cada 10 segundos.</span>
-                      </div>
-                      <button 
-                        onClick={() => setPostMessageActive(true)} 
-                        className="ml-3 hover:text-white/80 font-bold cursor-pointer"
-                      >
-                        Entendido
-                      </button>
-                    </div>
-                  )}
-                  <div className="absolute bottom-4 right-4 bg-black/85 backdrop-blur px-3 py-2 rounded-xl border border-white/10 text-[9px] text-neutral-400 flex items-center gap-1.5 pointer-events-none z-10">
-                    <Info className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Usa la pantalla completa del reproductor para omitir anuncios.</span>
-                  </div>
                 </div>
               ) : (
 
@@ -1223,14 +1236,9 @@ export default function VideoPlayer({
                       }
                     }}
                     onError={() => {
-                      console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Failing over...`);
-                      const nextWorkingIdx = servers.findIndex((s, i) => i !== activeServerIdx && s && s.url);
-                      if (nextWorkingIdx !== -1 && servers.length > 1) {
-                        setActiveServerIdx(nextWorkingIdx);
-                      } else {
-                        setUseResolvedPlayer(false);
-                        setResolvedStreamUrl(activeServer.url);
-                      }
+                      console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Falling back to embed player.`);
+                      setUseResolvedPlayer(false);
+                      setResolvedStreamUrl(activeServer.url);
                     }}
                   />
                   
@@ -1516,31 +1524,43 @@ export default function VideoPlayer({
                 </div>
               </div>
 
-              {/* Server Selector List */}
-              <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
-                <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
-                  <Server className="h-4 w-4 text-rose-500" />
-                  <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Seleccionar Reproductor</span>
+              {/* Server Selector List / MegaAnime Exclusive Banner */}
+              {activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? (
+                <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 space-y-2.5 shadow-lg shadow-rose-950/40">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="h-4 w-4 text-rose-400 animate-pulse" />
+                    <span className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono">⚡ MegaAnime (1080p Ultra HD)</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-relaxed">
+                    Reproduciendo en calidad nativa Ultra HD directamente desde nuestros servidores oficiales de MegaAnime sin anuncios ni ventanas emergentes.
+                  </p>
                 </div>
-                <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                  {servers.map((srv, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setActiveServerIdx(idx);
-                      }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                        activeServerIdx === idx
-                          ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
-                          : "bg-neutral-900 border-white/5 text-neutral-400 hover:border-neutral-700 hover:text-white"
-                      }`}
-                    >
-                      <span className="truncate">{srv.name}</span>
-                      {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                    </button>
-                  ))}
+              ) : (
+                <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
+                  <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
+                    <Server className="h-4 w-4 text-rose-500" />
+                    <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Seleccionar Reproductor</span>
+                  </div>
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    {servers.map((srv, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setActiveServerIdx(idx);
+                        }}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          activeServerIdx === idx
+                            ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
+                            : "bg-neutral-900 border-white/5 text-neutral-400 hover:border-neutral-700 hover:text-white"
+                        }`}
+                      >
+                        <span className="truncate">{srv.name}</span>
+                        {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Bottom Episode Navigation */}

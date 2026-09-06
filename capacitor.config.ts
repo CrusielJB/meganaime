@@ -6,13 +6,26 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
+    iosScheme: 'https',
     allowNavigation: [
+      'megaanime-1c250.web.app',
       'megaanime.net',
       '*.megaanime.net',
       '*.cloudfunctions.net',
       '*.tioanime.com',
-      '*.monoschinos2.com'
+      '*.monoschinos2.com',
+      '*.mega.nz',
+      '*.voe.sx',
+      '*.streamwish.to',
+      '*.mp4upload.com',
+      '*.ok.ru',
+      '*'
     ]
+  },
+  ios: {
+    allowsLinkPreview: false,
+    scrollEnabled: true,
+    limitsNavigationsToAppBoundDomains: false
   },
   plugins: {
     CapacitorCookies: {
@@ -22,3 +35,4 @@ const config: CapacitorConfig = {
 };
 
 export default config;
+

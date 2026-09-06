@@ -17,23 +17,32 @@ export default function AnimeCard({
   isFavorite,
   onToggleFavorite
 }: AnimeCardProps) {
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target && target.closest("button")) {
+      return;
+    }
+    onSelect(anime);
+  };
+
   return (
     <div
-      onClick={() => onSelect(anime)}
+      role="button"
+      onClick={handleCardClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter") {
+        if (e.key === "Enter" || e.key === " ") {
           onSelect(anime);
         }
       }}
       tabIndex={0}
-      className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/5 bg-neutral-900 transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/30 hover:shadow-xl hover:shadow-rose-950/20 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500/50 focus:-translate-y-1 focus:scale-[1.02] focus:shadow-xl focus:shadow-rose-950/30"
+      className="group relative cursor-pointer active:scale-95 touch-manipulation overflow-hidden rounded-xl border border-white/5 bg-neutral-900 transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/30 hover:shadow-xl hover:shadow-rose-950/20 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500/50 focus:-translate-y-1 focus:scale-[1.02] focus:shadow-xl focus:shadow-rose-950/30"
     >
       {/* Poster Image Container */}
       <div className="relative aspect-[3/4] w-full overflow-hidden">
         <img
           src={getProxyImageUrl(anime.coverUrl, anime.title)}
           alt={anime.title}
-          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 pointer-events-none"
           referrerPolicy="no-referrer"
           onError={(e) => {
             recoverCoverImageInHotPath(e, anime.title, anime.id);
@@ -41,10 +50,10 @@ export default function AnimeCard({
         />
         
         {/* Shadow Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent opacity-60 group-hover:opacity-85 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/10 to-transparent opacity-60 group-hover:opacity-85 transition-opacity pointer-events-none" />
 
         {/* Hover Actions (Fades in) */}
-        <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+        <div className="absolute inset-0 flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg self-center mb-3 scale-75 group-hover:scale-100 transition-transform duration-300">
             <Play className="h-5 w-5 fill-white ml-0.5" />
           </div>

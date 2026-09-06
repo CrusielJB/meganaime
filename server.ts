@@ -44,6 +44,17 @@ const emailTransporter = nodemailer.createTransport({
 export async function createExpressApp() {
   const app = express();
 
+  // Universal CORS middleware for iOS / Android / Web clients
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
+    next();
+  });
+
   // --- CUSTOM ADMIN DATABASE IMPLEMENTATION ---
   const customDbPath = path.join(process.cwd(), "src/utils/customAnimes.json");
   const customMangasDbPath = path.join(process.cwd(), "src/utils/customMangas.json");
@@ -353,11 +364,13 @@ export async function createExpressApp() {
     timezone: "America/New_York"
   });
 
-  // Pre-fetch the latest episodes asynchronously after server startup
-  setTimeout(() => {
-    updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
-    refreshAiringEpisodesCount().catch(e => console.warn("Airing count error:", e));
-  }, 2000);
+  // Pre-fetch the latest episodes asynchronously after server startup (skip during Firebase CLI analysis)
+  if (process.env.K_SERVICE || (!process.argv.includes("deploy") && process.env.NODE_ENV === "production")) {
+    setTimeout(() => {
+      updateEpisodesRepository().catch(e => console.warn("Background prefetch error:", e));
+      refreshAiringEpisodesCount().catch(e => console.warn("Airing count error:", e));
+    }, 5000);
+  }
 
   // Body parsers
   app.use(express.json());
@@ -479,6 +492,12 @@ export async function createExpressApp() {
       success: true,
       message: "Correo verificado correctamente."
     });
+  });
+
+  app.all("/api/admin/flush-cache", (req, res) => {
+    apiCache.flushAll();
+    console.log("[Cache] 🧹 Server apiCache flushed completely!");
+    return res.json({ success: true, message: "Cache de servidor vaciada en megaanime.net" });
   });
 
   // ── Periodic Facebook Auto-Post Endpoint (called every 3 hours from node-cron, external cron, or GET link) ──
@@ -819,14 +838,87 @@ export async function createExpressApp() {
     if (cached) return res.json(cached);
 
     try {
-      // Check TioAnime catalog episode path
+      // 1. FIRST: Check if this episode exists in Google Drive manifest for INSTANT 1ms playback
+      let manifest: any = {};
+      const manifestPaths = [
+        path.join(process.cwd(), "dist/drive_episodes.json"),
+        path.join(process.cwd(), "src/data/drive_episodes.json")
+      ];
+      for (const mp of manifestPaths) {
+        if (fs.existsSync(mp)) {
+          manifest = JSON.parse(fs.readFileSync(mp, "utf-8"));
+          break;
+        }
+      }
+
+      let rawSlug = "";
+      let epNum = 1;
       const tioMatch = id.match(/^(?:tioanime-)?(.+?)-(?:ep|episodio)-(\d+)$/i);
       if (tioMatch) {
-        const rawSlug = tioMatch[1];
-        const epNum = parseInt(tioMatch[2], 10);
-        const servers = await scrapeEpisodeFromTioAnime(rawSlug, epNum);
+        rawSlug = tioMatch[1];
+        epNum = parseInt(tioMatch[2], 10);
+      } else {
+        const parts = id.split("-ep-");
+        if (parts.length === 2) {
+          rawSlug = parts[0];
+          epNum = parseInt(parts[1], 10);
+        }
+      }
+
+      // Match anime in catalog
+      const catalogItem = (rawSlug === "one-piece" || rawSlug === "one-piece-tv" || rawSlug === "one-piece-temporada-2")
+        ? (LOCAL_CATALOG.find(a => a.id === "one-piece" || a.id === "tioanime-one-piece-tv") || LOCAL_CATALOG.find(a => a.title === "One Piece"))
+        : (LOCAL_CATALOG.find(a => 
+            a.id === id ||
+            a.id === rawSlug ||
+            a.id === `tioanime-${rawSlug}` || 
+            a.id === `tioanime-${rawSlug}-tv` || 
+            (a.external_id && a.external_id === rawSlug)
+          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`)));
+
+      // Check if episode is in Google Drive
+      const entryKeys = [
+        rawSlug,
+        `tioanime-${rawSlug}`,
+        `tioanime-${rawSlug}-tv`,
+        catalogItem?.id,
+        (rawSlug.includes("one-piece") || catalogItem?.title?.toLowerCase().includes("one piece")) ? "tioanime-one-piece-tv" : null
+      ].filter(Boolean);
+
+      let driveEp: any = null;
+      for (const k of entryKeys) {
+        if (manifest[k]?.episodes?.[`ep-${epNum}`]) {
+          driveEp = manifest[k].episodes[`ep-${epNum}`];
+          break;
+        }
+      }
+
+      if (driveEp && (driveEp.streamUrl || (driveEp.fileId && !driveEp.fileId.startsWith("drive-")))) {
+        const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
+        const epData = {
+          id,
+          title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
+          number: epNum,
+          animeId: catalogItem ? catalogItem.id : (rawSlug.includes("one-piece") ? "tioanime-one-piece-tv" : `tioanime-${rawSlug}`),
+          animeTitle: catalogItem ? catalogItem.title : (rawSlug.includes("one-piece") ? "One Piece" : rawSlug),
+          coverUrl: catalogItem ? catalogItem.coverUrl : "",
+          videoServers: [
+            {
+              name: "⚡ MegaAnime (1080p Ultra HD)",
+              url: directDriveUrl
+            }
+          ],
+          videoUrl: directDriveUrl
+        };
+        apiCache.set(cacheKey, epData, 86400);
+        return res.json(epData);
+      }
+
+      // 2. SECOND: If not in Google Drive, scrape TioAnime for external servers
+      if (rawSlug) {
+        const scrapeSlug = rawSlug.includes("one-piece") ? "one-piece-tv" : rawSlug;
+        const servers = await scrapeEpisodeFromTioAnime(scrapeSlug, epNum);
         if (servers && servers.length > 0) {
-          const catalogItem = LOCAL_CATALOG.find(a => a.id === `tioanime-${rawSlug}` || a.id.includes(rawSlug));
           const epData = {
             id,
             title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
@@ -2044,6 +2136,37 @@ export async function createExpressApp() {
     }
   });
 
+  // ── Google Drive Direct Video Stream Endpoint (Zero ads, native player, Full HD 1080p) ──
+  app.get("/api/gdrive-stream", async (req, res) => {
+    const rawPath = req.query.path as string;
+    if (!rawPath) {
+      return res.status(400).json({ error: "Missing path parameter" });
+    }
+
+    try {
+      const { spawn } = await import("child_process");
+      const remoteTarget = `gdrive:MegaAnime_HD/${rawPath.replace(/^\/+/, '')}`;
+
+      res.setHeader("Content-Type", "video/mp4");
+      res.setHeader("Accept-Ranges", "bytes");
+
+      const rclone = spawn("rclone", ["cat", remoteTarget]);
+
+      rclone.stdout.on("error", (err) => {
+        if (!res.writableEnded) res.end();
+      });
+
+      rclone.stdout.pipe(res);
+
+      req.on("close", () => {
+        try { rclone.kill(); } catch(e) {}
+      });
+    } catch (err: any) {
+      console.error("GDrive stream error:", err.message);
+      if (!res.headersSent) res.status(500).send("Error streaming from Google Drive");
+    }
+  });
+
   // 2. Comprehensive Embed URL Resolver — supports 12+ server types
   app.get("/api/admin/resolve", async (req, res) => {
     const serverName = (req.query.server as string || "").toLowerCase();
@@ -2084,7 +2207,7 @@ export async function createExpressApp() {
       } catch (e) {}
 
       if (!response || !response.ok) {
-        return res.json({ url: null, isHls: false });
+        return res.json({ url: null, isHls: false, dead: false });
       }
       const rawHtml = await response.text();
 
@@ -2119,7 +2242,7 @@ export async function createExpressApp() {
       const html = unpackPacker(rawHtml) + "\n" + rawHtml;
 
       // Detect if third-party embed page returned a 404 or File Deleted page
-      const isDeadEmbed = /404 Not Found|File Not Found|File deleted|Video not found|this video is no longer available/i.test(html);
+      const isDeadEmbed = /404|No encontrado|Not Found|File Not Found|File deleted|Video not found|no longer available|Content Restricted/i.test(html);
       if (isDeadEmbed) {
         return res.json({ url: null, isHls: false, dead: true });
       }
@@ -2431,8 +2554,50 @@ export async function createExpressApp() {
 
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+    
+    // Dynamic SSR OpenGraph tags injection for Facebook / Social Crawlers & Direct Links
     app.get("*", (req, res) => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); res.sendFile(path.join(distPath, "index.html"));
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      const indexPath = path.join(distPath, "index.html");
+      if (!fs.existsSync(indexPath)) return res.status(200).send("megaAnime");
+
+      let html = fs.readFileSync(indexPath, "utf-8");
+
+      // Extract anime query or path
+      const animeQuery = (req.query.anime as string) || (req.query.id as string);
+      let animeSlug = animeQuery;
+      if (!animeSlug && (req.path.startsWith("/anime/") || req.path.startsWith("/ver/"))) {
+        animeSlug = req.path.replace(/^\/(anime|ver)\//, "").split("/")[0];
+      }
+
+      if (animeSlug) {
+        const cleanSlug = decodeURIComponent(animeSlug).toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        const found = LOCAL_CATALOG.find(a => 
+          a.id === animeSlug ||
+          a.id === `tioanime-${animeSlug}` ||
+          a.id.toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]+/g, "-") === cleanSlug ||
+          a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanSlug ||
+          a.title.toLowerCase().includes(cleanSlug.replace(/-/g, " "))
+        );
+
+        if (found) {
+          const ogTitle = `${found.title} - Ver Online en HD | megaAnime`;
+          let ogImage = found.coverUrl || "https://megaanime.net/icon-512.png";
+          if (ogImage.includes("tioanime.com")) {
+            ogImage = `https://megaanime.net/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+          }
+          const ogUrl = `https://megaanime.net/ver/${encodeURIComponent(cleanSlug)}`;
+
+          html = html.replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`);
+          html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`);
+          html = html.replace(/<meta property="og:description" content=".*?"\s*\/?>/i, `<meta property="og:description" content="${ogDesc}" />`);
+          html = html.replace(/<meta property="og:image" content=".*?"\s*\/?>/i, `<meta property="og:image" content="${ogImage}" /><meta property="og:image:secure_url" content="${ogImage}" /><meta property="og:image:type" content="image/jpeg" />`);
+          html = html.replace(/<meta property="og:url" content=".*?"\s*\/?>/i, `<meta property="og:url" content="${ogUrl}" />`);
+          html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/?>/i, `<meta name="twitter:image" content="${ogImage}" />`);
+        }
+      }
+
+      res.send(html);
     });
   }
 

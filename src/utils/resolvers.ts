@@ -1,3 +1,5 @@
+import { getApiUrl } from "./apiConfig";
+
 export interface ResolvedStream {
   url: string | null;
   isHls: boolean;
@@ -12,7 +14,7 @@ export interface ResolvedStream {
 export async function resolveEmbedUrl(serverName: string, embedUrl: string): Promise<ResolvedStream | null> {
   try {
     const cleanServer = serverName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-    const res = await fetch(`/api/admin/resolve?server=${encodeURIComponent(cleanServer)}&url=${encodeURIComponent(embedUrl)}`);
+    const res = await fetch(getApiUrl(`/api/admin/resolve?server=${encodeURIComponent(cleanServer)}&url=${encodeURIComponent(embedUrl)}`), { signal: AbortSignal.timeout(6000) });
     if (res.ok) {
       const data = await res.json();
       return data as ResolvedStream;
