@@ -987,6 +987,21 @@ export async function createExpressApp() {
             } catch (e) {}
           }
         }
+
+        // Ensure episode count is at least the highest episode present in Drive manifest
+        const rawSlug = catalogItem.id.replace(/^tioanime-/, "");
+        const driveEntry = DRIVE_MANIFEST[catalogItem.id] || DRIVE_MANIFEST[`tioanime-${rawSlug}`] || DRIVE_MANIFEST[rawSlug];
+        if (driveEntry && driveEntry.episodes) {
+          let driveMaxEp = 0;
+          for (const epKey of Object.keys(driveEntry.episodes)) {
+            const num = parseInt(epKey.replace(/^ep-/, ""), 10);
+            if (!isNaN(num) && num > driveMaxEp) driveMaxEp = num;
+          }
+          if (driveMaxEp > count) {
+            count = driveMaxEp;
+            catalogItem.episodesCount = count;
+          }
+        }
         
         const episodes = Array.from({ length: count }, (_, i) => ({
           id: `${catalogItem.id}-ep-${i + 1}`,

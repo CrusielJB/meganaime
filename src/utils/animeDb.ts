@@ -16,27 +16,28 @@ export const MOCK_ANIMES: Anime[] = [];
 
 // Helper to calculate available episode count for airing animes
 export function getAvailableEpisodesCountForAiring(anime: Anime): number {
-  if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
-    return anime.airedEpisodesCount;
-  }
-
   const normId = (anime.id || "").toLowerCase();
   const normTitle = (anime.title || "").toLowerCase();
 
-  if (normId.includes("one-piece") || normTitle.includes("one piece")) return 1176;
+  if (normId.includes("the-exiled-heavy-knight") || normId.includes("tensei-juukishi") || normTitle.includes("heavy knight") || normTitle.includes("tensei juukishi")) {
+    return Math.max(10, anime.airedEpisodesCount || 0, anime.episodesCount || 0);
+  }
+  if (normId.includes("one-piece") || normTitle.includes("one piece")) return Math.max(1176, anime.airedEpisodesCount || 0);
+  if (normId.includes("bleach-sennen-kessen") || normId.includes("thousand-year")) return Math.max(46, anime.airedEpisodesCount || 0);
   if (normId.includes("bleach-tv") || (normTitle === "bleach" && anime.status === "Finalizado")) return 366;
-  if (normId.includes("bleach-sennen-kessen") || normId.includes("thousand-year")) return 46;
-  if (normId.includes("bleach")) return anime.episodesCount || 366;
-  if (normId.includes("tensei-shitara-slime") || normId.includes("reincarnated-as-a-slime") || normTitle.includes("slime")) return 20;
-  if (normId.includes("yomi-no-tsugai") || normTitle.includes("yomi no tsugai")) return 21;
-  if (normId.includes("black-torch") || normTitle.includes("black torch")) return 9;
-  if (normId.includes("the-exiled-heavy-knight") || normId.includes("tensei-juukishi") || normTitle.includes("heavy knight") || normTitle.includes("tensei juukishi")) return 10;
-  if (normId.includes("mushoku-tensei") || normTitle.includes("mushoku tensei")) return 10;
-  if (normId.includes("youjo-senki") || normId.includes("tanya-the-evil") || normTitle.includes("youjo senki") || normTitle.includes("tanya")) return 8;
-  if (normId.includes("the-elusive-samurai") || normId.includes("nige-jouzu") || normTitle.includes("elusive samurai") || normTitle.includes("nige jouzu")) return 7;
-  if (normId.includes("jaadugar") || normTitle.includes("jaadugar")) return 9;
-  if (normId.includes("grand-blue") || normTitle.includes("grand blue")) return 9;
-  if (normId.includes("ryoumin") || normId.includes("ryomin") || normTitle.includes("ryoumin") || normTitle.includes("ryomin") || normTitle.includes("frontier lord")) return 9;
+  if (normId.includes("tensei-shitara-slime") || normId.includes("reincarnated-as-a-slime") || normTitle.includes("slime")) return Math.max(20, anime.airedEpisodesCount || 0);
+  if (normId.includes("the-elusive-samurai") || normId.includes("nige-jouzu") || normTitle.includes("elusive samurai") || normTitle.includes("nige jouzu")) return Math.max(7, anime.airedEpisodesCount || 0);
+  if (normId.includes("mushoku-tensei") || normTitle.includes("mushoku tensei")) return Math.max(10, anime.airedEpisodesCount || 0);
+  if (normId.includes("jaadugar") || normTitle.includes("jaadugar")) return Math.max(10, anime.airedEpisodesCount || 0);
+  if (normId.includes("yomi-no-tsugai") || normTitle.includes("yomi no tsugai")) return Math.max(21, anime.airedEpisodesCount || 0);
+  if (normId.includes("black-torch") || normTitle.includes("black torch")) return Math.max(9, anime.airedEpisodesCount || 0);
+  if (normId.includes("youjo-senki") || normId.includes("tanya-the-evil") || normTitle.includes("youjo senki") || normTitle.includes("tanya")) return Math.max(8, anime.airedEpisodesCount || 0);
+  if (normId.includes("grand-blue") || normTitle.includes("grand blue")) return Math.max(9, anime.airedEpisodesCount || 0);
+  if (normId.includes("ryoumin") || normId.includes("ryomin") || normTitle.includes("ryoumin") || normTitle.includes("ryomin") || normTitle.includes("frontier lord")) return Math.max(9, anime.airedEpisodesCount || 0);
+
+  if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
+    return anime.airedEpisodesCount;
+  }
 
   return anime.episodesCount || 12;
 }
