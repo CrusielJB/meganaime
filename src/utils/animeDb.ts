@@ -19,35 +19,63 @@ export function getAvailableEpisodesCountForAiring(anime: Anime): number {
   if (anime.airedEpisodesCount !== undefined && anime.airedEpisodesCount > 0) {
     return anime.airedEpisodesCount;
   }
-  if (anime.id.includes("one-piece")) return 1174;
-  if (anime.id === "mushoku-tensei-3") return 7;
-  if (anime.id === "youjo-senki-2") return 6;
-  if (anime.id === "that-time-i-got-reincarnated-as-a-slime-4") return 18;
-  return Math.min(5, anime.episodesCount || 5);
+
+  const normId = (anime.id || "").toLowerCase();
+  const normTitle = (anime.title || "").toLowerCase();
+
+  if (normId.includes("one-piece") || normTitle.includes("one piece")) return 1176;
+  if (normId.includes("bleach-tv") || (normTitle === "bleach" && anime.status === "Finalizado")) return 366;
+  if (normId.includes("bleach-sennen-kessen") || normId.includes("thousand-year")) return 46;
+  if (normId.includes("bleach")) return anime.episodesCount || 366;
+  if (normId.includes("tensei-shitara-slime") || normId.includes("reincarnated-as-a-slime") || normTitle.includes("slime")) return 20;
+  if (normId.includes("yomi-no-tsugai") || normTitle.includes("yomi no tsugai")) return 21;
+  if (normId.includes("black-torch") || normTitle.includes("black torch")) return 9;
+  if (normId.includes("the-exiled-heavy-knight") || normId.includes("tensei-juukishi") || normTitle.includes("heavy knight") || normTitle.includes("tensei juukishi")) return 10;
+  if (normId.includes("mushoku-tensei") || normTitle.includes("mushoku tensei")) return 10;
+  if (normId.includes("youjo-senki") || normId.includes("tanya-the-evil") || normTitle.includes("youjo senki") || normTitle.includes("tanya")) return 8;
+  if (normId.includes("the-elusive-samurai") || normId.includes("nige-jouzu") || normTitle.includes("elusive samurai") || normTitle.includes("nige jouzu")) return 7;
+  if (normId.includes("jaadugar") || normTitle.includes("jaadugar")) return 9;
+  if (normId.includes("grand-blue") || normTitle.includes("grand blue")) return 9;
+  if (normId.includes("ryoumin") || normId.includes("ryomin") || normTitle.includes("ryoumin") || normTitle.includes("ryomin") || normTitle.includes("frontier lord")) return 9;
+
+  return anime.episodesCount || 12;
 }
 
 export function generateEpisodesForAnime(anime: Anime): Episode[] {
-  if (Array.isArray(anime.episodes) && anime.episodes.length > 0) {
-    return anime.episodes;
-  }
   const isMovie = anime.type === "Película";
   const isOVA = anime.type === "OVA";
-  const count = isMovie ? 1 : isOVA ? 1 : (anime.status === "En emisión" ? getAvailableEpisodesCountForAiring(anime) : (anime.episodesCount || 12));
+  const targetCount = isMovie ? 1 : isOVA ? 1 : (anime.status === "En emisión" ? getAvailableEpisodesCountForAiring(anime) : (anime.episodesCount || 12));
 
-  return Array.from({ length: count }, (_, i) => ({
-    id: `${anime.id}-ep-${i + 1}`,
-    title: isMovie
-      ? anime.title
-      : isOVA
-        ? `${anime.title} - OVA ${i + 1}`
-        : `${anime.title} - Episodio ${i + 1}`,
-    number: i + 1,
-    animeId: anime.id,
-    animeTitle: anime.title,
-    coverUrl: anime.coverUrl,
-    videoUrl: `/api/episode/${anime.id}-ep-${i + 1}`,
-    releaseDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES")
-  }));
+  // If already has episodes array with at least targetCount episodes, return it
+  if (Array.isArray(anime.episodes) && anime.episodes.length >= targetCount && anime.episodes.length > 0) {
+    return anime.episodes;
+  }
+
+  // Otherwise generate full list up to targetCount preserving existing episode data
+  const baseEpisodes = Array.isArray(anime.episodes) ? anime.episodes : [];
+  const existingMap = new Map(baseEpisodes.map(ep => [ep.number, ep]));
+
+  return Array.from({ length: targetCount }, (_, i) => {
+    const num = i + 1;
+    const existing = existingMap.get(num);
+    if (existing && existing.videoUrl) {
+      return existing;
+    }
+    return {
+      id: `${anime.id}-ep-${num}`,
+      title: isMovie
+        ? anime.title
+        : isOVA
+          ? `${anime.title} - OVA ${num}`
+          : `${anime.title} - Episodio ${num}`,
+      number: num,
+      animeId: anime.id,
+      animeTitle: anime.title,
+      coverUrl: anime.coverUrl,
+      videoUrl: `/api/episode/${anime.id}-ep-${num}`,
+      releaseDate: new Date(Date.now() - (targetCount - num) * 7 * 24 * 60 * 60 * 1000).toLocaleDateString("es-ES")
+    };
+  });
 }
 
 /**
@@ -60,9 +88,13 @@ export function getAnimesWithEpisodes(): Anime[] {
 
 export function generateMockRecentEpisodes(animes: Anime[]): Episode[] {
   const episodes: Episode[] = [];
-  const recent = animes.slice(0, 20);
-  for (const anime of recent) {
-    const epNum = anime.episodesCount || 1;
+  const airing = animes.filter(a => a.status === "En emisión" && a.type !== "Película");
+  const otherRecent = animes.filter(a => a.status !== "En emisión" && a.type !== "Película");
+  const combined = [...airing, ...otherRecent].slice(0, 36);
+
+  for (const anime of combined) {
+    const epNum = getAvailableEpisodesCountForAiring(anime);
+    if (epNum <= 0) continue;
     episodes.push({
       id: `${anime.id}-ep-${epNum}`,
       title: anime.type === "Película"

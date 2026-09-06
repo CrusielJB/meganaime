@@ -58,14 +58,6 @@
         "function": "api"
       },
       {
-        "source": "/ver/**",
-        "function": "api"
-      },
-      {
-        "source": "/anime/**",
-        "function": "api"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -18,12 +18,16 @@ import { MovieSection } from "./components/MovieSection";
 import { SearchSection } from "./components/SearchSection";
 import { TheatreMode } from "./components/TheatreMode";
 import ProfileSelector from "./components/ProfileSelector";
-import { getAnimesWithEpisodes } from "./utils/animeDb";
+import { getAnimesWithEpisodes, generateEpisodesForAnime } from "./utils/animeDb";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
 import { syncAllProgressFromFirestore, getAllLocalProgress } from "./utils/progress";
 import { DownloadSection } from "./components/DownloadSection";
 import { useVisitorTracking } from "./hooks/useVisitorTracking";
 import { GlobalBanner } from "./components/GlobalBanner";
+import { Footer } from "./components/Footer";
+import { App as CapApp } from "@capacitor/app";
+import { getDoc, setDoc, doc } from "firebase/firestore";
+import { db, OperationType, handleFirestoreError } from "./lib/firebase";
 
 
 interface ErrorBoundaryProps {
@@ -36,7 +40,6 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  public props: ErrorBoundaryProps;
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null
@@ -44,7 +47,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.props = props;
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -122,9 +124,6 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfilesModal, setShowProfilesModal] = useState(false);
-
-  // Track real visitor session in Firestore (once per browser session)
-  useVisitorTracking();
   
   // Custom Hooks
   const { 
@@ -165,6 +164,13 @@ function AppContent() {
     hasPrevEpisode,
     hasNextEpisode
   } = useAnimeNavigation();
+
+  // Track real visitor session in Firestore and real-time live telemetry
+  useVisitorTracking(
+    currentUser, 
+    selectedAnime?.title, 
+    activeEpisodeId ? (activeEpisodeId.includes("-ep-") ? `Capítulo ${activeEpisodeId.split("-ep-")[1]}` : `Capítulo ${activeEpisodeId.split("-").pop()}`) : undefined
+  );
 
   const {
     activeCategory,
@@ -212,56 +218,75 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handleDpadNavigation);
   }, []);
 
-  const handleResumeEpisode = React.useCallback(async (animeId: string, episodeId: string) => {
-    const allAnimes = getAnimesWithEpisodes();
-    let found = allAnimes.find(a => a.id === animeId);
-    if (!found) {
-      try {
-        const res = await fetch(`/api/anime/${animeId}`);
-        if (res.ok) {
-          const data = await res.json();
-          // Only use API result if it has a valid, non-generic title
-          const apiTitle = data?.title?.toLowerCase()?.trim() || "";
-          if (data && !data.error && apiTitle && apiTitle !== "consumet" && apiTitle !== "hianime") {
-            found = data;
-          }
-        }
-      } catch (err) {
-        console.error("Error loading resume anime:", err);
-      }
-    }
-    // If still not found (API offline or returned bad data), reconstruct from saved progress metadata
-    if (!found) {
-      const allProgress = getAllLocalProgress(currentUser);
-      const savedProgress = allProgress.find(p => p.animeId === animeId || p.episodeId === episodeId);
-      if (savedProgress) {
-        const cleanTitle = savedProgress.animeTitle && 
+  const handleResumeEpisode = React.useCallback((animeOrId: Anime | string, episodeId: string) => {
+    let anime: Anime;
+    if (typeof animeOrId === "object" && animeOrId !== null) {
+      anime = { ...animeOrId };
+    } else {
+      const animeId = animeOrId as string;
+      const cleanId = animeId.toLowerCase().replace(/^tioanime-/, "");
+      const allAnimes = getAnimesWithEpisodes();
+      const found = allAnimes.find(a => a.id === animeId || a.id === `tioanime-${cleanId}` || a.id.toLowerCase().replace(/^tioanime-/, "") === cleanId);
+      if (found) {
+        anime = { ...found };
+      } else {
+        const allProgress = getAllLocalProgress(currentUser);
+        const savedProgress = allProgress.find(p => p.animeId === animeId || p.episodeId === episodeId);
+        const cleanTitle = savedProgress?.animeTitle && 
           savedProgress.animeTitle.toLowerCase() !== "consumet" && 
           savedProgress.animeTitle.toLowerCase() !== "hianime"
             ? savedProgress.animeTitle
-            : animeId.replace(/^(consumet-|hianime-)/g, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-        
-        found = {
+            : animeId.replace(/^(consumet-|hianime-|tioanime-)/g, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+        anime = {
           id: animeId,
           title: cleanTitle,
           synopsis: "",
-          coverUrl: savedProgress.animeCoverUrl || "",
-          bannerUrl: savedProgress.animeCoverUrl || "",
-          genres: savedProgress.contentType === "movie" ? ["Película"] : ["Anime"],
+          coverUrl: savedProgress?.animeCoverUrl || "",
+          bannerUrl: savedProgress?.animeCoverUrl || "",
+          genres: savedProgress?.contentType === "movie" ? ["Película"] : ["Anime"],
           status: "En emisión",
           rating: 8.5,
-          type: savedProgress.contentType === "movie" ? "Película" : "Anime",
-          episodesCount: 1,
+          type: savedProgress?.contentType === "movie" ? "Película" : "Anime",
+          episodesCount: Math.max(savedProgress?.episodeNumber || 1, 12),
           year: 2026,
-          episodes: [{ id: episodeId, title: `Episodio ${savedProgress.episodeNumber}`, number: savedProgress.episodeNumber, animeId, animeTitle: cleanTitle }]
+          episodes: []
         };
       }
     }
-    if (found) {
-      setSelectedAnime(found);
-      setActiveEpisodeId(episodeId);
+
+    if (!anime.episodes || !Array.isArray(anime.episodes) || anime.episodes.length <= 1) {
+      anime.episodes = generateEpisodesForAnime(anime);
     }
+
+    const targetEpId = episodeId || (anime.episodes && anime.episodes[0]?.id) || `${anime.id}-ep-1`;
+
+    // 🚀 Open video player IMMEDIATELY with 0ms delay!
+    setSelectedAnime(anime);
+    setActiveEpisodeId(targetEpId);
+
+    // Non-blocking background fetch to enrich anime details
+    fetch(`/api/anime/${anime.id}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        const apiTitle = data?.title?.toLowerCase()?.trim() || "";
+        if (data && !data.error && apiTitle && apiTitle !== "consumet" && apiTitle !== "hianime") {
+          setSelectedAnime(prev => {
+            if (!prev || prev.id !== anime.id) return prev;
+            return {
+              ...prev,
+              ...data,
+              episodes: Array.isArray(data.episodes) && data.episodes.length > 0 ? data.episodes : prev.episodes
+            };
+          });
+        }
+      })
+      .catch(() => {});
   }, [setSelectedAnime, setActiveEpisodeId, currentUser]);
+
+  const handlePlayDirectEpisode = React.useCallback((animeOrId: Anime | string, episodeId: string) => {
+    handleResumeEpisode(animeOrId, episodeId);
+  }, [handleResumeEpisode]);
 
   // Handle direct Deep Links (?anime=SLUG, ?id=SLUG, /anime/SLUG, /ver/SLUG) to open Anime Details modal immediately
   useEffect(() => {
@@ -284,20 +309,42 @@ function AppContent() {
         a.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanTarget ||
         a.title.toLowerCase().includes(cleanTarget.replace(/-/g, " "))
       );
+      const epParam = params.get("ep");
+      const pathEp = (window.location.pathname.startsWith("/anime/") || window.location.pathname.startsWith("/ver/"))
+        ? window.location.pathname.replace(/^\/(anime|ver)\//, "").split("/")[1]
+        : null;
+      const targetEp = epParam || pathEp;
+
       if (match) {
-        handleSelectAnime(match);
+        if (targetEp) {
+          const numOnly = targetEp.replace(/^(?:ep|episodio)-?/i, "");
+          const formattedEpId = targetEp.startsWith(match.id)
+            ? targetEp
+            : `${match.id}-ep-${numOnly}`;
+          handlePlayDirectEpisode(match, formattedEpId);
+        } else {
+          handleSelectAnime(match);
+        }
       } else {
         fetch(`/api/anime/${encodeURIComponent(targetSlug)}`)
           .then(r => r.json())
           .then(data => {
             if (data && !data.error && data.title) {
-              handleSelectAnime(data);
+              if (targetEp) {
+                const numOnly = targetEp.replace(/^(?:ep|episodio)-?/i, "");
+                const formattedEpId = targetEp.startsWith(data.id)
+                  ? targetEp
+                  : `${data.id}-ep-${numOnly}`;
+                handlePlayDirectEpisode(data, formattedEpId);
+              } else {
+                handleSelectAnime(data);
+              }
             }
           })
           .catch(() => {});
       }
     }
-  }, [handleSelectAnime]);
+  }, [handleSelectAnime, handlePlayDirectEpisode]);
 
   // Toggle favorite with event (prompt auth for non-registered guest users)
   const handleToggleFavoriteWithEvent = (e: React.MouseEvent, animeId: string) => {
@@ -343,6 +390,69 @@ function AppContent() {
       saveFavorites(mergedFavs);
     }
   };
+
+  // Global native deep link listener for OAuth / App launch callbacks
+  useEffect(() => {
+    const handleAuthDeepLink = async (rawUrl: string) => {
+      if (!rawUrl || (!rawUrl.includes("auth-callback") && !rawUrl.includes("megaanime") && !rawUrl.includes("net.megaanime.app"))) return;
+      try {
+        const getQueryParam = (k: string) => {
+          const m = rawUrl.match(new RegExp(`[?&]${k}=([^&]*)`));
+          return m ? decodeURIComponent(m[1]) : null;
+        };
+        const uid = getQueryParam("uid");
+        const emailParam = getQueryParam("email");
+        const nameParam = getQueryParam("name");
+        const photoParam = getQueryParam("photo");
+
+        if (uid && emailParam) {
+          const cleanEmail = emailParam.toLowerCase().trim();
+          const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
+
+          let userData: any;
+          try {
+            const userDoc = await getDoc(doc(db, "users", uid));
+            if (userDoc.exists()) {
+              userData = userDoc.data();
+              userData.isAdmin = isAdminUser;
+            } else {
+              userData = {
+                id: uid,
+                username: nameParam || cleanEmail.split("@")[0] || "Usuario Google",
+                email: cleanEmail,
+                avatarUrl: photoParam || "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
+                favorites: [],
+                history: [],
+                isAdmin: isAdminUser,
+                createdAt: new Date().toISOString()
+              };
+              await setDoc(doc(db, "users", uid), userData);
+            }
+          } catch (dbErr) {
+            handleFirestoreError(dbErr, OperationType.GET, `users/${uid}`);
+          }
+
+          if (userData) {
+            handleAuthSuccess(userData);
+          }
+        }
+      } catch (e) {
+        console.error("Error handling auth deep link in App:", e);
+      }
+    };
+
+    (window as any).handleOpenURL = (url: string) => {
+      handleAuthDeepLink(url);
+    };
+
+    try {
+      if (CapApp && typeof CapApp.addListener === "function") {
+        CapApp.addListener("appUrlOpen", (data: any) => {
+          if (data && data.url) handleAuthDeepLink(data.url);
+        }).catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
 
   const handleLogout = () => {
     setCurrentUser(null);
@@ -494,6 +604,8 @@ function AppContent() {
           <AdminPanel />
         )}
 
+        {/* Global Responsive Footer with Official Contact Email */}
+        <Footer />
       </main>
 
       <TheatreMode
@@ -516,6 +628,7 @@ function AppContent() {
         onSelectAnime={setSelectedAnime}
         onSelectManga={setSelectedManga}
         currentUser={currentUser}
+        onOpenAuth={() => setShowAuthModal(true)}
       />
 
       {showAuthModal && (

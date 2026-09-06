@@ -632,6 +632,8 @@ export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "one-piece-pelicula-gigantes": "one-piece-film-red",
   "black-torch": "black-torch-sub-espanol",
   "black-torch-sub-espanol": "black-torch-sub-espanol",
+  "tioanime-yomi-no-tsugai": "yomi-no-tsugai",
+  "yomi-no-tsugai": "yomi-no-tsugai",
   "dandadan": "dandadan",
   "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season": "re-zero-kara-hajimeru-isekai-seikatsu-3rd-season",
   "kono-subarashii-sekai-ni-shukufuku-wo-3": "kono-subarashii-sekai-ni-shukufuku-wo-3",
@@ -650,6 +652,8 @@ export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "consumet-196218": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
   "the-frontier-lord-begins-with-zero-subjects": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
   "ryoumin-0-nin-start-no-henkyou-ryoushu-sama": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
+  "tioanime-ryoumin-0nin-start-no-henkyou-ryoushusama": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
+  "ryoumin-0nin-start-no-henkyou-ryoushusama": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
   "ryomin-0-nin-start-no-henkyo-ryoshu-sama": "ryomin-0-nin-start-no-henkyo-ryoshu-sama",
   "180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "consumet-180136": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
@@ -657,6 +661,10 @@ export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru": "tsuihou-sareta-tensei-juukishi-wa-game-chishiki-de-musou-suru",
   "one-punch-man-3": "one-punch-man-3",
   "one-punch-man-season-3": "one-punch-man-3",
+  "one-punch-man-temporada-3": "one-punch-man-3",
+  "one-punch-man-3rd-season": "one-punch-man-3",
+  "one-punch-man-iii": "one-punch-man-3",
+  "tioanime-one-punch-man-3": "one-punch-man-3",
   "one-punch-man": "one-punch-man",
   "one-punch-man-2": "one-punch-man-2nd-season",
   "one-punch-man-ii": "one-punch-man-2nd-season",
@@ -749,7 +757,96 @@ export const MONOSCHINOS_SLUG_MAP: Record<string, string> = {
   "bleach-sennen-kessen-hen": "bleach-sennen-kessen-hen",
   "hunter-x-hunter-2011": "hunter-x-hunter-2011",
   "black-clover": "black-clover",
-  "shingeki-no-kyojin": "shingeki-no-kyojin"
+  "shingeki-no-kyojin": "shingeki-no-kyojin",
+  // Additional popular missing mappings
+  "mushoku-tensei": "mushoku-tensei-isekai-ittara-honki-dasu",
+  "mushoku-tensei-jobless-reincarnation": "mushoku-tensei-isekai-ittara-honki-dasu",
+  "mushoku-tensei-isekai-ittara-honki-dasu": "mushoku-tensei-isekai-ittara-honki-dasu",
+  "tioanime-mushoku-tensei": "mushoku-tensei-isekai-ittara-honki-dasu",
+  "mushoku-tensei-2": "mushoku-tensei-isekai-ittara-honki-dasu-2nd-season",
+  "mushoku-tensei-ii": "mushoku-tensei-isekai-ittara-honki-dasu-2nd-season",
+  "grand-blue-dreaming": "grand-blue",
+  "grand-blue": "grand-blue",
+  "tioanime-grand-blue-dreaming": "grand-blue",
+  "fullmetal-alchemist-brotherhood": "fullmetal-alchemist-brotherhood",
+  "tioanime-fullmetal-alchemist-brotherhood": "fullmetal-alchemist-brotherhood",
+  "attack-on-titan": "shingeki-no-kyojin",
+  "tioanime-attack-on-titan": "shingeki-no-kyojin",
+  "shingeki-no-kyojin-the-final-season-part-2": "shingeki-no-kyojin-the-final-season-part-2",
+  "shingeki-no-kyojin-the-final-season-part-3": "shingeki-no-kyojin-the-final-season-part-3",
+  "demon-slayer": "kimetsu-no-yaiba",
+  "kimetsu-no-yaiba": "kimetsu-no-yaiba",
+  "tioanime-demon-slayer": "kimetsu-no-yaiba",
+  "demon-slayer-kimetsu-no-yaiba": "kimetsu-no-yaiba",
+  "demon-slayer-entertainment-district-arc": "kimetsu-no-yaiba-yuukaku-hen",
+  "demon-slayer-swordsmith-village-arc": "kimetsu-no-yaiba-katanakaji-no-sato-hen",
+  "demon-slayer-hashira-training-arc": "kimetsu-no-yaiba-hashira-geiko-hen",
+  "naruto": "naruto",
+  "tioanime-naruto": "naruto",
+  "sword-art-online": "sword-art-online",
+  "sword-art-online-ii": "sword-art-online-ii",
+  "sword-art-online-alicization": "sword-art-online-alicization",
+  "tioanime-sword-art-online": "sword-art-online",
+  "tokyo-ghoul": "tokyo-ghoul",
+  "tokyo-ghoul-re": "tokyo-ghoulre",
+  "tioanime-tokyo-ghoul": "tokyo-ghoul",
+  "re-zero": "re-zero-kara-hajimeru-isekai-seikatsu",
+  "re-zero-kara-hajimeru-isekai-seikatsu": "re-zero-kara-hajimeru-isekai-seikatsu",
+  "tioanime-re-zero-kara-hajimeru-isekai-seikatsu": "re-zero-kara-hajimeru-isekai-seikatsu",
+  "re-zero-season-2": "re-zero-kara-hajimeru-isekai-seikatsu-2nd-season",
+  "re-zero-2": "re-zero-kara-hajimeru-isekai-seikatsu-2nd-season",
+  "steins-gate": "steins-gate",
+  "tioanime-steins-gate": "steins-gate",
+  "steins-gate-0": "steins-gate-0",
+  "code-geass": "code-geass-hangyaku-no-lelouch",
+  "code-geass-lelouch-of-the-rebellion": "code-geass-hangyaku-no-lelouch",
+  "code-geass-r2": "code-geass-hangyaku-no-lelouch-r2",
+  "tioanime-code-geass": "code-geass-hangyaku-no-lelouch",
+  "no-game-no-life": "no-game-no-life",
+  "tioanime-no-game-no-life": "no-game-no-life",
+  "mob-psycho-100": "mob-psycho-100",
+  "mob-psycho-100-ii": "mob-psycho-100-ii",
+  "mob-psycho-100-iii": "mob-psycho-100-iii",
+  "tioanime-mob-psycho-100": "mob-psycho-100",
+  "dr-stone": "dr-stone",
+  "tioanime-dr-stone": "dr-stone",
+  "dr-stone-3": "dr-stone-new-world",
+  "hunter-x-hunter": "hunter-x-hunter-2011",
+  "tioanime-hunter-x-hunter-2011": "hunter-x-hunter-2011",
+  "fairy-tail": "fairy-tail",
+  "tioanime-fairy-tail": "fairy-tail",
+  "sword-art-online-progressive": "sword-art-online-progressive-movie-hoshi-naki-yoru-no-aria",
+  "overlord": "overlord",
+  "overlord-ii": "overlord-ii",
+  "overlord-iii": "overlord-iii",
+  "overlord-iv": "overlord-iv",
+  "tioanime-overlord": "overlord",
+  "tioanime-overlord-iv": "overlord-iv",
+  "violet-evergarden": "violet-evergarden",
+  "tioanime-violet-evergarden": "violet-evergarden",
+  "vinland-saga": "vinland-saga",
+  "tioanime-vinland-saga": "vinland-saga",
+  "vinland-saga-2": "vinland-saga-season-2",
+  "spy-x-family": "spy-x-family",
+  "tioanime-spy-x-family": "spy-x-family",
+  "spy-x-family-2": "spy-x-family-season-2",
+  "bocchi-the-rock": "bocchi-the-rock",
+  "tioanime-bocchi-the-rock": "bocchi-the-rock",
+  "lycoris-recoil": "lycoris-recoil",
+  "tioanime-lycoris-recoil": "lycoris-recoil",
+  "sword-art-online-alicization-war-of-underworld": "sword-art-online-alicization-war-of-underworld",
+  "kaguya-sama-love-is-war": "kaguya-sama-wa-kokurasetai-tensai-tachi-no-renai-zunousen",
+  "kaguya-sama-season-2": "kaguya-sama-wa-kokurasetai-wa-tensai-tachi-no-love-battle",
+  "kaguya-sama-season-3": "kaguya-sama-wa-kokurasetai-ultra-romantic",
+  "tioanime-kaguya-sama-love-is-war": "kaguya-sama-wa-kokurasetai-tensai-tachi-no-renai-zunousen",
+  "your-lie-in-april": "shigatsu-wa-kimi-no-uso",
+  "tioanime-your-lie-in-april": "shigatsu-wa-kimi-no-uso",
+  "attack-on-titan-season-2": "shingeki-no-kyojin-2",
+  "attack-on-titan-season-3": "shingeki-no-kyojin-3",
+  "attack-on-titan-season-4": "shingeki-no-kyojin-the-final-season",
+  "neon-genesis-evangelion": "neon-genesis-evangelion",
+  "trigun-stampede": "trigun-stampede",
+  "tioanime-trigun-stampede": "trigun-stampede"
 };
 
 export const TIOANIME_SLUG_MAP: Record<string, string> = MONOSCHINOS_SLUG_MAP;
@@ -903,45 +1000,77 @@ export async function scrapeEpisodeFromMonosChinos(
               if (searchRes.ok) {
                 const searchText = await searchRes.text();
                 const searchRegex = /href=["']?(?:https?:\/\/[^\/]+)?\/anime\/([^"'\s>]+)["']?/gi;
-                let searchMatch;
-                const targetWords = query.split(/\s+/);
-                const candidates: Array<{ slug: string; score: number }> = [];
+                const STOP_WORDS = new Set([
+                  "no", "to", "de", "la", "el", "en", "ii", "iii", "iv", "v", "vi", "i", "the", "a", "an", "and", "or", 
+                  "wa", "ga", "wo", "ni", "da", "ha", "tv", "season", "temporada", "part", "parte", "san", 
+                  "kun", "chan", "sama", "anime", "sub", "espanol", "latino", "2nd", "3rd", "4th", "5th",
+                  "yuusha", "isekai", "maou", "tensei", "densetsu", "sekai", "shikabane", "ou", "hen"
+                ]);
+
+                const targetWords = query.toLowerCase().split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+                // Primary distinctive keywords: the first 2 words of the title that are not generic stopwords
+                const primaryKeywords = targetWords.slice(0, 2);
+
+                const candidates: Array<{ slug: string; score: number; significantMatches: number }> = [];
+                let searchMatch: RegExpExecArray | null;
                 while ((searchMatch = searchRegex.exec(searchText)) !== null) {
                   const foundSlug = searchMatch[1].replace(/-sub-espanol$/, "");
-                  const slugWords = foundSlug.split("-");
+                  const slugWords = foundSlug.toLowerCase().split("-");
+
+                  // ANTI-MISMATCH GUARD: The candidate MUST contain at least one of the primary distinctive keywords
+                  const hasPrimaryKeyword = primaryKeywords.length > 0 && primaryKeywords.some(pk => slugWords.includes(pk) || foundSlug.toLowerCase().includes(pk));
+                  if (!hasPrimaryKeyword) {
+                    continue; // Skip completely - does not belong to the requested anime!
+                  }
+
                   let score = 0;
+                  let significantMatches = 0;
+
                   for (const w of slugWords) {
+                    if (STOP_WORDS.has(w)) continue;
                     if (targetWords.includes(w)) {
-                      score += 1;
+                      score += 3;
+                      significantMatches++;
                     }
                   }
 
-                  // Heuristic score adjustments
-                  const movieKeywords = ["movie", "pelicula", "film", "special", "ova", "ona", "3d", "crossover", "especiales"];
-                  const containsMovieWord = movieKeywords.some(w => foundSlug.toLowerCase().includes(w));
-                  if (isMovie) {
-                    if (containsMovieWord) {
-                      score += 5;
+                  // Only consider candidate if at least 1 significant non-stopword matches
+                  if (significantMatches > 0) {
+                    // Heuristic score adjustments
+                    const movieKeywords = ["movie", "pelicula", "film", "special", "ova", "ona", "3d", "crossover", "especiales"];
+                    const containsMovieWord = movieKeywords.some(w => foundSlug.toLowerCase().includes(w));
+                    if (isMovie) {
+                      if (containsMovieWord) {
+                        score += 5;
+                      } else {
+                        score -= 8;
+                      }
                     } else {
-                      score -= 8; // Heavy penalty if it's a movie but found slug lacks movie keywords
+                      if (containsMovieWord) {
+                        score -= 10;
+                      }
                     }
-                  } else {
-                    if (containsMovieWord) {
-                      score -= 10;
+
+                    // Exact match bonus
+                    if (foundSlug.replace(/-tv$/, "") === query.toLowerCase().replace(/\s+/g, "-")) {
+                      score += 15;
+                    }
+
+                    const isSingleWordQuery = targetWords.length === 1;
+                    const matchRatio = targetWords.length > 0 ? (significantMatches / targetWords.length) : 0;
+                    
+                    // Strict threshold: single word requires direct match; multi-word requires at least 50% words or score >= 6
+                    if (isSingleWordQuery ? (score >= 3 && hasPrimaryKeyword) : (matchRatio >= 0.5 || score >= 6)) {
+                      candidates.push({ slug: foundSlug, score, significantMatches });
                     }
                   }
-
-                  // Exact match bonus
-                  if (foundSlug.replace(/-tv$/, "") === query.replace(/\s+/g, "-")) {
-                    score += 4;
-                  }
-
-                  candidates.push({ slug: foundSlug, score });
                 }
 
                 if (candidates.length > 0) {
                   candidates.sort((a, b) => b.score - a.score || a.slug.length - b.slug.length);
-                  if (candidates[0].score >= 0.3) {
+                  // Strict verification: top candidate must have high confidence
+                  const minRequiredScore = targetWords.length === 1 ? 3 : 6;
+                  if (candidates[0].score >= minRequiredScore && candidates[0].significantMatches >= 1) {
                     slug = candidates[0].slug;
                     break;
                   }
@@ -973,10 +1102,6 @@ export async function scrapeEpisodeFromMonosChinos(
           if (isMovie) {
             epUrlCandidates.push(
               `${domain}/ver/${baseSlug}-episodio-1`,
-              `${domain}/ver/${slug}-episodio-1`,
-              `${domain}/ver/${slug}-sub-espanol-episodio-1`,
-              `${domain}/ver/${baseSlug}-pelicula`,
-              `${domain}/ver/${slug}-pelicula`,
               `${domain}/ver/${baseSlug}`,
               `${domain}/ver/${slug}`,
               `${domain}/ver/${animeId}-episodio-1`,
@@ -991,18 +1116,8 @@ export async function scrapeEpisodeFromMonosChinos(
               `${domain}/ver/${baseSlug}-${finalEpNum}`,
               `${domain}/ver/${slug}-${finalEpNum}`,
               `${domain}/ver/${slugSeason}-episodio-${finalEpNum}`,
-              `${domain}/ver/${animeId}-episodio-${finalEpNum}`,
-              `${domain}/ver/${baseSlug}`,
-              `${domain}/ver/${slug}`
+              `${domain}/ver/${animeId}-episodio-${finalEpNum}`
             );
-
-            if (finalEpNum > 1) {
-              epUrlCandidates.push(
-                `${domain}/ver/${baseSlug}-episodio-1`,
-                `${domain}/ver/${slug}-episodio-1`,
-                `${domain}/ver/${slug}-sub-espanol-episodio-1`
-              );
-            }
 
             const ovaNumMatch = (animeId + " " + slug).match(/-(\d+)(?:-[a-z0-9-]+)?$/i);
             if (ovaNumMatch) {
@@ -1256,21 +1371,26 @@ export async function scrapeEpisode(id: string): Promise<Partial<Episode>> {
  */
 function generateMockRecentEpisodes(animes: Anime[]): Episode[] {
   const list: Episode[] = [];
-  animes.forEach((anime) => {
-    // Add latest chapter of each anime
-    const latestChapterNum = anime.episodesCount;
+  const airing = animes.filter(a => a.status === "En emisión" && a.type !== "Película");
+  const otherRecent = animes.filter(a => a.status !== "En emisión" && a.type !== "Película");
+  const combined = [...airing, ...otherRecent].slice(0, 36);
+
+  combined.forEach((anime) => {
+    const latestChapterNum = anime.airedEpisodesCount || anime.episodesCount || 1;
     list.push({
-      id: `${anime.id}-${latestChapterNum}`,
-      title: `${anime.title} - Episodio ${latestChapterNum}`,
+      id: `${anime.id}-ep-${latestChapterNum}`,
+      title: anime.type === "Película"
+        ? anime.title
+        : `${anime.title} - Episodio ${latestChapterNum}`,
       number: latestChapterNum,
       animeId: anime.id,
       animeTitle: anime.title,
       coverUrl: anime.coverUrl,
-      videoUrl: `/api/admin/scrape-episode?episodeId=${anime.id}-${latestChapterNum}&animeId=${anime.id}&epNum=${latestChapterNum}`,
+      videoUrl: `/api/episode/${anime.id}-ep-${latestChapterNum}`,
       releaseDate: "Hoy"
     });
   });
-  return list.sort(() => 0.5 - Math.random()).slice(0, 12);
+  return list.slice(0, 24);
 }
 
 /**
@@ -1402,10 +1522,9 @@ export async function scrapeEpisodeFromTioAnime(
     .replace(/-sub-espanol$/, "")
     .replace(/-(?:ep|episodio)-\d+$/i, "");
 
+  const isMovie = slug.includes("-pelicula") || slug.includes("-movie");
   const cleanSlug = TIOANIME_SLUG_MAP[rawClean.toLowerCase()] || rawClean;
 
-  // For movies try all common movie URL patterns on TioAnime
-  const isMovie = slug.includes("-pelicula") || slug.includes("movie") || slug.includes("pelicula");
   const candidates = isMovie
     ? [
         `https://tioanime.com/ver/${cleanSlug}-1`,
@@ -1415,12 +1534,17 @@ export async function scrapeEpisodeFromTioAnime(
         `https://tioanime.com/ver/${cleanSlug}-movie-1`,
         `https://tioanime.com/ver/${cleanSlug}-movie`
       ]
-    : [
-        `https://tioanime.com/ver/${cleanSlug}-${epNum}`,
-        `https://tioanime.com/ver/${rawClean}-${epNum}`,
-        `https://tioanime.com/ver/${cleanSlug}-1`,
-        `https://tioanime.com/ver/${cleanSlug}`
-      ];
+    : (epNum === 1
+        ? [
+            `https://tioanime.com/ver/${cleanSlug}-1`,
+            `https://tioanime.com/ver/${rawClean}-1`,
+            `https://tioanime.com/ver/${cleanSlug}`,
+            `https://tioanime.com/ver/${rawClean}`
+          ]
+        : [
+            `https://tioanime.com/ver/${cleanSlug}-${epNum}`,
+            `https://tioanime.com/ver/${rawClean}-${epNum}`
+          ]);
 
   for (const cand of candidates) {
     try {
@@ -1445,18 +1569,20 @@ export async function scrapeEpisodeFromTioAnime(
               }
             }
             if (servers.length > 0) {
-              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Mega > Mp4Upload > Okru
+              // Prioritize reliable active servers: Direct MP4/M3U8 > Voe > Streamwish > Mp4Upload > TioAnime Embeds (Amus, Mepu, Netu) > others
               servers.sort((a, b) => {
                 const score = (s: { name: string; url: string }) => {
                   const u = s.url.toLowerCase();
                   const n = s.name.toLowerCase();
                   if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 100;
-                  if (u.includes("yourupload") || n.includes("yourupload")) return 98;
                   if (u.includes("voe.sx") || u.includes("voe.") || n.includes("voe")) return 95;
-                  if (u.includes("mega.nz") || n.includes("mega")) return 90;
-                  if (u.includes("mp4upload") || n.includes("mp4upload")) return 85;
-                  if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 70;
-                  if (u.includes("bysekoze")) return 10;
+                  if (u.includes("streamwish") || u.includes("filelions") || n.includes("wish")) return 94;
+                  if (u.includes("mp4upload") || n.includes("mp4upload")) return 93;
+                  if (u.includes("amus") || n.includes("amus") || u.includes("mepu") || n.includes("mepu") || u.includes("tioanime.com/embed") || u.includes("embed.php")) return 92;
+                  if (u.includes("yourupload") || n.includes("yourupload")) return 90;
+                  if (u.includes("mega.nz") || n.includes("mega")) return 85;
+                  if (u.includes("hqq.tv") || u.includes("netu") || n.includes("netu")) return 80;
+                  if (u.includes("ok.ru") || u.includes("okru") || n.includes("okru")) return 0;
                   return 50;
                 };
                 return score(b) - score(a);

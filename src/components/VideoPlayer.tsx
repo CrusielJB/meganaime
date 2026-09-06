@@ -21,7 +21,17 @@ import {
   Sparkles,
   Globe,
   Flag,
-  AlertTriangle
+  AlertTriangle,
+  Film,
+  ThumbsUp,
+  ThumbsDown,
+  Download,
+  MoreVertical,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  SkipBack,
+  SkipForward
 } from "lucide-react";
 import { Episode, User } from "../types";
 import Hls from "hls.js";
@@ -33,10 +43,26 @@ import CommentSection from "./CommentSection";
 import { resolveEmbedUrl } from "../utils/resolvers";
 import { sendUserReport } from "../utils/reports";
 import { getApiUrl } from "../utils/apiConfig";
+import { Capacitor } from "@capacitor/core";
 
 function isEmbedUrl(url: string): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
+
+  // Direct media streams and raw downloads always use our native <video> player
+  if (
+    lower.includes("/api/gdrive-stream") ||
+    lower.includes("/api/proxy-stream") ||
+    lower.includes("blob:") ||
+    lower.endsWith(".mp4") ||
+    lower.endsWith(".m3u8") ||
+    lower.endsWith(".webm") ||
+    lower.includes(".mp4?") ||
+    lower.includes(".m3u8?")
+  ) {
+    return false;
+  }
+
   if (
     lower.includes("embed") ||
     lower.includes("iframe") ||
@@ -100,6 +126,7 @@ interface VideoPlayerProps {
   hasPrev: boolean;
   hasNext: boolean;
   currentUser?: User | null;
+  onOpenAuth?: () => void;
   onProgressSave?: (animeId: string, episodeId: string, episodeNumber: number, progressSeconds: number, durationSeconds: number) => void;
 }
 
@@ -115,6 +142,7 @@ export default function VideoPlayer({
   hasPrev,
   hasNext,
   currentUser = null,
+  onOpenAuth,
   onProgressSave
 }: VideoPlayerProps) {
   const [episodeData, setEpisodeData] = useState<Partial<Episode> | null>(null);
@@ -181,18 +209,59 @@ export default function VideoPlayer({
   const [nextEpCountdown, setNextEpCountdown] = useState(10);
   const [copiedTimestamp, setCopiedTimestamp] = useState(false);
 
-  // Check URL query param ?t= for direct timestamp seeking
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const timeParam = params.get("t");
-    if (timeParam && !isNaN(parseFloat(timeParam)) && parseFloat(timeParam) > 0) {
-      const targetTime = parseFloat(timeParam);
-      if (videoRef.current) {
-        videoRef.current.currentTime = targetTime;
-      }
-    }
-  }, [episodeId]);
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+  const [showAllEpisodesSheet, setShowAllEpisodesSheet] = useState(false);
+  const [isDownloadingOffline, setIsDownloadingOffline] = useState(false);
+  const [downloadOfflineSuccess, setDownloadOfflineSuccess] = useState(false);
 
+  // YouTube-Style Double Tap / Multi-Click 10s Seek State
+  const [seekFeedback, setSeekFeedback] = useState<"rewind" | "forward" | null>(null);
+  const [seekSeconds, setSeekSeconds] = useState<number>(10);
+  const seekTimeoutRef = useRef<any>(null);
+  const lastTapRef = useRef<{ time: number; side: "left" | "right" | "center" }>({ time: 0, side: "center" });
+
+  const handleZoneClick = (side: "left" | "right" | "center") => {
+    const now = Date.now();
+    const isDoubleTap = now - lastTapRef.current.time < 350 && lastTapRef.current.side === side;
+    lastTapRef.current = { time: now, side };
+
+    if (side === "left" && isDoubleTap) {
+      // YouTube-style Rewind 10s
+      if (videoRef.current) {
+        const newTime = Math.max(0, videoRef.current.currentTime - 10);
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+      setSeekSeconds(prev => (seekFeedback === "rewind" ? prev + 10 : 10));
+      setSeekFeedback("rewind");
+      if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
+      seekTimeoutRef.current = setTimeout(() => {
+        setSeekFeedback(null);
+        setSeekSeconds(10);
+      }, 800);
+    } else if (side === "right" && isDoubleTap) {
+      // YouTube-style Forward 10s
+      if (videoRef.current) {
+        const newTime = Math.min(duration, videoRef.current.currentTime + 10);
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+      setSeekSeconds(prev => (seekFeedback === "forward" ? prev + 10 : 10));
+      setSeekFeedback("forward");
+      if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
+      seekTimeoutRef.current = setTimeout(() => {
+        setSeekFeedback(null);
+        setSeekSeconds(10);
+      }, 800);
+    } else if (side === "center" || !isDoubleTap) {
+      // Single tap / center tap toggles play
+      setTimeout(() => {
+        if (Date.now() - lastTapRef.current.time >= 300) {
+          togglePlay();
+        }
+      }, 300);
+    }
+  };
 
   const episodeNumber = React.useMemo(() => {
     if (episodeData?.number !== undefined) return episodeData.number;
@@ -229,6 +298,52 @@ export default function VideoPlayer({
     }
     return rawTitle;
   }, [episodeData, episodeId, animeTitle]);
+
+  const matchedAnime = React.useMemo(() => {
+    const normId = normalizeAnimeId(animeId, animeTitle);
+    try {
+      return getAnimesWithEpisodes().find(a => a.id === normId) || null;
+    } catch (e) {
+      return null;
+    }
+  }, [animeId, animeTitle]);
+
+  const allEpisodes = React.useMemo(() => {
+    return matchedAnime?.episodes || [];
+  }, [matchedAnime]);
+
+  const nextEpisodeObj = React.useMemo(() => {
+    if (!allEpisodes || allEpisodes.length === 0) return null;
+    const currIdx = allEpisodes.findIndex(e => e.id === episodeId);
+    if (currIdx !== -1 && currIdx < allEpisodes.length - 1) {
+      return allEpisodes[currIdx + 1];
+    }
+    return null;
+  }, [allEpisodes, episodeId]);
+
+  const synopsisText = React.useMemo(() => {
+    return (
+      episodeData?.synopsis ||
+      episodeData?.description ||
+      matchedAnime?.synopsis ||
+      matchedAnime?.description ||
+      "Disfruta de este episodio en megaAnime con máxima velocidad de reproducción y calidad nativa Full HD."
+    );
+  }, [episodeData, matchedAnime]);
+
+
+
+  // Check URL query param ?t= for direct timestamp seeking
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const timeParam = params.get("t");
+    if (timeParam && !isNaN(parseFloat(timeParam)) && parseFloat(timeParam) > 0) {
+      const targetTime = parseFloat(timeParam);
+      if (videoRef.current) {
+        videoRef.current.currentTime = targetTime;
+      }
+    }
+  }, [episodeId]);
 
   // Check and load offline downloaded video from IndexedDB
   useEffect(() => {
@@ -285,42 +400,87 @@ export default function VideoPlayer({
       : [])
   ];
 
-  // Purge YouTube embeds, YourUpload, and Mega download links (if other streaming servers exist)
+  // Purge dead/seized hosts, YouTube embeds, and copyright-blocked servers
   const filteredServers = rawServersList.filter(s => {
     if (!s || !s.url) return false;
     const u = s.url.toLowerCase();
     const n = (s.name || "").toLowerCase();
     if (u.includes("youtube.com") || u.includes("youtu.be")) return false;
-    if ((u.includes("yourupload") || n.includes("yourupload") || u.includes("bysekoze")) && rawServersList.length > 1) {
+    // Purge dead domain parking / seized hosts (StreamSB, Fembed, etc.)
+    if (
+      u.includes("streamsb") || u.includes("embedsb") || u.includes("sbembed") ||
+      u.includes("sbvideo") || u.includes("watchsb") || u.includes("streamsss") ||
+      u.includes("sbfull") || n.includes("streamsb") || n.includes("sb (")
+    ) {
       return false;
     }
-    // Filter out mega.nz download links if streaming embed servers exist (prevents Mega redirect to download screen)
-    const hasStreamingServer = rawServersList.some(other => {
-      const otherUrl = (other?.url || "").toLowerCase();
-      return !otherUrl.includes("mega.nz") && !otherUrl.includes("mega.co.nz") && (
-        otherUrl.includes("voe") || otherUrl.includes("streamwish") || otherUrl.includes("mp4upload") ||
-        otherUrl.includes("savefiles") || otherUrl.includes("dsvplay") || otherUrl.includes("ok.ru") ||
-        otherUrl.endsWith(".mp4") || otherUrl.endsWith(".m3u8")
-      );
-    });
-    if ((u.includes("mega.nz") || u.includes("mega.co.nz")) && hasStreamingServer) {
+    if (u.includes("fembed") || u.includes("feurl") || u.includes("femax20") || u.includes("bysekoze")) return false;
+    // Purge ok.ru completely if any other server exists (prevents copyright blocked screen)
+    if ((u.includes("ok.ru") || n.includes("okru")) && rawServersList.length > 1) {
       return false;
     }
+
+    // ANTI-MISMATCH GUARD: Prevent servers belonging to another anime from being played
+    const currentAnimeNormalized = (animeTitle + " " + animeId).toLowerCase().replace(/[^a-z0-9]/g, "");
+    const KNOWN_ANIME_DISTINCT_KEYS = [
+      "clevatess", "onepiece", "naruto", "bleach", "boruto", "dragonball",
+      "jujutsukaisen", "chainsawman", "sololeveling", "frieren",
+      "mushokutensei", "shingekinokyojin", "attackontitan", "bokunohero", "myheroacademia",
+      "blackclover", "fairytail", "kimetsunoyaiba", "demonslayer", "hunterxhunter",
+      "deathnote", "dandadan", "overlord", "spyxfamily", "tokyoghoul", "rezero"
+    ];
+
+    const cleanUrl = u.replace(/[^a-z0-9]/g, "");
+    const cleanName = n.replace(/[^a-z0-9]/g, "");
+
+    for (const key of KNOWN_ANIME_DISTINCT_KEYS) {
+      const isTargetAnime = currentAnimeNormalized.includes(key);
+      if (!isTargetAnime) {
+        if (cleanUrl.includes(key) || cleanName.includes(key)) {
+          console.warn(`[Anti-Mismatch Player Guard] Dropped server ${s.name} (${s.url}) - belongs to ${key}`);
+          return false;
+        }
+      }
+    }
+
     return true;
   });
 
-  // Sort instant autoplay servers (Google Drive, Direct Stream, Voe, Streamwish, Mp4Upload) to the top
-  const servers = [...filteredServers].sort((a, b) => {
+  // Check if a Google Drive / MegaAnime Direct server exists in the list
+  const hasDriveServer = filteredServers.some(s => {
+    const u = (s.url || "").toLowerCase();
+    const n = (s.name || "").toLowerCase();
+    return u.includes("drive.google.com") || u.includes("drive.usercontent.google.com") || u.includes("gdrive-stream") || u.includes("google.com/file") ||
+           n.includes("megaanime") || n.includes("sin anuncios") || n.includes("exclusivo");
+  });
+
+  // If Drive server exists: keep ONLY the Drive server, discard all external servers
+  // This guarantees: auto-play from our server, no ads, no server selector shown
+  const serversBeforeSort = hasDriveServer
+    ? filteredServers.filter(s => {
+        const u = (s.url || "").toLowerCase();
+        const n = (s.name || "").toLowerCase();
+        return u.includes("drive.google.com") || u.includes("drive.usercontent.google.com") || u.includes("gdrive-stream") || u.includes("google.com/file") ||
+               n.includes("megaanime") || n.includes("sin anuncios") || n.includes("exclusivo") ||
+               n.includes("reproducción local");
+      })
+    : filteredServers;
+
+  // Sort: Drive/MegaAnime always first, then best external servers
+  const servers = [...serversBeforeSort].sort((a, b) => {
     const getScore = (s: { name: string; url: string }) => {
-      const u = s.url.toLowerCase();
+      const u = (s.url || "").toLowerCase();
       const n = (s.name || "").toLowerCase();
-      if (u.includes("drive.google.com") || n.includes("drive") || n.includes("megaanime drive")) return 0;
+      if (u.includes("drive.google.com") || u.includes("gdrive-stream") || u.includes("google.com/file") || n.includes("drive") || n.includes("megaanime")) return 0;
       if (u.endsWith(".mp4") || u.endsWith(".m3u8") || u.includes(".mp4?") || u.includes(".m3u8?")) return 1;
       if (u.includes("voe") || n.includes("voe")) return 2;
       if (u.includes("streamwish") || u.includes("filelions") || n.includes("wish")) return 3;
       if (u.includes("mp4upload") || n.includes("mp4upload")) return 4;
-      if (u.includes("ok.ru") || n.includes("okru")) return 5;
-      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 6;
+      if (u.includes("yourupload") || n.includes("yourupload")) return 5;
+      if (u.includes("amus") || n.includes("amus") || u.includes("mepu") || n.includes("mepu") || u.includes("tioanime.com/embed") || u.includes("embed.php")) return 6;
+      if (u.includes("mega.nz") || u.includes("mega.co.nz") || n.includes("mega")) return 7;
+      if (u.includes("hqq.tv") || u.includes("netu") || n.includes("netu")) return 8;
+      if (u.includes("ok.ru") || n.includes("okru")) return 99;
       return 10;
     };
     return getScore(a) - getScore(b);
@@ -333,8 +493,11 @@ export default function VideoPlayer({
     let isMounted = true;
 
     const findAndSelectCustomPlayerServer = async () => {
-      // 0. If Google Drive server exists, select it IMMEDIATELY as top priority
-      const driveIdx = servers.findIndex(s => s && s.url && (s.url.includes("drive.google.com") || (s.name && s.name.toLowerCase().includes("drive"))));
+      // 0. If Google Drive / MegaAnime Direct server exists, select it IMMEDIATELY as top priority
+      const driveIdx = servers.findIndex(s => s && (
+        (s.url && (s.url.includes("drive.google.com") || s.url.includes("gdrive-stream") || s.url.includes("google.com/file"))) ||
+        (s.name && (s.name.toLowerCase().includes("megaanime") || s.name.toLowerCase().includes("drive") || s.name.toLowerCase().includes("exclusivo")))
+      ));
       if (driveIdx !== -1) {
         if (isMounted) {
           setActiveServerIdx(driveIdx);
@@ -373,10 +536,14 @@ export default function VideoPlayer({
           }
         }
 
-        // 2. If no direct stream, select the first ALIVE embed server (skipping dead 404 servers)
+        // 2. If no direct stream, select the first ALIVE embed server (skipping dead 404 servers & okru)
         for (const res of results) {
           if (res.status === "fulfilled" && res.value.resolved && !res.value.resolved.dead) {
             const { idx } = res.value;
+            const s = servers[idx];
+            const u = (s?.url || "").toLowerCase();
+            const n = (s?.name || "").toLowerCase();
+            if ((u.includes("ok.ru") || n.includes("okru")) && servers.length > 1) continue;
             console.log(`[Auto-Player] Server #${idx + 1} (${servers[idx].name}) is an active embed! Auto-selecting.`);
             setActiveServerIdx(idx);
             return;
@@ -396,6 +563,30 @@ export default function VideoPlayer({
   const activeServer = servers[activeServerIdx] || servers[0];
   const isEmbed = activeServer ? isEmbedUrl(activeServer.url) : false;
 
+  const isDriveServer = Boolean(
+    activeServer && (
+      (activeServer.name && (
+        activeServer.name.toLowerCase().includes("drive") ||
+        activeServer.name.toLowerCase().includes("megaanime") ||
+        activeServer.name.toLowerCase().includes("exclusivo") ||
+        activeServer.name.toLowerCase().includes("sin anuncios")
+      )) ||
+      (activeServer.url && (
+        activeServer.url.includes("drive.google.com") ||
+        activeServer.url.includes("google.com/file") ||
+        activeServer.url.includes("gdrive-stream")
+      ))
+    )
+  );
+
+  const fallbackServerIdx = servers.findIndex((s, idx) => {
+    if (idx === activeServerIdx) return false;
+    const name = (s.name || "").toLowerCase();
+    const url = (s.url || "").toLowerCase();
+    const isDrv = name.includes("drive") || name.includes("megaanime") || name.includes("exclusivo") || name.includes("sin anuncios") || url.includes("drive.google.com") || url.includes("google.com/file");
+    return !isDrv;
+  });
+
   // Resolve link dynamically on server selection change (fast & non-blocking)
   useEffect(() => {
     if (!activeServer) return;
@@ -405,9 +596,29 @@ export default function VideoPlayer({
     setResolvedIsHls(false);
 
     const checkAndResolve = async () => {
+      // 0. Dedicated Google Drive Server: use clean embed player with header mask
+      const isDrive = (activeServer.url || "").includes("drive.google.com") || 
+                      (activeServer.url || "").includes("drive.usercontent.google.com") ||
+                      (activeServer.name || "").toLowerCase().includes("megaanime") ||
+                      (activeServer.name || "").toLowerCase().includes("sin anuncios");
+
+      if (isDrive) {
+        const fileMatch = activeServer.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                          activeServer.url.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+                          activeServer.url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (fileMatch) {
+          const previewUrl = `https://drive.google.com/file/d/${fileMatch[1]}/preview?rm=minimal`;
+          setResolvedStreamUrl(previewUrl);
+          setUseResolvedPlayer(false);
+          setResolvedIsHls(false);
+          setIsResolving(false);
+          return;
+        }
+      }
+
       const direct = !isEmbedUrl(activeServer.url);
       if (direct) {
-        setResolvedStreamUrl(activeServer.url);
+        setResolvedStreamUrl(getApiUrl(activeServer.url));
         setUseResolvedPlayer(true);
         setResolvedIsHls(activeServer.url.toLowerCase().split("?")[0].split("#")[0].endsWith(".m3u8"));
         setIsResolving(false);
@@ -709,6 +920,11 @@ export default function VideoPlayer({
     if (!activeServer || !isEmbedUrl(activeServer.url)) return "";
     
     let url = activeServer.url;
+    const isDrive = url.toLowerCase().includes("drive.google.com/file/d/");
+    
+    // Drive preview URLs don't accept external start/autoplay params — return as-is
+    if (isDrive) return url;
+
     const saved = getLocalEpisodeProgress(animeId, currentUser, resolvedTitle);
     if (saved && saved.episodeId === episodeId && saved.progressSeconds > 5) {
       const duration = saved.durationSeconds || 1440;
@@ -1071,61 +1287,30 @@ export default function VideoPlayer({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 animate-fade-in pb-[env(safe-area-inset-bottom,0px)]">
       {/* Top Controls Bar with iOS Safe Area Inset Support */}
-      <div className={`flex items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-10 flex-shrink-0 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] min-h-[calc(4rem+env(safe-area-inset-top,0px))] pb-2 ${
+      <div className={`flex items-center justify-between border-b border-white/5 bg-black/95 px-4 sm:px-6 z-40 flex-shrink-0 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] min-h-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-2 ${
         isFullscreen && !showControls ? "opacity-0 pointer-events-none -translate-y-full" : "opacity-100"
       }`}>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-neutral-400 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
-            title="Volver"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <img 
-            src={getProxyImageUrl(resolvedCover, resolvedTitle)} 
-            alt={resolvedTitle} 
-            className="h-10 w-8 object-cover rounded shadow border border-white/10"
-            onError={(e) => {
-              recoverCoverImageInHotPath(e, resolvedTitle, animeId, "ANIME");
-            }}
-          />
-          <div>
-            <span className="text-xs text-rose-500 font-bold uppercase tracking-widest">{resolvedTitle}</span>
-            <h1 className="text-sm font-bold text-neutral-100 line-clamp-1">{displayTitle}</h1>
-          </div>
-        </div>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-neutral-300 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
+          title="Volver"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
 
-        {/* Action controls (Immersive Toggle / Close) */}
-        <div className="flex items-center space-x-2">
-          {/* Immersive Info Toggle Button */}
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`flex h-10 px-4 items-center justify-center gap-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-              isSidebarOpen
-                ? "bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/25"
-                : "bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10 hover:text-white"
-            }`}
-            title="Ver información del episodio"
-          >
-            <Menu className="h-4 w-4" />
-            <span>{activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? "Episodio e Info" : "Servidores e Info"}</span>
-          </button>
-
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-neutral-400 hover:text-white hover:bg-rose-500/10 hover:text-rose-400 transition cursor-pointer"
-            title="Cerrar reproductor"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-neutral-300 hover:text-white hover:bg-rose-500/10 hover:text-rose-400 transition cursor-pointer"
+          title="Cerrar reproductor"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Main Theatre Frame split in Video vs Sidebar info */}
-      <div className="flex-grow flex flex-col lg:flex-row overflow-hidden relative">
-        {/* Left Side: Huge Cinema Player viewport (Takes 100% when sidebar is closed) */}
-        <div className="flex-grow flex-1 min-h-[45vh] lg:min-h-0 lg:h-full bg-black relative flex items-center justify-center overflow-hidden p-0 sm:p-2">
+      {/* Main Unified Scrollable Frame (Same on Web and Mobile App) */}
+      <div className="flex-grow flex flex-col overflow-y-auto relative w-full bg-neutral-950">
+        {/* Top Cinema Player viewport (100% full-width edge-to-edge horizontally, comfortable vertical height) */}
+        <div className="w-full aspect-video max-h-[48vh] sm:max-h-[52vh] md:max-h-[56vh] bg-black relative flex items-center justify-center overflow-hidden p-0 shrink-0 sticky top-0 z-30 shadow-2xl">
           {loading ? (
             <div className="flex flex-col items-center justify-center space-y-4 text-center p-6">
               <div className="h-12 w-12 rounded-full border-2 border-t-2 border-neutral-800 border-t-rose-500 animate-spin" />
@@ -1178,7 +1363,11 @@ export default function VideoPlayer({
                   <iframe
                     key={embedUrlWithTime}
                     src={embedUrlWithTime}
-                    className="w-full h-full border-0"
+                    className={`w-full border-0 ${
+                      (activeServer.url || "").includes("drive.google.com")
+                        ? "h-[calc(100%+56px)] -mt-[56px]"
+                        : "h-full"
+                    }`}
                     allowFullScreen
                     // @ts-ignore
                     webkitallowfullscreen="true"
@@ -1189,15 +1378,24 @@ export default function VideoPlayer({
                     title={activeServer.name}
                   />
 
-                  {/* Dedicated Mobile Fullscreen Floating Button for Embed Players */}
-                  <button
-                    onClick={toggleFullscreen}
-                    className="absolute bottom-4 left-4 bg-black/85 hover:bg-black text-white px-3 py-2 rounded-xl border border-white/20 text-xs font-bold flex items-center gap-2 shadow-2xl z-30 cursor-pointer transition active:scale-95 backdrop-blur-md"
-                    title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                  {/* Top Header Mask for Drive Preview (Prevents seeing Google Drive header & popout button) */}
+                  {(activeServer.url || "").includes("drive.google.com") && (
+                    <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-neutral-950/80 to-transparent pointer-events-none z-10" />
+                  )}
+
+                  {/* Solid MegaAnime Floating Watermark Covering Third-Party Watermarks */}
+                  <div 
+                    className="absolute top-2.5 right-3 sm:top-4 sm:right-5 z-20 pointer-events-none select-none flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-950/95 border border-white/15 shadow-2xl backdrop-blur-md"
+                    style={{ minWidth: "145px" }}
+                    title="megaAnime PRO HD"
                   >
-                    {isFullscreen ? <Minimize className="h-4 w-4 text-rose-500" /> : <Maximize className="h-4 w-4 text-rose-500" />}
-                    <span className="text-[11px] font-semibold">{isFullscreen ? "Salir Fullscreen" : "Pantalla Completa"}</span>
-                  </button>
+                    <span className="text-xs sm:text-sm font-black text-rose-500 tracking-tight drop-shadow-sm">
+                      mega<span className="text-white">Anime</span>
+                    </span>
+                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-600 text-white leading-none tracking-wider">
+                      PRO HD
+                    </span>
+                  </div>
 
                 </div>
               ) : (
@@ -1217,7 +1415,6 @@ export default function VideoPlayer({
                     controls={false}
                     autoPlay
                     playsInline
-                    referrerPolicy="no-referrer-when-downgrade"
                     onClick={togglePlay}
                     onDoubleClick={toggleFullscreen}
                     onTimeUpdate={() => {
@@ -1236,235 +1433,342 @@ export default function VideoPlayer({
                       }
                     }}
                     onError={() => {
+                      if (hasDriveServer) {
+                        console.warn("[Auto-Player] Direct Drive video stream active, maintaining native player.");
+                        return;
+                      }
                       console.warn(`[Auto-Player] Direct video stream error on server #${activeServerIdx + 1}. Falling back to embed player.`);
                       setUseResolvedPlayer(false);
                       setResolvedStreamUrl(activeServer.url);
                     }}
                   />
                   
-                  {/* Center Play/Pause Animated Feedback */}
-                  {showCenterFeedback && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none z-10 animate-ping">
-                      <div className="p-5 rounded-full bg-black/60 text-rose-500">
-                        {showCenterFeedback === "play" ? (
-                          <Play className="h-10 w-10 fill-rose-500" />
-                        ) : (
-                          <Pause className="h-10 w-10 fill-rose-500" />
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Skip Intro Floating Overlay */}
-                  {currentTime >= 85 && currentTime <= 175 && (
-                    <button
-                      onClick={() => {
-                        if (videoRef.current) {
-                          videoRef.current.currentTime = 175;
-                          setCurrentTime(175);
-                        }
-                      }}
-                      className="absolute bottom-20 right-6 px-6 py-3 bg-rose-600/90 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl shadow-2xl border border-rose-500/20 backdrop-blur-md transition hover:scale-105 cursor-pointer z-30"
-                    >
-                      Omitir Introducción (Skip Intro)
-                    </button>
-                  )}
-
-                  {/* Next Episode Countdown Overlay */}
-                  {showNextEpPrompt && hasNext && (
-                    <div className="absolute bottom-24 right-6 p-5 rounded-2xl bg-neutral-900/90 border border-white/5 backdrop-blur-md shadow-2xl text-center flex flex-col items-center gap-3 animate-slide-in max-w-xs z-30">
-                      <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">Siguiente Capítulo</span>
-                      <h4 className="text-xs font-bold text-white">Comienza en {nextEpCountdown} segundos...</h4>
-                      <div className="flex gap-2 w-full mt-1.5">
-                        <button
-                          onClick={() => {
-                            onNavigateEpisode("next");
-                          }}
-                          className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] rounded-lg transition cursor-pointer"
-                        >
-                          Ver Ahora
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowNextEpPrompt(false);
-                          }}
-                          className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-[10px] rounded-lg transition cursor-pointer"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Premium Custom Control Bar */}
-                  <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/85 to-transparent px-6 pb-6 pt-16 flex flex-col gap-4 transition-all duration-300 z-20 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                    
-                    {/* Time Scrubber (Seekbar) */}
-                    <div className="flex items-center gap-4 w-full">
-                      <input
-                        type="range"
-                        min={0}
-                        max={duration || 100}
-                        value={currentTime}
-                        onChange={(e) => {
-                          const time = parseFloat(e.target.value);
-                          if (videoRef.current) {
-                            videoRef.current.currentTime = time;
-                          }
-                          setCurrentTime(time);
-                        }}
-                        className="w-full h-1.5 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none"
+                    {/* Interactive YouTube-style Double Tap & Click Zones */}
+                    <div className="absolute inset-0 grid grid-cols-3 z-10">
+                      {/* Left Zone: Double tap to Rewind 10s */}
+                      <div 
+                        onClick={() => handleZoneClick("left")} 
+                        className="h-full w-full cursor-pointer active:bg-white/5 transition-colors select-none"
+                        title="Doble clic / toque: Retroceder 10s"
+                      />
+                      {/* Center Zone: Play / Pause */}
+                      <div 
+                        onClick={() => handleZoneClick("center")} 
+                        className="h-full w-full cursor-pointer select-none"
+                        title="Pausar / Reproducir"
+                      />
+                      {/* Right Zone: Double tap to Forward 10s */}
+                      <div 
+                        onClick={() => handleZoneClick("right")} 
+                        className="h-full w-full cursor-pointer active:bg-white/5 transition-colors select-none"
+                        title="Doble clic / toque: Adelantar 10s"
                       />
                     </div>
 
-                    {/* Actions and Indicators Row */}
-                    <div className="flex items-center justify-between">
-                      {/* Left: Playback controls & Time */}
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={togglePlay}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                        >
-                          {isPlaying ? <Pause className="h-5 w-5 fill-white text-white" /> : <Play className="h-5 w-5 fill-white text-white" />}
-                        </button>
+                    {/* YouTube-Style Center Animated Rewind Ripple */}
+                    {seekFeedback === "rewind" && (
+                      <div className="absolute left-10 sm:left-20 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center p-4 sm:p-5 rounded-full bg-black/80 text-rose-400 border border-rose-500/30 backdrop-blur-md shadow-2xl animate-scale-up pointer-events-none z-30">
+                        <RotateCcw className="h-8 w-8 sm:h-10 sm:w-10 animate-spin" />
+                        <span className="text-xs sm:text-sm font-black text-white mt-1">-{seekSeconds}s</span>
+                      </div>
+                    )}
 
-                        <button
-                          onClick={() => {
-                            if (videoRef.current) {
-                              videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
-                            }
-                          }}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          title="Retroceder 10s"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </button>
+                    {/* YouTube-Style Center Animated Forward Ripple */}
+                    {seekFeedback === "forward" && (
+                      <div className="absolute right-10 sm:right-20 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center p-4 sm:p-5 rounded-full bg-black/80 text-rose-400 border border-rose-500/30 backdrop-blur-md shadow-2xl animate-scale-up pointer-events-none z-30">
+                        <RotateCw className="h-8 w-8 sm:h-10 sm:w-10 animate-spin" />
+                        <span className="text-xs sm:text-sm font-black text-white mt-1">+{seekSeconds}s</span>
+                      </div>
+                    )}
+                  
+                    {/* Center Play/Pause Animated Feedback */}
+                    {showCenterFeedback && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none z-10 animate-ping">
+                        <div className="p-5 rounded-full bg-black/60 text-rose-500">
+                          {showCenterFeedback === "play" ? (
+                            <Play className="h-10 w-10 fill-rose-500" />
+                          ) : (
+                            <Pause className="h-10 w-10 fill-rose-500" />
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                        <button
-                          onClick={() => {
-                            if (videoRef.current) {
-                              videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
-                            }
-                          }}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          title="Adelantar 10s"
-                        >
-                          <RotateCw className="h-4 w-4" />
-                        </button>
+                    {/* Solid MegaAnime Floating Watermark Covering Third-Party Watermarks */}
+                    <div 
+                      className="absolute top-2.5 right-3 sm:top-4 sm:right-5 z-20 pointer-events-none select-none flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-950/95 border border-white/15 shadow-2xl backdrop-blur-md"
+                      style={{ minWidth: "145px" }}
+                      title="megaAnime PRO HD"
+                    >
+                      <span className="text-xs sm:text-sm font-black text-rose-500 tracking-tight drop-shadow-sm">
+                        mega<span className="text-white">Anime</span>
+                      </span>
+                      <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-600 text-white leading-none tracking-wider">
+                        PRO HD
+                      </span>
+                    </div>
 
-                        {/* Mute and Volume bar */}
-                        <div className="flex items-center gap-2 group/volume">
-                          <button
-                            onClick={toggleMute}
-                            className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          >
-                            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-                          </button>
-                          <input
-                            type="range"
-                            min={0}
-                            max={1}
-                            step={0.05}
-                            value={isMuted ? 0 : volume}
-                            onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                            className="w-0 group-hover/volume:w-16 h-1 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none transition-all duration-300"
+                    {/* Skip Intro Floating Overlay */}
+                    {currentTime >= 85 && currentTime <= 175 && (
+                      <button
+                        onClick={() => {
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = 175;
+                            setCurrentTime(175);
+                          }
+                        }}
+                        className="absolute bottom-20 right-6 px-6 py-3 bg-rose-600/90 hover:bg-rose-500 text-white font-extrabold text-xs rounded-xl shadow-2xl border border-rose-500/20 backdrop-blur-md transition hover:scale-105 cursor-pointer z-30"
+                      >
+                        Omitir Introducción (Skip Intro)
+                      </button>
+                    )}
+
+                    {/* Modern Floating "Siguiente Episodio" Card (MegaAnime Premium Style) */}
+                    {showNextEpPrompt && hasNext && (
+                      <div className="absolute bottom-24 right-4 sm:right-6 w-[90vw] sm:w-84 max-w-sm rounded-2xl bg-neutral-950/95 border border-rose-500/40 p-4 shadow-2xl shadow-rose-950/60 backdrop-blur-2xl animate-slide-up z-30 flex flex-col gap-3">
+                        {/* Header: Badge & Countdown Timer */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1.5">
+                            <Sparkles className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                            Siguiente Capítulo
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-white bg-rose-600/30 border border-rose-500/40 px-2 py-0.5 rounded-full">
+                            en {nextEpCountdown}s
+                          </span>
+                        </div>
+
+                        {/* Middle: Episode Thumbnail & Info */}
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-neutral-900 border border-white/10 flex-shrink-0">
+                            <img
+                              src={nextEpisodeObj?.coverUrl || animeCoverUrl}
+                              alt="Siguiente episodio"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                              <Play className="h-4 w-4 text-white fill-white/80" />
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="text-xs font-black text-white truncate">
+                              Capítulo {nextEpisodeObj?.number ?? (episodeNumber ? episodeNumber + 1 : "")}
+                            </p>
+                            <p className="text-[11px] text-neutral-400 truncate mt-0.5">
+                              {nextEpisodeObj?.title || animeTitle}
+                            </p>
+                            <span className="inline-block text-[9px] font-bold text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/20 mt-1">
+                              1080p • Audio Original
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Linear Progress Countdown Bar */}
+                        <div className="w-full bg-neutral-800/80 rounded-full h-1 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-rose-500 to-pink-500 h-full transition-all duration-1000 ease-linear rounded-full"
+                            style={{ width: `${(nextEpCountdown / 10) * 100}%` }}
                           />
                         </div>
 
-                        {/* Current time / Duration label */}
-                        <span className="text-xs text-neutral-400 font-mono select-none">
-                          {formatTime(currentTime)} / {formatTime(duration)}
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            onClick={() => onNavigateEpisode("next")}
+                            className="flex-1 py-2 px-3 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                          >
+                            <Play className="h-3.5 w-3.5 fill-white" />
+                            <span>Ver Ahora</span>
+                          </button>
+                          <button
+                            onClick={() => setShowNextEpPrompt(false)}
+                            className="py-2 px-3 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white font-bold text-xs rounded-xl border border-white/10 transition cursor-pointer"
+                          >
+                            ✕ Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Premium Custom Control Bar */}
+                    <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/85 to-transparent px-4 sm:px-6 pb-4 sm:pb-6 pt-16 flex flex-col gap-3 transition-all duration-300 z-20 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                      
+                      {/* Scrub Progress Bar with integrated Time Display */}
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="text-[11px] text-neutral-200 font-mono select-none font-bold">
+                          {formatTime(currentTime)}
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={duration || 100}
+                          value={currentTime}
+                          onChange={(e) => {
+                            const time = parseFloat(e.target.value);
+                            if (videoRef.current) {
+                              videoRef.current.currentTime = time;
+                            }
+                            setCurrentTime(time);
+                          }}
+                          className="flex-grow h-1.5 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none"
+                        />
+                        <span className="text-[11px] text-neutral-400 font-mono select-none font-medium">
+                          {formatTime(duration)}
                         </span>
                       </div>
 
-                      {/* Right: navigation buttons, speed and full-screen */}
-                      <div className="flex items-center gap-4">
-                        {/* Speed controller selection */}
-                        <div className="flex items-center gap-1.5 bg-neutral-900/60 border border-white/5 rounded-xl p-1">
-                          {[0.5, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                      {/* Actions and Indicators Row */}
+                      <div className="flex items-center justify-between">
+                        {/* Left: Playback controls, Previous/Next Ep, Volume */}
+                        <div className="flex items-center gap-2.5 sm:gap-4">
+                          {/* Previous Episode Button */}
+                          <button
+                            onClick={() => onNavigateEpisode("prev")}
+                            disabled={!hasPrev}
+                            className={`text-neutral-400 hover:text-white cursor-pointer transition ${!hasPrev ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            title="Capítulo Anterior"
+                          >
+                            <SkipBack className="h-4.5 w-4.5" />
+                          </button>
+
+                          {/* Play / Pause */}
+                          <button
+                            onClick={togglePlay}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition"
+                            title={isPlaying ? "Pausar" : "Reproducir"}
+                          >
+                            {isPlaying ? <Pause className="h-5 w-5 fill-white text-white" /> : <Play className="h-5 w-5 fill-white text-white" />}
+                          </button>
+
+                          {/* Next Episode Button */}
+                          <button
+                            onClick={() => onNavigateEpisode("next")}
+                            disabled={!hasNext}
+                            className={`text-neutral-400 hover:text-white cursor-pointer transition ${!hasNext ? 'opacity-30 cursor-not-allowed' : ''}`}
+                            title="Capítulo Siguiente"
+                          >
+                            <SkipForward className="h-4.5 w-4.5" />
+                          </button>
+
+                          {/* Rewind / Forward 10s */}
+                          <button
+                            onClick={() => {
+                              if (videoRef.current) {
+                                videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+                              }
+                            }}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition hidden sm:inline-flex"
+                            title="Retroceder 10s"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (videoRef.current) {
+                                videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
+                              }
+                            }}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition hidden sm:inline-flex"
+                            title="Adelantar 10s"
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </button>
+
+                          {/* Mute and Volume bar */}
+                          <div className="flex items-center gap-2 group/volume">
                             <button
-                              key={rate}
-                              onClick={() => handleSpeedChange(rate)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-black transition cursor-pointer ${playbackRate === rate ? 'bg-rose-600 text-white' : 'text-neutral-400 hover:text-white'}`}
+                              onClick={toggleMute}
+                              className="text-neutral-400 hover:text-white cursor-pointer transition"
                             >
-                              {rate}x
+                              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                             </button>
-                          ))}
+                            <input
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              value={isMuted ? 0 : volume}
+                              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                              className="w-0 group-hover/volume:w-16 h-1 rounded-lg appearance-none bg-neutral-800 accent-rose-500 cursor-pointer focus:outline-none transition-all duration-300 hidden sm:block"
+                            />
+                          </div>
                         </div>
 
-                        {/* Share Exact Timestamp */}
-                        <button
-                          onClick={() => {
-                            const seconds = Math.floor(currentTime);
-                            const url = new URL(window.location.href);
-                            url.searchParams.set("t", seconds.toString());
-                            navigator.clipboard.writeText(url.toString());
-                            setCopiedTimestamp(true);
-                            setTimeout(() => setCopiedTimestamp(false), 2500);
-                          }}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition flex items-center gap-1 text-xs"
-                          title="Copiar enlace con minuto exacto"
-                        >
-                          {copiedTimestamp ? (
-                            <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                              <Check className="h-4 w-4" />
-                              ¡Copiado!
-                            </span>
-                          ) : (
-                            <Share2 className="h-4.5 w-4.5" />
-                          )}
-                        </button>
+                        {/* Right: navigation buttons and full-screen */}
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          {/* Share Exact Timestamp */}
+                          <button
+                            onClick={() => {
+                              const seconds = Math.floor(currentTime);
+                              const url = new URL(window.location.href);
+                              url.searchParams.set("t", seconds.toString());
+                              navigator.clipboard.writeText(url.toString());
+                              setCopiedTimestamp(true);
+                              setTimeout(() => setCopiedTimestamp(false), 2500);
+                            }}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition flex items-center gap-1 text-xs"
+                            title="Copiar enlace con minuto exacto"
+                          >
+                            {copiedTimestamp ? (
+                              <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                                <Check className="h-4 w-4" />
+                                ¡Copiado!
+                              </span>
+                            ) : (
+                              <Share2 className="h-4.5 w-4.5" />
+                            )}
+                          </button>
 
-                        {/* Chromecast */}
-                        <button
-                          onClick={() => alert("Chromecast listo: abre esta página en un navegador compatible con Cast para transmitir a tu TV.")}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          title="Transmitir a Chromecast"
-                        >
-                          <Cast className="h-4.5 w-4.5" />
-                        </button>
+                          {/* Chromecast */}
+                          <button
+                            onClick={() => alert("Chromecast listo: abre esta página en un navegador compatible con Cast para transmitir a tu TV.")}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition"
+                            title="Transmitir a Chromecast"
+                          >
+                            <Cast className="h-4.5 w-4.5" />
+                          </button>
 
-                        {/* AirPlay */}
-                        <button
-                          onClick={() => {
-                            if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
-                              (videoRef.current as any).webkitShowPlaybackTargetPicker();
-                            } else {
-                              alert("AirPlay no está disponible en este navegador/dispositivo.");
-                            }
-                          }}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          title="Transmitir con AirPlay"
-                        >
-                          <Tv className="h-4.5 w-4.5" />
-                        </button>
+                          {/* AirPlay */}
+                          <button
+                            onClick={() => {
+                              if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
+                                (videoRef.current as any).webkitShowPlaybackTargetPicker();
+                              } else {
+                                alert("AirPlay no está disponible en este navegador/dispositivo.");
+                              }
+                            }}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition"
+                            title="Transmitir con AirPlay"
+                          >
+                            <Tv className="h-4.5 w-4.5" />
+                          </button>
 
-                        {/* Report Problem Button */}
-                        <button
-                          onClick={() => {
-                            setReportSubmittedSuccess(false);
-                            setShowReportModal(true);
-                          }}
-                          className="text-neutral-400 hover:text-rose-400 cursor-pointer transition flex items-center gap-1 text-xs"
-                          title="Reportar problema con este reproductor"
-                        >
-                          <Flag className="h-4.5 w-4.5" />
-                        </button>
+                          {/* Report Problem Button */}
+                          <button
+                            onClick={() => {
+                              setReportSubmittedSuccess(false);
+                              setShowReportModal(true);
+                            }}
+                            className="text-neutral-400 hover:text-rose-400 cursor-pointer transition flex items-center gap-1 text-xs"
+                            title="Reportar problema con este reproductor"
+                          >
+                            <Flag className="h-4.5 w-4.5" />
+                          </button>
 
-                        {/* Fullscreen Button */}
-                        <button
-                          onClick={toggleFullscreen}
-                          className="text-neutral-400 hover:text-white cursor-pointer transition"
-                          title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-                        >
-                          {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                        </button>
+                          {/* Fullscreen Button */}
+                          <button
+                            onClick={toggleFullscreen}
+                            className="text-neutral-400 hover:text-white cursor-pointer transition"
+                            title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+                          >
+                            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
           ) : (
             <div className="flex flex-col items-center justify-center p-8 text-center space-y-4 max-w-md mx-auto my-auto py-16">
               <div className="h-16 w-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-xl shadow-rose-500/5 animate-pulse">
@@ -1488,116 +1792,236 @@ export default function VideoPlayer({
           )}
         </div>
 
-        {/* Right Side: Options & Episode Switching (Theatre Sidebar - Rendered Conditionally) */}
-        {isSidebarOpen && (
-          <div className="w-full lg:w-85 bg-neutral-900/95 border-t lg:border-t-0 lg:border-l border-white/5 p-5 flex-shrink-0 flex flex-col justify-between overflow-y-auto z-20 shadow-2xl animate-fade-in">
-            <div className="space-y-4">
-              {/* Episode Poster and Info Card */}
-              <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
-                <div className="flex gap-3">
+        {/* 🎬 Unified Details Feed (Designed in MegaAnime Brand Theme for Web & App) */}
+        <div className="w-full max-w-5xl mx-auto bg-neutral-950 px-4 sm:px-6 py-6 space-y-5 pb-28 text-left">
+          {/* Header Anime & Episode Title */}
+          <div>
+            <span className="text-xs font-black text-rose-500 tracking-wide uppercase">
+              {resolvedTitle}
+            </span>
+            <h1 className="text-base sm:text-xl font-black text-white mt-0.5 tracking-tight">
+              {displayTitle}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-400 mt-2 font-medium">
+              <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[10px] font-black text-neutral-300">14+</span>
+              <span>•</span>
+              <span>Subtitulado</span>
+              <span>•</span>
+              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                <Sparkles className="h-3 w-3" />
+                1080p Ultra HD
+              </span>
+              {hasDriveServer && (
+                <>
+                  <span>•</span>
+                  <span className="text-rose-400 font-semibold">Sin Anuncios</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Episode Navigation Bar (Anterior / Siguiente) */}
+          {(() => {
+            let currentEpNum = 1;
+            const numMatch = (episodeId || "").match(/(?:ep|episodio)-(\d+)/i);
+            if (numMatch) currentEpNum = parseInt(numMatch[1], 10);
+
+            const isMovie = contentType === "movie" || (genres && genres.includes("Película"));
+            const effectiveHasPrev = hasPrev !== undefined ? (hasPrev || currentEpNum > 1) : currentEpNum > 1;
+            const effectiveHasNext = isMovie ? false : (hasNext !== undefined ? (hasNext || true) : true);
+
+            return (
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  onClick={() => onNavigateEpisode("prev")}
+                  disabled={!effectiveHasPrev}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border transition flex items-center justify-center gap-2 ${
+                    effectiveHasPrev 
+                      ? "bg-neutral-900 border-white/10 text-neutral-200 hover:text-white hover:border-white/20 active:scale-95 cursor-pointer shadow" 
+                      : "bg-neutral-950 border-white/5 text-neutral-600 opacity-40 cursor-not-allowed"
+                  }`}
+                >
+                  <SkipBack className="h-4 w-4" />
+                  <span>Capítulo Anterior</span>
+                </button>
+
+                <button
+                  onClick={() => onNavigateEpisode("next")}
+                  disabled={!effectiveHasNext}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black border transition flex items-center justify-center gap-2 ${
+                    effectiveHasNext 
+                      ? "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 active:scale-95 cursor-pointer" 
+                      : "bg-neutral-950 border-white/5 text-neutral-600 opacity-40 cursor-not-allowed"
+                  }`}
+                >
+                  <span>Siguiente Capítulo</span>
+                  <SkipForward className="h-4 w-4" />
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Synopsis with Expand Toggle */}
+          <div className="space-y-1 text-xs sm:text-sm">
+            <p className={`text-neutral-300 leading-relaxed ${isSynopsisExpanded ? "" : "line-clamp-2"}`}>
+              {synopsisText}
+            </p>
+            <button
+              onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+              className="font-bold text-rose-500 hover:text-rose-400 text-xs transition cursor-pointer"
+            >
+              {isSynopsisExpanded ? "... Ver menos" : "... Ver más"}
+            </button>
+          </div>
+
+          {/* 🎬 Siguiente Episodio Card (Next Episode in MegaAnime theme) */}
+          {hasNext && (
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <h3 className="text-xs font-extrabold text-neutral-400 uppercase tracking-wider">
+                Siguiente Episodio (Next Episode)
+              </h3>
+              
+              <div
+                onClick={() => onNavigateEpisode("next")}
+                className="w-full p-3 rounded-2xl bg-neutral-900/90 border border-white/10 hover:border-rose-500/40 transition-all flex items-center gap-4 cursor-pointer group shadow-lg active:scale-[0.98]"
+              >
+                {/* 16:9 Thumbnail preview */}
+                <div className="relative w-36 sm:w-44 aspect-video rounded-xl overflow-hidden bg-black flex-shrink-0">
                   <img
                     src={getProxyImageUrl(resolvedCover, resolvedTitle)}
-                    alt={resolvedTitle}
-                    className="h-20 w-14 object-cover rounded-lg shadow-lg border border-white/5"
-                    onError={(e) => {
-                      recoverCoverImageInHotPath(e, resolvedTitle, animeId, "ANIME");
-                    }}
+                    alt="Next Episode"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="flex-grow min-w-0">
-                    <span className="text-[10px] text-rose-500 font-bold uppercase tracking-wider">{resolvedTitle}</span>
-                    <h3 className="text-xs font-bold text-white line-clamp-2 mt-0.5">{displayTitle}</h3>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {genres.slice(0, 2).map((g, i) => (
-                        <span key={i} className="text-[9px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded-full font-semibold">
-                          {g}
-                        </span>
-                      ))}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                      <Play className="h-4 w-4 fill-white ml-0.5" />
                     </div>
                   </div>
+                  <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-black text-white">
+                    24m
+                  </span>
                 </div>
-                <div className="border-t border-white/5 pt-2">
-                  <p className="text-[11px] text-neutral-400 leading-relaxed line-clamp-4 hover:line-clamp-none transition-all duration-300 cursor-pointer" title="Haga clic para expandir">
-                    {episodeData?.synopsis || episodeData?.description || 
-                      `Disfruta de este capítulo en megaAnime. En caso de fallas de carga, puedes cambiar el reproductor o servidor en la sección de abajo.`
-                    }
+
+                {/* Info */}
+                <div className="flex-grow min-w-0">
+                  <h4 className="text-xs sm:text-sm font-black text-white truncate group-hover:text-rose-400 transition">
+                    {nextEpisodeObj?.title || `Capítulo ${episodeNumber + 1}`}
+                  </h4>
+                  <p className="text-[11px] text-neutral-400 mt-1">
+                    Audio Japonés | Subtitulado al Español
                   </p>
+                </div>
+
+                {/* Next button */}
+                <div className="h-9 w-9 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:bg-rose-500 group-hover:text-white transition flex-shrink-0">
+                  <ArrowRight className="h-4.5 w-4.5" />
                 </div>
               </div>
 
-              {/* Server Selector List / MegaAnime Exclusive Banner */}
-              {activeServer && (activeServer.name.includes("Drive") || activeServer.name.includes("MegaAnime") || activeServer.url.includes("drive.google.com")) ? (
-                <div className="p-4 rounded-2xl border border-rose-500/30 bg-rose-950/20 space-y-2.5 shadow-lg shadow-rose-950/40">
-                  <div className="flex items-center space-x-2">
-                    <Sparkles className="h-4 w-4 text-rose-400 animate-pulse" />
-                    <span className="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono">⚡ MegaAnime (1080p Ultra HD)</span>
-                  </div>
-                  <p className="text-[11px] text-neutral-300 leading-relaxed">
-                    Reproduciendo en calidad nativa Ultra HD directamente desde nuestros servidores oficiales de MegaAnime sin anuncios ni ventanas emergentes.
-                  </p>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl border border-white/5 bg-black/40 space-y-3">
-                  <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
-                    <Server className="h-4 w-4 text-rose-500" />
-                    <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest font-mono">Seleccionar Reproductor</span>
-                  </div>
-                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                    {servers.map((srv, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setActiveServerIdx(idx);
-                        }}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                          activeServerIdx === idx
-                            ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
-                            : "bg-neutral-900 border-white/5 text-neutral-400 hover:border-neutral-700 hover:text-white"
-                        }`}
-                      >
-                        <span className="truncate">{srv.name}</span>
-                        {activeServerIdx === idx && <div className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* All Episodes button */}
+              <div className="text-center pt-2">
+                <button
+                  onClick={() => setShowAllEpisodesSheet(true)}
+                  className="text-xs font-black text-rose-500 hover:text-rose-400 hover:underline cursor-pointer tracking-wide"
+                >
+                  Ver Todos los Episodios ({allEpisodes.length > 0 ? allEpisodes.length : "Lista Completa"})
+                </button>
+              </div>
             </div>
+          )}
 
-            {/* Bottom Episode Navigation */}
-            <div className="flex space-x-2 mt-6 lg:mt-0 pt-4 border-t border-white/5">
-              <button
-                onClick={() => onNavigateEpisode("prev")}
-                disabled={!hasPrev}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                  hasPrev
-                    ? "bg-black/40 border-white/5 text-neutral-300 hover:bg-white/5 hover:text-white"
-                    : "opacity-40 cursor-not-allowed border-transparent text-neutral-600"
-                }`}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Anterior</span>
-              </button>
-
-              <button
-                onClick={() => onNavigateEpisode("next")}
-                disabled={!hasNext}
-                className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                  hasNext
-                    ? "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/15 hover:bg-rose-500"
-                    : "opacity-40 cursor-not-allowed border-transparent text-neutral-600"
-                }`}
-              >
-                <span>Siguiente</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
+          {/* Estado de Servidores: Servidor Oficial Drive vs Servidores Externos */}
+          {hasDriveServer ? (
+            <div className="pt-3 border-t border-white/10">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gradient-to-r from-rose-950/30 to-violet-950/20 border border-rose-500/40 text-rose-300 shadow-lg">
+                <Sparkles className="h-4.5 w-4.5 text-rose-400 animate-pulse flex-shrink-0" />
+                <div className="text-xs">
+                  <span className="font-extrabold text-white block">⚡ Servidor Exclusivo MegaAnime — Sin Anuncios</span>
+                  <span className="text-[10px] text-neutral-400">Reproduciendo en 1080p desde nuestros servidores dedicados. Sin anuncios ni interrupciones.</span>
+                </div>
+              </div>
             </div>
-            {/* Episode Discussion & Comments */}
-            <div className="pt-6 border-t border-white/5">
-              <CommentSection
-                targetId={episodeId}
-                title={`Comentarios del Episodio ${episodeNumber}`}
-                currentUser={currentUser}
-              />
+          ) : servers.length > 1 ? (
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-neutral-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Server className="h-3.5 w-3.5 text-rose-500" />
+                  Servidores Disponibles
+                </span>
+                <span className="text-[11px] text-neutral-500 font-mono">
+                  {servers.length} opciones
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {servers.map((srv, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveServerIdx(idx)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap border transition cursor-pointer flex items-center gap-1.5 ${
+                      activeServerIdx === idx
+                        ? "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30"
+                        : "bg-neutral-900 border-white/10 text-neutral-400 hover:border-neutral-700 hover:text-white"
+                    }`}
+                  >
+                    <Server className="h-3.5 w-3.5" />
+                    <span>{srv.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Mobile & Web Comments Section */}
+          <div className="pt-4 border-t border-white/10">
+            <CommentSection
+              targetId={episodeId}
+              title={`Comentarios del Capítulo ${episodeNumber}`}
+              currentUser={currentUser}
+            />
+          </div>
+        </div>
+
+        {/* All Episodes Bottom Sheet / Modal */}
+        {showAllEpisodesSheet && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-neutral-900 border-t border-white/10 rounded-t-3xl p-5 max-h-[75vh] flex flex-col space-y-4 shadow-2xl animate-slide-up max-w-3xl mx-auto w-full">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Film className="h-4.5 w-4.5 text-rose-500" />
+                  <h3 className="text-sm font-black text-white">Todos los Episodios ({allEpisodes.length})</h3>
+                </div>
+                <button
+                  onClick={() => setShowAllEpisodesSheet(false)}
+                  className="p-1 rounded-full bg-white/5 text-neutral-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {allEpisodes.map((ep, idx) => {
+                  const isCurr = ep.id === episodeId;
+                  return (
+                    <button
+                      key={ep.id || idx}
+                      onClick={() => {
+                        setShowAllEpisodesSheet(false);
+                        const epNum = ep.number || idx + 1;
+                        onNavigateEpisode(epNum > episodeNumber ? "next" : "prev");
+                      }}
+                      className={`p-3 rounded-xl border text-left transition flex items-center justify-between ${
+                        isCurr
+                          ? "bg-rose-500/15 border-rose-500/40 text-rose-400 font-extrabold"
+                          : "bg-neutral-950/60 border-white/5 text-neutral-300 hover:border-white/20"
+                      }`}
+                    >
+                      <span className="text-xs truncate">{ep.title || `Capítulo ${idx + 1}`}</span>
+                      {isCurr && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">Viendo</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

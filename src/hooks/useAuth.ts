@@ -6,25 +6,41 @@ import { User, Profile } from "../types";
 import { safeLocalStorage } from "../utils/safeStorage";
 
 export function useAuth() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    try {
+      const cached = safeLocalStorage.getItem("megaAnime_user");
+      return cached ? JSON.parse(cached) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Safety fallback: Never block the UI on loading screen longer than 3 seconds
+    // Safety fallback: Never block the UI on loading screen
     const safetyTimer = setTimeout(() => {
       setLoading(false);
-    }, 3000);
+    }, 1000);
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         try {
           const userDocRef = doc(db, "users", fbUser.uid);
-          const userDoc = await getDoc(userDocRef);
+          let userDoc: any = null;
+
+          try {
+            userDoc = await Promise.race([
+              getDoc(userDocRef),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("firestore_timeout")), 2500))
+            ]);
+          } catch (e) {
+            console.warn("Firestore getDoc timeout/warning, building fallback:", e);
+          }
           
           let userData: any;
           const isAdminUser = fbUser.email?.trim().toLowerCase() === "baezcabrera.j.r@gmail.com";
           
-          if (userDoc.exists()) {
+          if (userDoc && typeof userDoc.exists === "function" && userDoc.exists()) {
             userData = userDoc.data();
             
             // Check and initialize profiles
@@ -56,7 +72,7 @@ export function useAuth() {
               updates.activeProfileId = userData.activeProfileId;
             }
 
-            await setDoc(userDocRef, updates, { merge: true });
+            setDoc(userDocRef, updates, { merge: true }).catch(() => {});
             userData.lastActive = new Date().toISOString();
             userData.isAdmin = isAdminUser;
           } else {
@@ -80,7 +96,7 @@ export function useAuth() {
               lastActive: new Date().toISOString(),
               createdAt: new Date().toISOString()
             };
-            await setDoc(userDocRef, userData);
+            setDoc(userDocRef, userData, { merge: true }).catch(() => {});
           }
           
           setCurrentUser(userData as User);

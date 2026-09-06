@@ -73,6 +73,18 @@
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>net.megaanime.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>megaanime</string>
+				<string>net.megaanime.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
 

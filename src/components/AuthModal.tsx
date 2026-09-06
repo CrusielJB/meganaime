@@ -4,10 +4,13 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signInWithPopup, 
-  GoogleAuthProvider 
+  GoogleAuthProvider,
+  sendEmailVerification
 } from "firebase/auth";
 import { setDoc, getDoc, doc } from "firebase/firestore";
 import { auth, db, OperationType, handleFirestoreError } from "../lib/firebase";
+import { getApiUrl, isNativePlatform } from "../utils/apiConfig";
+import { App as CapApp } from "@capacitor/app";
 
 interface AuthModalProps {
   onClose?: () => void;
@@ -27,10 +30,8 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
   // 6-Digit OTP State
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [attemptsLeft, setAttemptsLeft] = useState<number>(3);
-  const [timerSeconds, setTimerSeconds] = useState<number>(600); // 10 minutes
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-
+  const [countdown, setCountdown] = useState<number>(60);
+  const [canResend, setCanResend] = useState<boolean>(false);
   const otpInputRefs = [
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
@@ -40,15 +41,14 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
     useRef<HTMLInputElement>(null)
   ];
 
-  // Countdown timer effect for OTP expiration
+  // OTP Countdown timer
   useEffect(() => {
-    let interval: any = null;
-    if (step === "otp" && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => {
+    let timer: any = null;
+    if (step === "otp" && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown(prev => {
           if (prev <= 1) {
-            clearInterval(interval);
-            setErrorMsg("El código de 6 dígitos ha expirado. Por favor solicita uno nuevo.");
+            setCanResend(true);
             return 0;
           }
           return prev - 1;
@@ -56,90 +56,96 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
       }, 1000);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (timer) clearInterval(timer);
     };
-  }, [step, timerSeconds]);
+  }, [step, countdown]);
 
-  // Focus 1st OTP input when switching to OTP step
-  useEffect(() => {
-    if (step === "otp") {
-      setTimeout(() => {
-        otpInputRefs[0].current?.focus();
-      }, 100);
-    }
-  }, [step]);
-
-  const handleSendOtp = async (cleanEmail: string) => {
-    setSendingOtp(true);
+  const handleSendOtp = async (targetEmail: string) => {
     setErrorMsg("");
+    setLoading(true);
     try {
-      const res = await fetch("/api/auth/send-otp", {
+      const res = await fetch(getApiUrl("/api/auth/send-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanEmail })
+        body: JSON.stringify({
+          email: targetEmail,
+          username: username.trim() || targetEmail.split("@")[0]
+        })
       });
       const data = await res.json();
-      if (!res.ok || !data.success) {
+
+      if (!res.ok) {
         throw new Error(data.error || "No se pudo enviar el código de verificación.");
       }
+
       setStep("otp");
+      setCountdown(60);
+      setCanResend(false);
       setAttemptsLeft(3);
-      setTimerSeconds(600);
       setOtpDigits(["", "", "", "", "", ""]);
+      setTimeout(() => otpInputRefs[0].current?.focus(), 100);
     } catch (err: any) {
-      setErrorMsg(err.message || "Error al enviar código OTP.");
+      setErrorMsg(err.message || "Error al enviar el código a tu correo.");
     } finally {
-      setSendingOtp(false);
+      setLoading(false);
     }
   };
 
-  const handleVerifyAndRegister = async (submittedCode?: string) => {
-    const code = submittedCode || otpDigits.join("").trim();
-    if (code.length < 6) {
-      setErrorMsg("Introduce el código completo de 6 dígitos.");
-      return;
-    }
-
-    setVerifyingOtp(true);
+  const handleVerifyAndRegister = async (codeToVerify: string) => {
+    if (codeToVerify.length !== 6) return;
     setErrorMsg("");
+    setLoading(true);
+
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch(getApiUrl("/api/auth/verify-otp"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanEmail, code })
+        body: JSON.stringify({
+          email: cleanEmail,
+          code: codeToVerify
+        })
       });
-
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        if (data.maxAttemptsExceeded) {
-          // STRICT RULE: 3 failed attempts cancels registration and resets to Step 1!
-          setStep("form");
-          setOtpDigits(["", "", "", "", "", ""]);
-          setAttemptsLeft(3);
-          throw new Error("⚠️ Has superado el número máximo de 3 intentos fallidos. Por seguridad, el registro ha sido cancelado. Debes iniciar nuevamente.");
-        } else {
-          if (data.attemptsLeft !== undefined) {
-            setAttemptsLeft(data.attemptsLeft);
-          }
-          throw new Error(data.error || "Código de verificación incorrecto.");
+      if (!res.ok) {
+        if (data.attemptsLeft !== undefined) {
+          setAttemptsLeft(data.attemptsLeft);
         }
+        if (data.maxAttemptsExceeded || data.expired) {
+          setTimeout(() => {
+            setStep("form");
+            setOtpDigits(["", "", "", "", "", ""]);
+          }, 2500);
+        }
+        throw new Error(data.error || "Código incorrecto.");
       }
 
-      // OTP Verified Successfully -> Complete Firebase Signup!
+      // Step 2 -> Create actual Firebase user account
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       const fbUser = userCredential.user;
       const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
 
+      const defaultProfile = {
+        id: "default",
+        name: username.trim() || cleanEmail.split("@")[0],
+        avatarUrl: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
+        favorites: [],
+        history: [],
+        isChild: false
+      };
+
       const userData = {
         id: fbUser.uid,
-        username: username.trim(),
+        username: username.trim() || cleanEmail.split("@")[0],
         email: cleanEmail,
         favorites: [],
         history: [],
+        profiles: [defaultProfile],
+        activeProfileId: "default",
         isAdmin: isAdminUser,
+        lastActive: new Date().toISOString(),
         createdAt: new Date().toISOString()
       };
 
@@ -151,58 +157,99 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
 
       onSuccess(userData);
     } catch (err: any) {
-      setErrorMsg(err.message || "Ocurrió un error al verificar el código.");
+      let msg = err.message || "Error al completar el registro.";
+      if (err.code === "auth/email-already-in-use") {
+        msg = "Este correo ya está registrado. Por favor inicia sesión.";
+        setStep("form");
+      }
+      setErrorMsg(msg);
     } finally {
-      setVerifyingOtp(false);
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
     const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setErrorMsg("Introduce un correo electrónico válido");
+      return;
+    }
 
     if (isLogin) {
+      if (!password) {
+        setErrorMsg("Introduce tu contraseña");
+        return;
+      }
+
       setLoading(true);
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-        const fbUser = userCredential.user;
+        const userCredential = await Promise.race([
+          signInWithEmailAndPassword(auth, cleanEmail, password),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("auth_timeout")), 10000))
+        ]) as any;
 
-        let userData: any;
+        const fbUser = userCredential.user;
         const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
+
+        let userData: any = null;
         try {
-          const userDoc = await getDoc(doc(db, "users", fbUser.uid));
-          if (userDoc.exists()) {
+          const userDoc = await Promise.race([
+            getDoc(doc(db, "users", fbUser.uid)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("doc_timeout")), 2500))
+          ]) as any;
+
+          if (userDoc && typeof userDoc.exists === "function" && userDoc.exists()) {
             userData = userDoc.data();
             userData.isAdmin = isAdminUser;
-          } else {
-            userData = {
-              id: fbUser.uid,
-              username: fbUser.displayName || email.split("@")[0],
-              email: cleanEmail,
-              favorites: [],
-              history: [],
-              isAdmin: isAdminUser,
-              createdAt: new Date().toISOString()
-            };
-            await setDoc(doc(db, "users", fbUser.uid), userData);
           }
         } catch (dbErr) {
-          handleFirestoreError(dbErr, OperationType.GET, `users/${fbUser.uid}`);
+          console.warn("Firestore getDoc timeout/warning on login:", dbErr);
+        }
+
+        if (!userData) {
+          const defaultProfile = {
+            id: "default",
+            name: fbUser.displayName || email.split("@")[0] || "Usuario",
+            avatarUrl: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
+            favorites: [],
+            history: [],
+            isChild: false
+          };
+          userData = {
+            id: fbUser.uid,
+            username: fbUser.displayName || email.split("@")[0] || "Usuario",
+            email: cleanEmail,
+            favorites: [],
+            history: [],
+            profiles: [defaultProfile],
+            activeProfileId: "default",
+            isAdmin: isAdminUser,
+            createdAt: new Date().toISOString()
+          };
+          setDoc(doc(db, "users", fbUser.uid), userData, { merge: true }).catch(() => {});
         }
 
         onSuccess(userData);
       } catch (err: any) {
-        let msg = err.message || "Ocurrió un error en la autenticación.";
-        if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found") {
+        let msg = "Ocurrió un error en la autenticación.";
+        if (err.message === "auth_timeout") {
+          msg = "Tiempo de espera agotado. Verifica tu conexión a internet.";
+        } else if (err.code === "auth/wrong-password" || err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
           msg = "Correo electrónico o contraseña incorrectos.";
+        } else if (err.code === "auth/too-many-requests") {
+          msg = "Demasiados intentos fallidos. Por favor espera unos minutos.";
+        } else if (err.message) {
+          msg = err.message;
         }
         setErrorMsg(msg);
       } finally {
         setLoading(false);
       }
     } else {
-      // Registration Step 1 -> Request 6-digit OTP email
+      // Registration Step
       if (username.trim().length < 2) {
         setErrorMsg("El nombre de usuario debe tener al menos 2 caracteres");
         return;
@@ -212,7 +259,65 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
         return;
       }
 
-      await handleSendOtp(cleanEmail);
+      setLoading(true);
+      try {
+        const userCredential = await Promise.race([
+          createUserWithEmailAndPassword(auth, cleanEmail, password),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("auth_timeout")), 10000))
+        ]) as any;
+
+        const fbUser = userCredential.user;
+        const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
+
+        // Send official verification email via Firebase Auth
+        try {
+          await sendEmailVerification(fbUser);
+        } catch (mailErr) {
+          console.warn("Could not trigger email verification:", mailErr);
+        }
+
+        const defaultProfile = {
+          id: "default",
+          name: username.trim() || cleanEmail.split("@")[0],
+          avatarUrl: "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
+          favorites: [],
+          history: [],
+          isChild: false
+        };
+
+        const userData = {
+          id: fbUser.uid,
+          username: username.trim() || cleanEmail.split("@")[0],
+          email: cleanEmail,
+          favorites: [],
+          history: [],
+          profiles: [defaultProfile],
+          activeProfileId: "default",
+          isAdmin: isAdminUser,
+          lastActive: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        };
+
+        setDoc(doc(db, "users", fbUser.uid), userData, { merge: true }).catch(() => {});
+
+        onSuccess(userData);
+      } catch (err: any) {
+        let msg = "Error al completar el registro.";
+        if (err.message === "auth_timeout") {
+          msg = "Tiempo de espera agotado. Verifica tu conexión a internet.";
+        } else if (err.code === "auth/email-already-in-use") {
+          msg = "Este correo ya está registrado. Por favor inicia sesión.";
+        } else if (err.code === "auth/weak-password") {
+          msg = "La contraseña debe tener al menos 6 caracteres.";
+        } else if (err.code === "auth/invalid-email") {
+          msg = "El formato de correo electrónico no es válido.";
+        } else if (err.message) {
+          msg = err.message;
+        }
+        setErrorMsg(msg);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -262,9 +367,108 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
     setErrorMsg("");
     setLoading(true);
 
+    // Native iOS & Android: Use In-App Safari OAuth with return scheme net.megaanime.app://
+    if (isNativePlatform()) {
+      try {
+        const stateId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        let completed = false;
+
+        const handleDeepLinkUrl = async (rawUrl: string) => {
+          if (!rawUrl || (!rawUrl.includes("auth-callback") && !rawUrl.includes("megaanime") && !rawUrl.includes("net.megaanime.app"))) return;
+          try {
+            const getQueryParam = (k: string) => {
+              const m = rawUrl.match(new RegExp(`[?&]${k}=([^&]*)`));
+              return m ? decodeURIComponent(m[1]) : null;
+            };
+
+            const uid = getQueryParam("uid");
+            const emailParam = getQueryParam("email");
+            const nameParam = getQueryParam("name");
+            const photoParam = getQueryParam("photo");
+
+            if (uid && emailParam) {
+              completed = true;
+              const cleanEmail = emailParam.toLowerCase().trim();
+              const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
+
+              let userData: any;
+              try {
+                const userDoc = await getDoc(doc(db, "users", uid));
+                if (userDoc.exists()) {
+                  userData = userDoc.data();
+                  userData.isAdmin = isAdminUser;
+                } else {
+                  userData = {
+                    id: uid,
+                    username: nameParam || cleanEmail.split("@")[0] || "Usuario Google",
+                    email: cleanEmail,
+                    avatarUrl: photoParam || "https://s4.anilist.co/file/anilistcdn/character/large/b127691-9zqh1xpIubn7.png",
+                    favorites: [],
+                    history: [],
+                    isAdmin: isAdminUser,
+                    createdAt: new Date().toISOString()
+                  };
+                  await setDoc(doc(db, "users", uid), userData);
+                }
+              } catch (dbErr) {
+                console.warn("Firestore error on OAuth callback:", dbErr);
+              }
+
+              onSuccess(userData);
+            }
+          } catch (parseErr) {
+            console.error("Error parsing auth callback URL:", parseErr);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        // 1. Global iOS scheme handler
+        (window as any).handleOpenURL = (url: string) => {
+          handleDeepLinkUrl(url);
+        };
+
+        // 2. Window message handler for popups / web views
+        const messageHandler = (e: MessageEvent) => {
+          if (typeof e.data === "string" && (e.data.includes("auth-callback") || e.data.includes("megaanime") || e.data.includes("net.megaanime.app"))) {
+            handleDeepLinkUrl(e.data);
+          }
+        };
+        window.addEventListener("message", messageHandler, { once: true });
+
+        // 3. Safe Capacitor App Listener
+        try {
+          if (CapApp && typeof CapApp.addListener === "function") {
+            CapApp.addListener("appUrlOpen", (data: any) => {
+              if (data && data.url) handleDeepLinkUrl(data.url);
+            }).catch(() => {});
+          }
+        } catch (e) {}
+
+        // Safety timeout in case user closes the external browser
+        setTimeout(() => {
+          if (!completed) {
+            setLoading(false);
+          }
+        }, 45000);
+
+        const targetAuthUrl = `https://megaanime-1c250.firebaseapp.com/google-auth.html?state=${encodeURIComponent(stateId)}`;
+        window.open(targetAuthUrl, "_blank");
+      } catch (nativeErr: any) {
+        console.error("Native Google OAuth Error:", nativeErr);
+        setErrorMsg("No se pudo iniciar el navegador para Google. Puedes ingresar con tu correo.");
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Web Platform: Standard popup flow
     try {
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
+      const userCredential = await Promise.race([
+        signInWithPopup(auth, provider),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("popup_timeout")), 10000))
+      ]) as any;
       const fbUser = userCredential.user;
       const cleanEmail = fbUser.email?.toLowerCase().trim() || "";
       const isAdminUser = cleanEmail === "baezcabrera.j.r@gmail.com";
@@ -390,18 +594,18 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
               <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 font-bold">{attemptsLeft} / 3</span>
             </span>
             <span className="text-neutral-400 font-mono">
-              Expira en: <strong className="text-white">{formatTimer(timerSeconds)}</strong>
+              Expira en: <strong className="text-white">{formatTimer(countdown)}</strong>
             </span>
           </div>
 
           {/* Action buttons */}
           <div className="space-y-3 pt-2">
             <button
-              onClick={() => handleVerifyAndRegister()}
-              disabled={verifyingOtp || otpDigits.join("").length < 6}
+              onClick={() => handleVerifyAndRegister(otpDigits.join("").trim())}
+              disabled={loading || otpDigits.join("").length < 6}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-sm font-bold text-white shadow-lg shadow-rose-600/15 hover:from-rose-500 hover:to-rose-400 active:scale-95 disabled:scale-100 disabled:opacity-50 transition cursor-pointer flex items-center justify-center space-x-2"
             >
-              {verifyingOtp ? (
+              {loading ? (
                 <>
                   <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Verificando...</span>
@@ -425,11 +629,11 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
 
               <button
                 onClick={() => handleSendOtp(email.trim().toLowerCase())}
-                disabled={sendingOtp || timerSeconds > 540}
+                disabled={loading || !canResend}
                 className="flex items-center space-x-1 text-xs font-bold text-rose-400 hover:text-rose-300 disabled:opacity-40 transition cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reenviar Código</span>
+                <span>Reenviar Código {countdown > 0 ? `(${countdown}s)` : ""}</span>
               </button>
             </div>
           </div>
@@ -486,18 +690,18 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
 
           <button
             type="submit"
-            disabled={loading || sendingOtp}
+            disabled={loading}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-sm font-bold text-white shadow-lg shadow-rose-600/15 hover:from-rose-500 hover:to-rose-400 active:scale-95 disabled:scale-100 disabled:opacity-50 transition cursor-pointer flex items-center justify-center space-x-2"
           >
-            {loading || sendingOtp ? (
+            {loading ? (
               <>
                 <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>{isLogin ? "Iniciando Sesión..." : "Enviando Código..."}</span>
+                <span>{isLogin ? "Iniciando Sesión..." : "Creando Cuenta..."}</span>
               </>
             ) : isLogin ? (
               "Iniciar Sesión"
             ) : (
-              "Enviar Código de Verificación"
+              "Crear Cuenta"
             )}
           </button>
         </form>
@@ -514,7 +718,7 @@ export default function AuthModal({ onClose, onSuccess, isFullScreen = false }: 
 
           <button
             onClick={handleGoogleLogin}
-            disabled={loading || sendingOtp}
+            disabled={loading}
             className="w-full py-2.5 border border-white/10 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-neutral-200 transition flex items-center justify-center space-x-2 active:scale-95 disabled:scale-100 disabled:opacity-50 cursor-pointer relative"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">

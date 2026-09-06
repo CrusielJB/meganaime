@@ -433,8 +433,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                           onSelectManga?.(item.manga);
                         }
                       } else {
-                        if (onResumeEpisode && item.progress.episodeId) {
-                          onResumeEpisode(item.anime.id, item.progress.episodeId);
+                        const targetEpId = item.progress.episodeId || (item.anime.episodes && item.anime.episodes[0]?.id) || `${item.anime.id}-ep-${item.progress.episodeNumber || 1}`;
+                        if (onResumeEpisode) {
+                          onResumeEpisode(item.anime, targetEpId);
                         } else {
                           onSelectAnime(item.anime);
                         }
@@ -515,8 +516,9 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                             onSelectManga?.(item.manga);
                           }
                         } else {
-                          if (onResumeEpisode && item.progress.episodeId) {
-                            onResumeEpisode(item.anime.id, item.progress.episodeId);
+                          const targetEpId = item.progress.episodeId || (item.anime.episodes && item.anime.episodes[0]?.id) || `${item.anime.id}-ep-${item.progress.episodeNumber || 1}`;
+                          if (onResumeEpisode) {
+                            onResumeEpisode(item.anime, targetEpId);
                           } else {
                             onSelectAnime(item.anime);
                           }
@@ -527,7 +529,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                         <img 
                           src={getProxyImageUrl(coverUrl, title)} 
                           alt={title}
-                          className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             const isM = item.manga ? "MANGA" : "ANIME";
@@ -535,30 +537,46 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                             recoverCoverImageInHotPath(e, title, targetId, isM);
                           }}
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <div className="h-9 w-9 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-500/20">
-                            <Play className="h-3.5 w-3.5 fill-white ml-0.5" />
+                        {/* Always accessible Play Glow Overlay */}
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors duration-200 flex items-center justify-center">
+                          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-gradient-to-tr from-rose-600 to-pink-500 text-white flex items-center justify-center shadow-xl shadow-rose-600/40 transform group-hover:scale-110 transition-transform">
+                            <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-white ml-0.5" />
                           </div>
                         </div>
-                        <div className="absolute top-2 left-2 bg-black/80 border border-white/10 text-[9px] font-bold text-white px-1.5 py-0.5 rounded">
-                          Cap. {item.progress.episodeNumber}
+
+                        {/* Top Badges */}
+                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md border border-white/10 text-[10px] font-black text-white px-2 py-0.5 rounded-lg shadow">
+                          Cap. {item.progress.episodeNumber || 1}
                         </div>
                         <button
                           onClick={(e) => handleRemoveProgress(e, currentId)}
-                          className="absolute top-2 right-2 h-5 w-5 bg-black/85 hover:bg-rose-600 border border-white/10 rounded-full flex items-center justify-center text-white/80 transition-all z-20"
-                          title="Quitar"
+                          className="absolute top-2 right-2 h-6 w-6 bg-black/80 hover:bg-rose-600 border border-white/10 rounded-full flex items-center justify-center text-white/80 transition-all z-20 shadow"
+                          title="Quitar de seguir viendo"
                         >
-                          <Trash2 className="h-2.5 w-2.5" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-neutral-800">
-                          <div className="bg-rose-500 h-full rounded-r" style={{ width: `${item.progress.percentage}%` }} />
+
+                        {/* Bottom Gradient Progress Bar */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-neutral-900/90">
+                          <div 
+                            className="bg-gradient-to-r from-rose-600 to-pink-500 h-full transition-all duration-300 rounded-r" 
+                            style={{ width: `${Math.max(item.progress.percentage, 5)}%` }} 
+                          />
                         </div>
                       </div>
-                      <div className="p-2 md:p-2.5 bg-neutral-900 flex-grow flex flex-col justify-between">
-                        <h3 className="font-bold text-[11px] md:text-xs text-neutral-100 group-hover:text-rose-400 transition-colors line-clamp-1">{title}</h3>
-                        <div className="flex justify-between items-center mt-1 text-[9px] md:text-[10px] text-neutral-400 font-medium">
-                          <span>{item.isManga ? `Pág. ${Math.round(item.progress.progressSeconds)}` : formatTime(item.progress.progressSeconds)}</span>
-                          <span className="font-bold text-rose-500">{item.progress.percentage}%</span>
+
+                      <div className="p-2.5 bg-neutral-900 flex-grow flex flex-col justify-between">
+                        <h3 className="font-bold text-xs text-neutral-100 group-hover:text-rose-400 transition-colors line-clamp-1">{title}</h3>
+                        <div className="flex justify-between items-center mt-1 text-[10px] text-neutral-400 font-medium">
+                          <span className="text-neutral-400 truncate">
+                            {item.isManga
+                              ? `Pág. ${Math.round(item.progress.progressSeconds)}`
+                              : item.progress.durationSeconds && item.progress.progressSeconds
+                                ? `Quedan ${Math.max(1, Math.round((item.progress.durationSeconds - item.progress.progressSeconds) / 60))} min`
+                                : formatTime(item.progress.progressSeconds)
+                            }
+                          </span>
+                          <span className="font-bold text-rose-500 flex-shrink-0 ml-1">{item.progress.percentage}%</span>
                         </div>
                       </div>
                     </div>

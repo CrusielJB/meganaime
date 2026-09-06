@@ -224,6 +224,39 @@ export const SearchSection: React.FC<SearchSectionProps> = ({
             )}
           </div>
 
+          {/* 1-Click Quick Filter Chips (Crunchyroll/Netflix style, MegaAnime theme) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { label: "✨ Todo", cat: null },
+              { label: "⚔️ Acción", cat: "Acción" },
+              { label: "🌌 Isekai", cat: "Isekai" },
+              { label: "💖 Romance", cat: "Romance" },
+              { label: "🍿 Películas", cat: "Película" },
+              { label: "😂 Comedia", cat: "Comedia" },
+              { label: "👻 Sobrenatural", cat: "Sobrenatural" },
+              { label: "⚡ Fantasía", cat: "Fantasía" }
+            ].map((chip) => {
+              const isSelected = activeCategory === chip.cat && !searchQuery;
+              return (
+                <button
+                  key={chip.label}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveCategory(chip.cat);
+                    setCategoryPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition cursor-pointer border flex-shrink-0 active:scale-95 ${
+                    isSelected
+                      ? "bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30"
+                      : "bg-neutral-900/80 border-white/5 text-neutral-400 hover:text-white hover:border-rose-500/30 hover:bg-neutral-800"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+
           {activeCategory ? (
             <CategorySection
               categories={[]}

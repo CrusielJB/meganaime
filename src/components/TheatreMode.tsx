@@ -21,6 +21,7 @@ interface TheatreModeProps {
   onSelectAnime?: (anime: Anime) => void;
   onSelectManga?: (manga: Manga) => void;
   currentUser?: User | null;
+  onOpenAuth?: () => void;
 }
 
 export const TheatreMode: React.FC<TheatreModeProps> = ({
@@ -39,7 +40,8 @@ export const TheatreMode: React.FC<TheatreModeProps> = ({
   hasNextEpisode,
   onSelectAnime,
   onSelectManga,
-  currentUser = null
+  currentUser = null,
+  onOpenAuth
 }) => {
   return (
     <>
@@ -78,6 +80,7 @@ export const TheatreMode: React.FC<TheatreModeProps> = ({
           hasPrev={hasPrevEpisode}
           hasNext={hasNextEpisode}
           currentUser={currentUser}
+          onOpenAuth={onOpenAuth}
         />
       )}
     </>

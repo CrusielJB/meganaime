@@ -78,7 +78,7 @@ export function generateFacebookPostCaption(item: {
   const genresText = item.genres && item.genres.length > 0 ? item.genres.slice(0, 3).join(", ") : "Anime";
   const hashtagAnime = item.animeTitle.replace(/[^a-zA-Z0-9]/g, "");
 
-  const cleanWebUrl = item.webUrl || "https://megaanime.net";
+  const cleanWebUrl = item.webUrl || "https://megaanime-1c250.web.app";
 
   return `🔥 ¡YA DISPONIBLE EN megaAnime SIN ANUNCIOS! 🔥
 

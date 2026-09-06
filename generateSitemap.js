@@ -19,7 +19,7 @@ const todayStr = new Date().toISOString().split('T')[0];
 let urlsXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://megaanime.net/</loc>
+    <loc>https://megaanime-1c250.web.app/</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -30,7 +30,7 @@ catalog.forEach(anime => {
   const cleanId = encodeURIComponent(anime.id);
   urlsXml += `
   <url>
-    <loc>https://megaanime.net/anime/${cleanId}</loc>
+    <loc>https://megaanime-1c250.web.app/anime/${cleanId}</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -63,11 +63,11 @@ if (fs.existsSync(baseHtmlPath)) {
 
     const ogTitle = `${anime.title} - Ver Online en HD | megaAnime`;
     const ogDesc = anime.synopsis ? anime.synopsis.slice(0, 200) + "..." : `Disfruta de ${anime.title} en calidad Full HD 1080p sin anuncios en megaAnime.`;
-    let ogImage = anime.coverUrl || "https://megaanime.net/icon-512.png";
+    let ogImage = anime.coverUrl || "https://megaanime-1c250.web.app/icon-512.png";
     if (ogImage.includes("tioanime.com")) {
-      ogImage = `https://megaanime.net/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+      ogImage = `https://megaanime-1c250.web.app/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
     }
-    const ogUrl = `https://megaanime.net/ver/${cleanSlug}`;
+    const ogUrl = `https://megaanime-1c250.web.app/ver/${cleanSlug}`;
 
     let pageHtml = baseHtml
       .replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`)
@@ -80,6 +80,12 @@ if (fs.existsSync(baseHtmlPath)) {
     const verDir = path.join(distPath, 'ver', cleanSlug);
     fs.mkdirSync(verDir, { recursive: true });
     fs.writeFileSync(path.join(verDir, 'index.html'), pageHtml, 'utf8');
+
+    if (anime.id && anime.id !== cleanSlug) {
+      const verIdDir = path.join(distPath, 'ver', anime.id);
+      fs.mkdirSync(verIdDir, { recursive: true });
+      fs.writeFileSync(path.join(verIdDir, 'index.html'), pageHtml, 'utf8');
+    }
     verCount++;
   });
 

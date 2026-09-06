@@ -272,8 +272,8 @@ export async function createExpressApp() {
       if (fs.existsSync(airingEpisodesPath)) {
         const raw = fs.readFileSync(airingEpisodesPath, "utf8");
         const data = JSON.parse(raw);
-        console.log("Loaded cached airing episode counts:", data);
-        MOCK_ANIMES.forEach(anime => {
+        console.log("Loaded cached airing episode counts:", Object.keys(data).length);
+        getAnimesWithEpisodes().forEach(anime => {
           if (data[anime.id] !== undefined) {
             anime.airedEpisodesCount = data[anime.id];
           }
@@ -297,7 +297,7 @@ export async function createExpressApp() {
     } catch (e) {}
 
     let updatedAny = false;
-    for (const anime of MOCK_ANIMES) {
+    for (const anime of getAnimesWithEpisodes()) {
       if (anime.status === "En emisión" && anime.external_id) {
         const extId = parseInt(anime.external_id.toString(), 10);
         if (!isNaN(extId)) {
@@ -479,19 +479,168 @@ export async function createExpressApp() {
 
       console.warn(`[OTP Engine] ⚠️ Incorrect OTP for ${email}. Submitted: ${code}, Correct: ${record.code}. Remaining attempts: ${record.attemptsLeft}`);
       return res.status(400).json({
-        error: `Código incorrecto. Te ${record.attemptsLeft === 1 ? 'queda' : 'quedan'} ${record.attemptsLeft} ${record.attemptsLeft === 1 ? 'intento' : 'intentos'}.`,
-        maxAttemptsExceeded: false,
+        error: `Código de 6 dígitos incorrecto. Te quedan ${record.attemptsLeft} ${record.attemptsLeft === 1 ? 'intento' : 'intentos'}.`,
         attemptsLeft: record.attemptsLeft
       });
     }
 
-    // SUCCESS: OTP verified! Delete record to prevent reuse.
+    // SUCCESS: OTP is valid!
     delete OTP_STORE[email];
     console.log(`[OTP Engine] ✅ OTP verified successfully for ${email}`);
-    return res.json({
+    res.json({
       success: true,
-      message: "Correo verificado correctamente."
+      message: "Código verificado correctamente."
     });
+  });
+
+  // --- GOOGLE OAUTH PORTAL FOR NATIVE IOS & ANDROID APPS ---
+  app.get("/api/auth/google-start", (req, res) => {
+    const state = (req.query?.state as string || "").trim();
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Iniciar Sesión con Google - megaAnime</title>
+  <style>
+    body {
+      background-color: #0a0a0a;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .card {
+      background: #171717;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 36px 28px;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      color: #e11d48;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+    }
+    .logo span { color: #ffffff; }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(225, 29, 72, 0.2);
+      border-top-color: #e11d48;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn {
+      display: inline-block;
+      background: #e11d48;
+      color: white;
+      text-decoration: none;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-weight: bold;
+      margin-top: 24px;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: opacity 0.2s;
+    }
+    .btn:active { opacity: 0.8; }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+
+    const host = window.location.hostname;
+    const authDomain = (host && host !== "localhost" && !host.includes("127.0.0.1")) ? host : "megaanime-1c250.web.app";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiOUFkE_JabN1ho29lZoxssj33TXHUZlg",
+      authDomain: authDomain,
+      projectId: "megaanime-1c250",
+      storageBucket: "megaanime-1c250.firebasestorage.app",
+      messagingSenderId: "642402487201",
+      appId: "1:642402487201:web:0a0510b6bb43ea6fba99e0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const state = "${state}";
+
+    async function login() {
+      const statusEl = document.getElementById("status");
+      const actionEl = document.getElementById("action-btn");
+      const spinnerEl = document.getElementById("spinner");
+      try {
+        if (spinnerEl) spinnerEl.style.display = "block";
+        statusEl.textContent = "Conectando de forma segura con Google...";
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        statusEl.textContent = "¡Autenticado con éxito! Abriendo megaAnime App...";
+        
+        const queryParams = "uid=" + encodeURIComponent(user.uid) + "&email=" + encodeURIComponent(user.email || "") + "&name=" + encodeURIComponent(user.displayName || "") + "&photo=" + encodeURIComponent(user.photoURL || "") + "&state=" + encodeURIComponent(state);
+        const returnUrl = "megaanime://auth-callback?" + queryParams;
+        const legacyReturnUrl = "net.megaanime.app://auth-callback?" + queryParams;
+        
+        if (actionEl) {
+          actionEl.style.display = "block";
+          actionEl.href = returnUrl;
+          actionEl.textContent = "Abrir en megaAnime App";
+          actionEl.onclick = null;
+        }
+
+        window.location.href = returnUrl;
+
+        setTimeout(() => {
+          try {
+            window.location.href = legacyReturnUrl;
+          } catch(e) {}
+        }, 500);
+      } catch (err) {
+        console.error(err);
+        if (spinnerEl) spinnerEl.style.display = "none";
+        statusEl.textContent = "Toca el botón para iniciar sesión con Google:";
+        if (actionEl) {
+          actionEl.style.display = "block";
+          actionEl.href = "#";
+          actionEl.onclick = (e) => { e.preventDefault(); login(); };
+          actionEl.textContent = "Continuar con Google";
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      login();
+    });
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">mega<span>Anime</span></div>
+    <div class="spinner"></div>
+    <p id="status" style="color:#a3a3a3; font-size:14px; margin:0; line-height: 1.5;">Iniciando sesión con Google...</p>
+    <a id="action-btn" class="btn" style="display:none;">Continuar</a>
+  </div>
+</body>
+</html>`);
   });
 
   app.all("/api/admin/flush-cache", (req, res) => {
@@ -804,16 +953,14 @@ export async function createExpressApp() {
         const episodes = [];
         for (let i = 1; i <= custom.episodesCount; i++) {
           episodes.push({
-            id: `${custom.id}-${i}`,
+            id: `${custom.id}-ep-${i}`,
             title: `${custom.title} - Episodio ${i}`,
             number: i,
             animeId: custom.id,
             animeTitle: custom.title,
             coverUrl: custom.coverUrl,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            videoServers: [
-              { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
-            ]
+            videoUrl: `/api/episode/${custom.id}-ep-${i}`,
+            videoServers: []
           });
         }
         const fullAnime = { ...custom, episodes };
@@ -838,7 +985,7 @@ export async function createExpressApp() {
     if (cached) return res.json(cached);
 
     try {
-      // 1. FIRST: Check if this episode exists in Google Drive manifest for INSTANT 1ms playback
+      // 1. Check if this episode exists in Google Drive manifest with STRICT matching
       let manifest: any = {};
       const manifestPaths = [
         path.join(process.cwd(), "dist/drive_episodes.json"),
@@ -874,103 +1021,147 @@ export async function createExpressApp() {
             a.id === `tioanime-${rawSlug}` || 
             a.id === `tioanime-${rawSlug}-tv` || 
             (a.external_id && a.external_id === rawSlug)
-          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase().startsWith(`tioanime-${rawSlug.toLowerCase()}`)));
+          ) || LOCAL_CATALOG.find(a => a.id.toLowerCase() === `tioanime-${rawSlug.toLowerCase()}`));
 
-      // Check if episode is in Google Drive
-      const entryKeys = [
+      const normRawSlug = rawSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normAnimeTitle = (catalogItem?.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normCatalogId = (catalogItem?.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      let driveEp: any = null;
+
+      // 1. Direct exact key match only
+      const directKeys = [
         rawSlug,
         `tioanime-${rawSlug}`,
         `tioanime-${rawSlug}-tv`,
         catalogItem?.id,
-        (rawSlug.includes("one-piece") || catalogItem?.title?.toLowerCase().includes("one piece")) ? "tioanime-one-piece-tv" : null
-      ].filter(Boolean);
+        catalogItem?.external_id
+      ].filter(Boolean) as string[];
 
-      let driveEp: any = null;
-      for (const k of entryKeys) {
+      for (const k of directKeys) {
         if (manifest[k]?.episodes?.[`ep-${epNum}`]) {
           driveEp = manifest[k].episodes[`ep-${epNum}`];
           break;
         }
       }
 
-      if (driveEp && (driveEp.streamUrl || (driveEp.fileId && !driveEp.fileId.startsWith("drive-")))) {
-        const directDriveUrl = driveEp.streamUrl || `https://drive.google.com/file/d/${driveEp.fileId}/preview`;
-        const epData = {
-          id,
-          title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
-          number: epNum,
-          animeId: catalogItem ? catalogItem.id : (rawSlug.includes("one-piece") ? "tioanime-one-piece-tv" : `tioanime-${rawSlug}`),
-          animeTitle: catalogItem ? catalogItem.title : (rawSlug.includes("one-piece") ? "One Piece" : rawSlug),
-          coverUrl: catalogItem ? catalogItem.coverUrl : "",
-          videoServers: [
-            {
-              name: "⚡ MegaAnime (1080p Ultra HD)",
-              url: directDriveUrl
+      // 2. Strict full normalized equality match only (NO partial substring .includes)
+      if (!driveEp) {
+        for (const mKey of Object.keys(manifest)) {
+          const normKey = mKey.toLowerCase().replace(/^tioanime-/, "").replace(/[^a-z0-9]/g, "");
+          const normEntryTitle = (manifest[mKey]?.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+          
+          const isExactKey = (normKey && normRawSlug && normKey === normRawSlug) || (normCatalogId && normKey === normCatalogId);
+          const isExactTitle = normAnimeTitle && normEntryTitle && normAnimeTitle.length >= 4 && normAnimeTitle === normEntryTitle;
+
+          if (isExactKey || isExactTitle) {
+            if (manifest[mKey]?.episodes?.[`ep-${epNum}`]) {
+              driveEp = manifest[mKey].episodes[`ep-${epNum}`];
+              break;
             }
-          ],
-          videoUrl: directDriveUrl
-        };
-        apiCache.set(cacheKey, epData, 86400);
-        return res.json(epData);
+          }
+        }
       }
 
-      // 2. SECOND: If not in Google Drive, scrape TioAnime for external servers
+      // 2. Fetch original authentic servers from scrapers (TioAnime, MonosChinos, AnimeFLV, AnimeID)
+      let combinedServers: Array<{ name: string; url: string }> = [];
+
       if (rawSlug) {
-        const scrapeSlug = rawSlug.includes("one-piece") ? "one-piece-tv" : rawSlug;
-        const servers = await scrapeEpisodeFromTioAnime(scrapeSlug, epNum);
-        if (servers && servers.length > 0) {
-          const epData = {
-            id,
-            title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
-            number: epNum,
-            animeId: catalogItem ? catalogItem.id : `tioanime-${rawSlug}`,
-            animeTitle: catalogItem ? catalogItem.title : rawSlug,
-            coverUrl: catalogItem ? catalogItem.coverUrl : "",
-            videoServers: servers,
-            videoUrl: servers[0]?.url || ""
-          };
-          apiCache.set(cacheKey, epData, 7200);
-          return res.json(epData);
+        const scrapeSlug = rawSlug.includes("one-piece") && !rawSlug.includes("movie") && !rawSlug.includes("pelicula") ? "one-piece-tv" : rawSlug;
+        try {
+          const tioServers = await scrapeEpisodeFromTioAnime(scrapeSlug, epNum);
+          if (tioServers && tioServers.length > 0) {
+            combinedServers.push(...tioServers);
+          }
+        } catch (e) {
+          console.warn("TioAnime scrape notice:", e);
         }
       }
 
-      // Check custom DB second
-      GLOBAL_CUSTOM_ANIMES = readCustomDb();
-      let foundCustomEp: any = null;
-      for (const anime of GLOBAL_CUSTOM_ANIMES) {
-        if (id.startsWith(anime.id + "-")) {
-          const parts = id.split("-");
-          const epNum = parseInt(parts[parts.length - 1], 10);
-          foundCustomEp = {
-            id,
-            title: `${anime.title} - Episodio ${epNum}`,
-            number: epNum,
-            animeId: anime.id,
-            animeTitle: anime.title,
-            coverUrl: anime.coverUrl,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            videoServers: [
-              { name: "MegaServer 1", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }
-            ]
-          };
-          break;
+      // If needed, run additional scrapers
+      if (combinedServers.length === 0) {
+        try {
+          const freshData = await scrapeEpisode(id);
+          if (freshData && freshData.videoServers && freshData.videoServers.length > 0) {
+            combinedServers.push(...freshData.videoServers);
+          }
+        } catch (e) {
+          console.warn("Aggregator scrape notice:", e);
         }
       }
 
-      if (foundCustomEp) {
-        apiCache.set(cacheKey, foundCustomEp, 86400);
-        return res.json(foundCustomEp);
+      // If strict Drive episode exists and is a valid video (> 20MB), add it as our primary ad-free 1080p player
+      const driveSize = parseFloat(driveEp?.sizeMB || "0");
+      if (driveEp && (driveEp.fileId || driveEp.streamUrl) && (isNaN(driveSize) || driveSize >= 20)) {
+        const fileId = driveEp.fileId || (driveEp.streamUrl ? driveEp.streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] : null);
+        if (fileId) {
+          // Dedicated MegaAnime HD Drive server: strictly exclusive without ad servers
+          combinedServers = [{
+            name: "⚡ MegaAnime HD (Sin Anuncios)",
+            url: `https://drive.google.com/file/d/${fileId}/preview?rm=minimal`
+          }];
+        }
       }
 
-      const freshData = await scrapeEpisode(id);
-      const hasRealServers = freshData && freshData.videoServers && freshData.videoServers.length > 2;
-      
-      if (hasRealServers) {
-        apiCache.set(cacheKey, freshData, 86400);
-      } else {
-        apiCache.set(cacheKey, freshData, 5);
+      // Custom DB fallback - note: no fallback video; real servers will be scraped per episode
+      if (combinedServers.length === 0) {
+        GLOBAL_CUSTOM_ANIMES = readCustomDb();
+        for (const anime of GLOBAL_CUSTOM_ANIMES) {
+          if (id.startsWith(anime.id + "-")) {
+            // Don't inject fake video - real episode servers will be found via scrapers above
+            // If we get here with 0 servers, TioAnime/MonosChinos didn't find this anime yet
+            break;
+          }
+        }
       }
-      res.json(freshData);
+
+      // Anti-Mismatch Guard: Ensure no external server belongs to a different anime
+      const currentAnimeKeywords = [
+        rawSlug,
+        catalogItem?.id,
+        catalogItem?.title,
+        catalogItem?.title_english,
+        catalogItem?.title_romaji
+      ].filter(Boolean).map(s => (s as string).toLowerCase().replace(/[^a-z0-9]/g, ""));
+
+      const KNOWN_ANIME_DISTINCT_KEYS = [
+        "clevatess", "onepiece", "naruto", "bleach", "boruto", "dragonball",
+        "jujutsukaisen", "chainsawman", "sololeveling", "frieren",
+        "mushokutensei", "shingekinokyojin", "attackontitan", "bokunohero", "myheroacademia",
+        "blackclover", "fairytail", "kimetsunoyaiba", "demonslayer", "hunterxhunter",
+        "deathnote", "dandadan", "overlord", "spyxfamily", "tokyoghoul", "rezero"
+      ];
+
+      const verifiedServers = combinedServers.filter(s => {
+        const u = (s.url || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const n = (s.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const key of KNOWN_ANIME_DISTINCT_KEYS) {
+          const isTargetAnime = currentAnimeKeywords.some(ak => ak.includes(key) || key.includes(ak));
+          if (!isTargetAnime) {
+            if (u.includes(key) || n.includes(key)) {
+              console.warn(`[Anti-Mismatch Server Filter] Dropped server ${s.name} (${s.url}) - belongs to ${key}`);
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+
+      const epData = {
+        id,
+        title: catalogItem ? (catalogItem.type === "Película" ? catalogItem.title : `${catalogItem.title} - Episodio ${epNum}`) : `Episodio ${epNum}`,
+        number: epNum,
+        animeId: catalogItem ? catalogItem.id : (rawSlug.includes("one-piece") ? "tioanime-one-piece-tv" : `tioanime-${rawSlug}`),
+        animeTitle: catalogItem ? catalogItem.title : (rawSlug.includes("one-piece") ? "One Piece" : rawSlug),
+        coverUrl: catalogItem ? catalogItem.coverUrl : "",
+        videoServers: verifiedServers,
+        videoUrl: verifiedServers[0]?.url || ""
+      };
+
+      if (combinedServers.length > 0) {
+        apiCache.set(cacheKey, epData, 7200);
+      }
+      return res.json(epData);
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to fetch episode players" });
     }
@@ -2085,6 +2276,7 @@ export async function createExpressApp() {
     try {
       const upstream = await fetch(videoUrl, {
         headers: fetchHeaders,
+        redirect: "follow",
         signal: AbortSignal.timeout(30000)
       });
 
@@ -2138,33 +2330,107 @@ export async function createExpressApp() {
 
   // ── Google Drive Direct Video Stream Endpoint (Zero ads, native player, Full HD 1080p) ──
   app.get("/api/gdrive-stream", async (req, res) => {
-    const rawPath = req.query.path as string;
-    if (!rawPath) {
-      return res.status(400).json({ error: "Missing path parameter" });
+    let fileId = req.query.fileId as string;
+    const rawUrl = req.query.url as string;
+
+    if (!fileId && rawUrl) {
+      const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match) fileId = match[1];
     }
 
-    try {
-      const { spawn } = await import("child_process");
-      const remoteTarget = `gdrive:MegaAnime_HD/${rawPath.replace(/^\/+/, '')}`;
-
-      res.setHeader("Content-Type", "video/mp4");
-      res.setHeader("Accept-Ranges", "bytes");
-
-      const rclone = spawn("rclone", ["cat", remoteTarget]);
-
-      rclone.stdout.on("error", (err) => {
-        if (!res.writableEnded) res.end();
-      });
-
-      rclone.stdout.pipe(res);
-
-      req.on("close", () => {
-        try { rclone.kill(); } catch(e) {}
-      });
-    } catch (err: any) {
-      console.error("GDrive stream error:", err.message);
-      if (!res.headersSent) res.status(500).send("Error streaming from Google Drive");
+    if (!fileId) {
+      return res.status(400).json({ error: "Missing fileId parameter" });
     }
+
+    // Set CORS headers for custom HTML5 video player
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Range, Origin, Content-Type, Accept");
+    res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type, Accept-Ranges");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+    const reqRange = req.headers.range as string | undefined;
+
+    const makeRequest = (url: string, cookies: string = "", attempt: number = 0) => {
+      if (attempt > 6) {
+        if (!res.headersSent) res.status(500).send("Too many redirects from Google Drive");
+        return;
+      }
+
+      const parsedUrl = new URL(url);
+      const options = {
+        hostname: parsedUrl.hostname,
+        path: parsedUrl.pathname + parsedUrl.search,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Connection": "keep-alive",
+          ...(reqRange ? { "Range": reqRange } : {}),
+          ...(cookies ? { "Cookie": cookies } : {}),
+        }
+      };
+
+      const request = https.get(options, (upstream) => {
+        const status = upstream.statusCode || 200;
+
+        // Follow standard redirects (301, 302, 303, 307, 308)
+        if ((status === 301 || status === 302 || status === 303 || status === 307 || status === 308) && upstream.headers.location) {
+          upstream.resume();
+          const redirectUrl = upstream.headers.location.startsWith("http")
+            ? upstream.headers.location
+            : `https://${parsedUrl.hostname}${upstream.headers.location}`;
+          const newCookies = upstream.headers["set-cookie"]
+            ? [cookies, ...(upstream.headers["set-cookie"] as string[])].filter(Boolean).join("; ")
+            : cookies;
+          makeRequest(redirectUrl, newCookies, attempt + 1);
+          return;
+        }
+
+        const setCookies = upstream.headers["set-cookie"]
+          ? [cookies, ...(upstream.headers["set-cookie"] as string[])].filter(Boolean).join("; ")
+          : cookies;
+
+        const contentType = upstream.headers["content-type"] || "";
+
+        // Google Drive virus scan prompt for large video files (>100MB) — resolve confirm + uuid tokens
+        if (contentType.includes("text/html")) {
+          let html = "";
+          upstream.on("data", (chunk: Buffer) => html += chunk.toString());
+          upstream.on("end", () => {
+            const confirmMatch = html.match(/name="confirm"\s+value="([^"]+)"/) || html.match(/confirm=([a-zA-Z0-9_-]+)/);
+            const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/) || html.match(/uuid=([a-zA-Z0-9_-]+)/);
+            const confirmVal = confirmMatch ? confirmMatch[1] : "t";
+            const uuidVal = uuidMatch ? uuidMatch[1] : "";
+            const confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=${confirmVal}${uuidVal ? `&uuid=${uuidVal}` : ""}`;
+            makeRequest(confirmUrl, setCookies, attempt + 1);
+          });
+          return;
+        }
+
+        // Success: pipe video stream directly to client
+        if (!res.headersSent) {
+          res.status(status);
+          res.setHeader("Content-Type", contentType.includes("video") ? contentType : "video/mp4");
+          res.setHeader("Accept-Ranges", "bytes");
+          if (upstream.headers["content-length"]) res.setHeader("Content-Length", upstream.headers["content-length"] as string);
+          if (upstream.headers["content-range"]) res.setHeader("Content-Range", upstream.headers["content-range"] as string);
+          res.setHeader("Cache-Control", "public, max-age=7200");
+        }
+
+        upstream.pipe(res);
+        req.on("close", () => {
+          try { request.destroy(); upstream.destroy(); } catch (_) {}
+        });
+      });
+
+      request.on("error", (err: Error) => {
+        console.error("GDrive stream error:", err.message);
+        if (!res.headersSent) res.status(500).send("Stream error: " + err.message);
+      });
+    };
+
+    // Always start with drive.google.com/uc which resolves reliably in all Node environments
+    const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    makeRequest(initialUrl, "", 0);
   });
 
   // 2. Comprehensive Embed URL Resolver — supports 12+ server types
@@ -2184,6 +2450,35 @@ export async function createExpressApp() {
         url: `/api/proxy-stream?url=${encodeURIComponent(embedUrl)}&referer=${encodeURIComponent(embedUrl)}`,
         isHls
       });
+    }
+
+    // Google Drive direct stream resolver (Full HD 1080p, Zero ads, plays in MegaAnime native player)
+    if (embedUrl.includes("drive.google.com") || embedUrl.includes("google.com/file") || serverName.includes("drive") || serverName.includes("megaanime")) {
+      const driveMatch = embedUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || embedUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || embedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const fileId = driveMatch ? driveMatch[1] : null;
+      if (fileId) {
+        try {
+          const downloadPageRes = await fetch(`https://drive.usercontent.google.com/download?id=${fileId}&export=download`, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+            signal: AbortSignal.timeout(4000)
+          });
+          if (downloadPageRes.ok) {
+            const pageText = await downloadPageRes.text();
+            const uuidMatch = pageText.match(/name="uuid"\s+value="([^"]+)"/) || pageText.match(/uuid=([a-zA-Z0-9_-]+)/);
+            const confirmMatch = pageText.match(/name="confirm"\s+value="([^"]+)"/) || pageText.match(/confirm=([a-zA-Z0-9_-]+)/);
+            const uuid = uuidMatch ? uuidMatch[1] : "";
+            const confirm = confirmMatch ? confirmMatch[1] : "t";
+            const directStreamUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${confirm}&uuid=${uuid}`;
+            return res.json({
+              url: directStreamUrl,
+              isHls: false,
+              dead: false
+            });
+          }
+        } catch (err) {
+          console.warn("[Resolve] GDrive direct stream resolution error:", err);
+        }
+      }
     }
 
     try {
@@ -2510,6 +2805,249 @@ export async function createExpressApp() {
     res.json({ servers });
   });
 
+  // ── Live Users Telemetry System ──
+  interface LiveSession {
+    sessionId: string;
+    ip: string;
+    countryCode: string;
+    countryName: string;
+    countryFlag: string;
+    city: string;
+    deviceType: "Computadora" | "Móvil" | "Tablet" | "Smart TV" | "Otro";
+    os: string;
+    browser: string;
+    screenResolution: string;
+    currentPath: string;
+    currentAnimeTitle: string;
+    currentEpisode: string;
+    userId?: string;
+    userName?: string;
+    userEmail?: string;
+    userPlan?: string;
+    connectedAt: number;
+    lastSeen: number;
+  }
+
+  const LIVE_SESSIONS = new Map<string, LiveSession>();
+
+  const COUNTRY_MAP: Record<string, { name: string; flag: string }> = {
+    DO: { name: "República Dominicana", flag: "🇩🇴" },
+    MX: { name: "México", flag: "🇲🇽" },
+    ES: { name: "España", flag: "🇪🇸" },
+    US: { name: "Estados Unidos", flag: "🇺🇸" },
+    CO: { name: "Colombia", flag: "🇨🇴" },
+    AR: { name: "Argentina", flag: "🇦🇷" },
+    PE: { name: "Perú", flag: "🇵🇪" },
+    CL: { name: "Chile", flag: "🇨🇱" },
+    VE: { name: "Venezuela", flag: "🇻🇪" },
+    EC: { name: "Ecuador", flag: "🇪🇨" },
+    GT: { name: "Guatemala", flag: "🇬🇹" },
+    CU: { name: "Cuba", flag: "🇨🇺" },
+    BO: { name: "Bolivia", flag: "🇧🇴" },
+    PR: { name: "Puerto Rico", flag: "🇵🇷" },
+    CR: { name: "Costa Rica", flag: "🇨🇷" },
+    PA: { name: "Panamá", flag: "🇵🇦" },
+    UY: { name: "Uruguay", flag: "🇺🇾" },
+    PY: { name: "Paraguay", flag: "🇵🇾" },
+    SV: { name: "El Salvador", flag: "🇸🇻" },
+    HN: { name: "Honduras", flag: "🇭🇳" },
+    NI: { name: "Nicaragua", flag: "🇳🇮" },
+    BR: { name: "Brasil", flag: "🇧🇷" },
+    CA: { name: "Canadá", flag: "🇨🇦" },
+    FR: { name: "Francia", flag: "🇫🇷" },
+    DE: { name: "Alemania", flag: "🇩🇪" },
+    IT: { name: "Italia", flag: "🇮🇹" },
+    GB: { name: "Reino Unido", flag: "🇬🇧" },
+    JP: { name: "Japón", flag: "🇯🇵" },
+    KR: { name: "Corea del Sur", flag: "🇰🇷" },
+    RU: { name: "Rusia", flag: "🇷🇺" },
+    NL: { name: "Países Bajos", flag: "🇳🇱" },
+    PT: { name: "Portugal", flag: "🇵🇹" },
+    PH: { name: "Filipinas", flag: "🇵🇭" }
+  };
+
+  function parseUserAgent(ua: string) {
+    ua = ua || "";
+    let deviceType: LiveSession["deviceType"] = "Computadora";
+    if (/mobile/i.test(ua) && !/tablet|ipad/i.test(ua)) deviceType = "Móvil";
+    else if (/tablet|ipad/i.test(ua)) deviceType = "Tablet";
+    else if (/smart-tv|googletv|appletv|hbbtv|roku|crkey/i.test(ua)) deviceType = "Smart TV";
+
+    let os = "Desconocido";
+    if (/windows/i.test(ua)) os = "Windows";
+    else if (/macintosh|mac os x/i.test(ua) && !/iphone|ipad/i.test(ua)) os = "macOS";
+    else if (/iphone/i.test(ua)) os = "iOS (iPhone)";
+    else if (/ipad/i.test(ua)) os = "iPadOS";
+    else if (/android/i.test(ua)) os = "Android";
+    else if (/linux/i.test(ua)) os = "Linux";
+    else if (/cros/i.test(ua)) os = "ChromeOS";
+
+    let browser = "Navegador Web";
+    if (/edg/i.test(ua)) browser = "Microsoft Edge";
+    else if (/opr|opera/i.test(ua)) browser = "Opera";
+    else if (/chrome|crios/i.test(ua)) browser = "Google Chrome";
+    else if (/firefox|fxios/i.test(ua)) browser = "Mozilla Firefox";
+    else if (/safari/i.test(ua)) browser = "Apple Safari";
+    else if (/samsungbrowser/i.test(ua)) browser = "Samsung Internet";
+
+    return { deviceType, os, browser };
+  }
+
+  // Heartbeat endpoint
+  app.post(["/api/telemetry/heartbeat", "/telemetry/heartbeat"], express.json(), (req, res) => {
+    try {
+      const {
+        sessionId,
+        userId,
+        userName,
+        userEmail,
+        userPlan,
+        currentPath,
+        currentAnimeTitle,
+        currentEpisode,
+        device
+      } = req.body || {};
+
+      if (!sessionId) {
+        return res.status(400).json({ error: "Missing sessionId" });
+      }
+
+      // Extract client IP
+      const rawIp = (req.headers["cf-connecting-ip"] as string)
+        || (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim()
+        || (req.headers["fastly-client-ip"] as string)
+        || (req.headers["x-real-ip"] as string)
+        || req.socket.remoteAddress
+        || "127.0.0.1";
+      const ip = rawIp.replace(/^::ffff:/, '');
+
+      // Extract Country & City from cloud headers (Cloudflare, App Engine, Fastly)
+      const rawCountry = (req.headers["cf-ipcountry"] as string)
+        || (req.headers["x-appengine-country"] as string)
+        || (req.headers["geoip_country_code"] as string)
+        || (req.headers["x-country-code"] as string)
+        || "";
+
+      const rawCity = (req.headers["cf-ipcity"] as string)
+        || (req.headers["x-appengine-city"] as string)
+        || "";
+
+      const countryInfo = COUNTRY_MAP[rawCountry.toUpperCase()] || {
+        name: rawCountry ? `País (${rawCountry.toUpperCase()})` : (ip === "127.0.0.1" || ip === "localhost" ? "Local / Desarrollo" : "Global / América"),
+        flag: rawCountry ? "🌐" : (ip === "127.0.0.1" ? "💻" : "🌎")
+      };
+
+      const ua = req.headers["user-agent"] || "";
+      const parsedUa = parseUserAgent(ua);
+
+      const now = Date.now();
+      const existing = LIVE_SESSIONS.get(sessionId);
+
+      const session: LiveSession = {
+        sessionId,
+        ip: ip || "Desconocida",
+        countryCode: rawCountry ? rawCountry.toUpperCase() : "INT",
+        countryName: countryInfo.name,
+        countryFlag: countryInfo.flag,
+        city: rawCity ? decodeURIComponent(rawCity) : "",
+        deviceType: device?.deviceType || parsedUa.deviceType,
+        os: device?.os || parsedUa.os,
+        browser: device?.browser || parsedUa.browser,
+        screenResolution: device?.screenResolution || "",
+        currentPath: currentPath || "/",
+        currentAnimeTitle: currentAnimeTitle || "",
+        currentEpisode: currentEpisode || "",
+        userId: userId || existing?.userId,
+        userName: userName || existing?.userName,
+        userEmail: userEmail || existing?.userEmail,
+        userPlan: userPlan || existing?.userPlan,
+        connectedAt: existing?.connectedAt || now,
+        lastSeen: now
+      };
+
+      LIVE_SESSIONS.set(sessionId, session);
+
+      // Clean up sessions older than 45 seconds
+      for (const [sId, sData] of LIVE_SESSIONS.entries()) {
+        if (now - sData.lastSeen > 45000) {
+          LIVE_SESSIONS.delete(sId);
+        }
+      }
+
+      res.json({ success: true, onlineCount: LIVE_SESSIONS.size });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Disconnect endpoint
+  app.post(["/api/telemetry/disconnect", "/telemetry/disconnect"], express.text({ type: "*/*" }), (req, res) => {
+    try {
+      let sessionId = "";
+      if (typeof req.body === "string" && req.body.startsWith("{")) {
+        try { sessionId = JSON.parse(req.body).sessionId; } catch(e) {}
+      } else if (req.body?.sessionId) {
+        sessionId = req.body.sessionId;
+      }
+      if (sessionId) {
+        LIVE_SESSIONS.delete(sessionId);
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      res.json({ success: true });
+    }
+  });
+
+  // Admin Live Users Query endpoint
+  app.get(["/api/admin/live-users", "/admin/live-users"], (req, res) => {
+    const now = Date.now();
+    // Purge stale
+    for (const [sId, sData] of LIVE_SESSIONS.entries()) {
+      if (now - sData.lastSeen > 45000) {
+        LIVE_SESSIONS.delete(sId);
+      }
+    }
+
+    const sessions = Array.from(LIVE_SESSIONS.values()).sort((a, b) => b.lastSeen - a.lastSeen);
+
+    const devices = { Computadora: 0, Móvil: 0, Tablet: 0, "Smart TV": 0, Otro: 0 };
+    const countriesCount: Record<string, { country: string; code: string; flag: string; count: number }> = {};
+    const pagesCount: Record<string, { path: string; title: string; count: number }> = {};
+
+    for (const s of sessions) {
+      if (devices[s.deviceType] !== undefined) devices[s.deviceType]++;
+      else devices.Otro++;
+
+      const cKey = s.countryCode || "INT";
+      if (!countriesCount[cKey]) {
+        countriesCount[cKey] = {
+          country: s.countryName,
+          code: s.countryCode,
+          flag: s.countryFlag,
+          count: 0
+        };
+      }
+      countriesCount[cKey].count++;
+
+      const pKey = s.currentAnimeTitle ? `${s.currentAnimeTitle} ${s.currentEpisode ? `- ${s.currentEpisode}` : ''}` : s.currentPath;
+      if (!pagesCount[pKey]) {
+        pagesCount[pKey] = {
+          path: s.currentPath,
+          title: s.currentAnimeTitle ? `${s.currentAnimeTitle} ${s.currentEpisode ? `- ${s.currentEpisode}` : ''}` : s.currentPath,
+          count: 0
+        };
+      }
+      pagesCount[pKey].count++;
+    }
+
+    res.json({
+      onlineCount: sessions.length,
+      users: sessions,
+      devices,
+      countries: Object.values(countriesCount).sort((a, b) => b.count - a.count),
+      topPages: Object.values(pagesCount).sort((a, b) => b.count - a.count)
+    });
+  });
 
   // Configure middleware (Vite Dev Server vs Static Production bundle)
   const isProduction = process.env.NODE_ENV === "production" || fs.existsSync(path.join(process.cwd(), "dist/index.html"));
@@ -2582,6 +3120,7 @@ export async function createExpressApp() {
 
         if (found) {
           const ogTitle = `${found.title} - Ver Online en HD | megaAnime`;
+          const ogDesc = found.synopsis ? found.synopsis.slice(0, 200) + "..." : `Disfruta de ${found.title} en HD en megaAnime.`;
           let ogImage = found.coverUrl || "https://megaanime.net/icon-512.png";
           if (ogImage.includes("tioanime.com")) {
             ogImage = `https://megaanime.net/api/image-proxy?url=${encodeURIComponent(ogImage)}`;

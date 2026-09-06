@@ -39,12 +39,52 @@ import {
   Film,
   ExternalLink,
   MessageSquare,
-  CheckCircle2
+  CheckCircle2,
+  Globe,
+  Smartphone,
+  Laptop,
+  Monitor,
+  Tv,
+  MapPin,
+  Wifi,
+  Clock,
+  Copy
 } from 'lucide-react';
 import { MOCK_ANIMES } from '../utils/animeDb';
 import { MOCK_MANGAS } from '../utils/mangaDb';
 import { fetchUserReports, updateReportStatus, UserReport } from '../utils/reports';
 import { getGlobalBannerAlert, saveGlobalBannerAlert, GlobalBannerAlert } from '../utils/systemAlerts';
+import { getApiUrl } from '../utils/apiConfig';
+
+export interface LiveUserItem {
+  sessionId: string;
+  ip: string;
+  countryCode: string;
+  countryName: string;
+  countryFlag: string;
+  city: string;
+  deviceType: "Computadora" | "Móvil" | "Tablet" | "Smart TV" | "Otro";
+  os: string;
+  browser: string;
+  screenResolution: string;
+  currentPath: string;
+  currentAnimeTitle: string;
+  currentEpisode: string;
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  userPlan?: string;
+  connectedAt: number;
+  lastSeen: number;
+}
+
+export interface LiveTelemetryData {
+  onlineCount: number;
+  users: LiveUserItem[];
+  devices: { Computadora: number; Móvil: number; Tablet: number; "Smart TV": number; Otro: number };
+  countries: { country: string; code: string; flag: string; count: number }[];
+  topPages: { path: string; title: string; count: number }[];
+}
 
 // Main interface for local anime edits
 interface LocalAnime {
@@ -73,8 +113,39 @@ interface AdminUser {
 }
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState<'inicio' | 'catalogo' | 'apariencia' | 'usuarios' | 'reportes' | 'servidores'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'en_vivo' | 'catalogo' | 'apariencia' | 'usuarios' | 'reportes' | 'servidores'>('inicio');
   const [loading, setLoading] = useState(true);
+
+  // Live Users Telemetry State
+  const [liveData, setLiveData] = useState<LiveTelemetryData>({
+    onlineCount: 0,
+    users: [],
+    devices: { Computadora: 0, Móvil: 0, Tablet: 0, "Smart TV": 0, Otro: 0 },
+    countries: [],
+    topPages: []
+  });
+  const [loadingLive, setLoadingLive] = useState(false);
+  const [liveSearchQuery, setLiveSearchQuery] = useState("");
+  const [selectedDeviceFilter, setSelectedDeviceFilter] = useState<string>("all");
+  const [copiedIp, setCopiedIp] = useState<string | null>(null);
+
+  // Fetch live telemetry on mount and every 3.5s
+  useEffect(() => {
+    let interval: any = null;
+    const fetchLive = async () => {
+      try {
+        const res = await fetch(getApiUrl("/api/admin/live-users"));
+        if (res.ok) {
+          const data = await res.json();
+          setLiveData(data);
+        }
+      } catch (e) {}
+    };
+
+    fetchLive();
+    interval = setInterval(fetchLive, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Advanced Servers Tab States
   const [serverPriority, setServerPriority] = useState<string[]>(() => {
@@ -771,6 +842,32 @@ export default function AdminPanel() {
             <LayoutDashboard className="h-4 w-4" />
             <span>Inicio</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('en_vivo')}
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+              activeTab === 'en_vivo' 
+                ? 'bg-emerald-500/10 border-l-4 border-emerald-500 text-emerald-400' 
+                : 'text-neutral-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center justify-center">
+                <Activity className={`h-4 w-4 ${liveData.onlineCount > 0 ? 'text-emerald-400' : 'text-neutral-500'}`} />
+                {liveData.onlineCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                )}
+              </div>
+              <span>Usuarios en Vivo</span>
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              liveData.onlineCount > 0 
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                : 'bg-neutral-800 text-neutral-500'
+            }`}>
+              {liveData.onlineCount}
+            </span>
+          </button>
           
           <button
             onClick={() => setActiveTab('catalogo')}
@@ -844,18 +941,22 @@ export default function AdminPanel() {
 
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-neutral-900/35 border border-white/5 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group">
-                <div className="h-10 w-10 bg-green-500/10 rounded-xl flex items-center justify-center">
-                  <Users className="h-5 w-5 text-green-400" />
+              <button 
+                onClick={() => setActiveTab('en_vivo')}
+                className="bg-neutral-900/35 hover:bg-emerald-950/20 border border-white/5 hover:border-emerald-500/30 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group text-left transition cursor-pointer"
+              >
+                <div className="h-10 w-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                  <Users className="h-5 w-5 text-emerald-400" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-500 uppercase font-black tracking-widest block">Usuarios Online</span>
-                  <span className="text-2xl font-black text-white leading-none mt-1 block">{stats.activeUsers}</span>
+                  <span className="text-[10px] text-neutral-500 group-hover:text-emerald-400 uppercase font-black tracking-widest block transition">Usuarios Online</span>
+                  <span className="text-2xl font-black text-white leading-none mt-1 block">{liveData.onlineCount}</span>
                 </div>
-                <div className="absolute top-2 right-2 flex items-center gap-0.5 text-[8px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full font-bold">
+                <div className="absolute top-2 right-2 flex items-center gap-1 text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                   <span>En vivo</span>
                 </div>
-              </div>
+              </button>
 
               <div className="bg-neutral-900/35 border border-white/5 rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden group">
                 <div className="h-10 w-10 bg-indigo-500/10 rounded-xl flex items-center justify-center">
@@ -1012,25 +1113,41 @@ export default function AdminPanel() {
 
             {/* Daily Visitor History Section — resets per day automatically, 100% real Firestore data */}
             <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-5 flex flex-col space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/5 pb-3">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4.5 w-4.5 text-rose-500" />
-                  <span className="text-sm font-extrabold text-white tracking-wide uppercase">Historial de Personas / Visitas por Día</span>
-                </div>
-                <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 font-bold flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3" />
-                  Datos Reales de Firestore — Se reinicia cada día automáticamente
-                </span>
-              </div>
+              {(() => {
+                const currentMonthPrefix = new Date().toISOString().slice(0, 7);
+                const totalThisMonth = dailyHistory
+                  .filter(d => d.date.startsWith(currentMonthPrefix))
+                  .reduce((sum, d) => sum + (d.count || 0), 0);
+
+                return (
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/5 pb-3">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4.5 w-4.5 text-rose-500" />
+                      <span className="text-sm font-extrabold text-white tracking-wide uppercase">Historial de Personas / Visitas por Día</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <div className="bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-xl flex items-center gap-2 shadow-sm shadow-rose-500/10">
+                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Total en este mes:</span>
+                        <span className="text-sm font-black text-rose-400">{totalThisMonth.toLocaleString()} <span className="text-[10px] text-neutral-400 font-normal">personas</span></span>
+                      </div>
+                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20 font-bold flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Datos Reales de Firestore
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {dailyHistory.length === 0 ? (
                 <div className="text-center py-8 text-neutral-500 text-xs">
                   Aún no hay visitas registradas. Los datos aparecerán aquí cuando los usuarios visiten la página.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-auto max-h-[175px] rounded-xl pr-1">
                   <table className="w-full text-left text-xs text-neutral-300 border-collapse">
-                    <thead>
+                    <thead className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-md">
                       <tr className="border-b border-white/10 text-[10px] uppercase text-neutral-500 font-extrabold tracking-wider">
                         <th className="py-2.5 px-3">Fecha</th>
                         <th className="py-2.5 px-3">Personas / Visitas</th>
@@ -1367,6 +1484,358 @@ export default function AdminPanel() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* 1.5 LIVE USERS TELEMETRY MONITOR TAB */}
+        {activeTab === 'en_vivo' && (
+          <div className="space-y-8 animate-slide-in">
+            {/* Header & Controls */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
+                  <h1 className="text-xl font-extrabold text-white tracking-tight">Monitor de Usuarios en Vivo</h1>
+                </div>
+                <p className="text-xs text-neutral-400">
+                  Telemetría en tiempo real: Conexiones activas, países, direcciones IP, dispositivos y reproducción en curso.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{liveData.onlineCount} Conectados Ahora</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      setLoadingLive(true);
+                      const res = await fetch(getApiUrl("/api/admin/live-users"));
+                      if (res.ok) setLiveData(await res.json());
+                    } finally {
+                      setLoadingLive(false);
+                    }
+                  }}
+                  className="p-2 rounded-xl bg-neutral-900 border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white transition cursor-pointer"
+                  title="Refrescar datos"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingLive ? 'animate-spin text-emerald-400' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* KPI Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Total Online */}
+              <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                    Tiempo Real
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-black text-white">{liveData.onlineCount}</span>
+                  <span className="text-xs text-neutral-400 block mt-0.5">Usuarios navegando</span>
+                </div>
+              </div>
+
+              {/* Computadoras */}
+              <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <Laptop className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <span className="text-xs font-bold text-neutral-400">
+                    {liveData.onlineCount > 0 ? Math.round((liveData.devices.Computadora / liveData.onlineCount) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-black text-white">{liveData.devices.Computadora}</span>
+                  <span className="text-xs text-neutral-400 block mt-0.5">Computadoras (PC / Mac)</span>
+                </div>
+              </div>
+
+              {/* Celulares & Tablets */}
+              <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 bg-rose-500/10 rounded-xl flex items-center justify-center">
+                    <Smartphone className="h-5 w-5 text-rose-400" />
+                  </div>
+                  <span className="text-xs font-bold text-neutral-400">
+                    {liveData.onlineCount > 0 ? Math.round(((liveData.devices.Móvil + liveData.devices.Tablet) / liveData.onlineCount) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-2xl font-black text-white">{liveData.devices.Móvil + liveData.devices.Tablet}</span>
+                  <span className="text-xs text-neutral-400 block mt-0.5">Móviles & Tablets</span>
+                </div>
+              </div>
+
+              {/* Top País */}
+              <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-5 relative overflow-hidden group">
+                <div className="flex items-center justify-between">
+                  <div className="h-10 w-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-lg">
+                    {liveData.countries[0]?.flag || "🌎"}
+                  </div>
+                  <span className="text-xs font-bold text-neutral-400">
+                    {liveData.countries[0]?.count || 0} visitas
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-lg font-black text-white truncate block">
+                    {liveData.countries[0]?.country || "Global"}
+                  </span>
+                  <span className="text-xs text-neutral-400 block mt-0.5">País más activo ahora</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Watching Now Active Bar (if any) */}
+            {liveData.topPages.some(p => p.title && !p.title.startsWith("/")) && (
+              <div className="bg-neutral-900/40 border border-white/5 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Film className="h-4 w-4 text-purple-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Viendo Ahora Mismo:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {liveData.topPages.filter(p => p.title && !p.title.startsWith("/")).slice(0, 4).map((p, idx) => (
+                    <span key={idx} className="bg-purple-950/40 border border-purple-500/30 text-purple-300 text-xs px-3 py-1 rounded-xl font-bold flex items-center gap-1.5">
+                      <span>🎬 {p.title}</span>
+                      <span className="bg-purple-500/30 px-1.5 py-0.2 rounded-full text-[10px] text-white font-black">{p.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+              {/* Search input */}
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                <input
+                  type="text"
+                  placeholder="Buscar por IP, País, Anime o Usuario..."
+                  value={liveSearchQuery}
+                  onChange={(e) => setLiveSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-neutral-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/50 transition"
+                />
+                {liveSearchQuery && (
+                  <button onClick={() => setLiveSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Device Filters */}
+              <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+                {[
+                  { id: "all", label: "Todos", icon: Globe },
+                  { id: "Computadora", label: "Computadora", icon: Laptop },
+                  { id: "Móvil", label: "Celular", icon: Smartphone },
+                  { id: "Tablet", label: "Tablet", icon: Monitor },
+                  { id: "Smart TV", label: "TV", icon: Tv }
+                ].map((f) => {
+                  const Icon = f.icon;
+                  const active = selectedDeviceFilter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedDeviceFilter(f.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                        active 
+                          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/20" 
+                          : "bg-neutral-900 border-white/5 text-neutral-400 hover:text-white hover:border-neutral-700"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{f.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Live Users Table */}
+            <div className="bg-neutral-900/30 border border-white/5 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wifi className="h-4 w-4 text-emerald-400" />
+                  <span className="text-xs font-extrabold text-white uppercase tracking-wider">Sesiones en Vivo ({liveData.users.length})</span>
+                </div>
+                <span className="text-[10px] text-neutral-400">Actualización automática cada 3.5s</span>
+              </div>
+
+              {(() => {
+                const filteredUsers = liveData.users.filter(u => {
+                  if (selectedDeviceFilter !== "all" && u.deviceType !== selectedDeviceFilter) return false;
+                  if (liveSearchQuery) {
+                    const q = liveSearchQuery.toLowerCase();
+                    const matchIp = u.ip.toLowerCase().includes(q);
+                    const matchCountry = u.countryName.toLowerCase().includes(q) || u.city.toLowerCase().includes(q);
+                    const matchAnime = u.currentAnimeTitle.toLowerCase().includes(q) || u.currentPath.toLowerCase().includes(q);
+                    const matchUser = (u.userName || "").toLowerCase().includes(q) || (u.userEmail || "").toLowerCase().includes(q);
+                    const matchDev = u.deviceType.toLowerCase().includes(q) || u.os.toLowerCase().includes(q) || u.browser.toLowerCase().includes(q);
+                    return matchIp || matchCountry || matchAnime || matchUser || matchDev;
+                  }
+                  return true;
+                });
+
+                if (filteredUsers.length === 0) {
+                  return (
+                    <div className="text-center py-12 px-4 text-neutral-500 text-xs">
+                      <Users className="h-8 w-8 mx-auto text-neutral-600 mb-2 opacity-50" />
+                      <span>No hay usuarios conectados con los filtros seleccionados en este momento.</span>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-neutral-300 border-collapse">
+                      <thead>
+                        <tr className="border-b border-white/10 text-[10px] uppercase text-neutral-500 font-extrabold tracking-wider bg-black/20">
+                          <th className="py-3 px-4">Usuario / Sesión</th>
+                          <th className="py-3 px-4">País & Ubicación</th>
+                          <th className="py-3 px-4">Dirección IP</th>
+                          <th className="py-3 px-4">Dispositivo & SO</th>
+                          <th className="py-3 px-4">Actividad / Viendo</th>
+                          <th className="py-3 px-4 text-right">Tiempo Activo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {filteredUsers.map((u) => {
+                          const now = Date.now();
+                          const activeSecondsAgo = Math.max(0, Math.round((now - u.lastSeen) / 1000));
+                          const sessionMinutes = Math.max(1, Math.round((now - u.connectedAt) / 60000));
+
+                          return (
+                            <tr key={u.sessionId} className="hover:bg-white/5 transition-colors">
+                              {/* User Info */}
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2.5">
+                                  <div className={`h-8 w-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                                    u.userName ? 'bg-gradient-to-tr from-rose-500 to-amber-500 text-white' : 'bg-neutral-800 text-neutral-400'
+                                  }`}>
+                                    {u.userName ? u.userName[0].toUpperCase() : '👤'}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-white flex items-center gap-1.5">
+                                      {u.userName || "Visitante Anónimo"}
+                                      {u.userPlan === "Premium" && (
+                                        <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-black border border-amber-500/30">VIP</span>
+                                      )}
+                                    </span>
+                                    <span className="text-[10px] text-neutral-400 font-mono">
+                                      {u.userEmail || u.sessionId.slice(0, 12)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Country & Location */}
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg leading-none">{u.countryFlag || "🌐"}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-white">{u.countryName}</span>
+                                    {u.city ? (
+                                      <span className="text-[10px] text-neutral-400 flex items-center gap-1">
+                                        <MapPin className="h-2.5 w-2.5 text-neutral-500" />
+                                        {u.city}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-neutral-500">Región detectada</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* IP Address */}
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-1.5">
+                                  <code className="bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-[11px] font-mono text-emerald-400 font-semibold">
+                                    {u.ip}
+                                  </code>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(u.ip);
+                                      setCopiedIp(u.sessionId);
+                                      setTimeout(() => setCopiedIp(null), 2000);
+                                    }}
+                                    className="p-1 text-neutral-500 hover:text-white transition cursor-pointer"
+                                    title="Copiar IP"
+                                  >
+                                    {copiedIp === u.sessionId ? (
+                                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="h-3.5 w-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+
+                              {/* Device & OS */}
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300">
+                                    {u.deviceType === "Móvil" ? <Smartphone className="h-3.5 w-3.5 text-rose-400" /> :
+                                     u.deviceType === "Tablet" ? <Monitor className="h-3.5 w-3.5 text-amber-400" /> :
+                                     u.deviceType === "Smart TV" ? <Tv className="h-3.5 w-3.5 text-purple-400" /> :
+                                     <Laptop className="h-3.5 w-3.5 text-blue-400" />}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-white text-xs">{u.deviceType} · {u.os}</span>
+                                    <span className="text-[10px] text-neutral-400">{u.browser} {u.screenResolution ? `(${u.screenResolution})` : ''}</span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Activity / Anime Watching */}
+                              <td className="py-3 px-4">
+                                {u.currentAnimeTitle ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-rose-300 truncate max-w-xs">{u.currentAnimeTitle}</span>
+                                      {u.currentEpisode && (
+                                        <span className="text-[10px] text-neutral-400 font-semibold">{u.currentEpisode}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-[11px] text-neutral-300 font-medium">
+                                    <span>🌐</span>
+                                    <span className="truncate max-w-xs">{u.currentPath === '/' ? 'Página Principal' : u.currentPath}</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Active Time */}
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex flex-col items-end">
+                                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                    <span>{activeSecondsAgo < 5 ? 'En este instante' : `Hace ${activeSecondsAgo}s`}</span>
+                                  </span>
+                                  <span className="text-[10px] text-neutral-500">
+                                    Conectado hace {sessionMinutes} min
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

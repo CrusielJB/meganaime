@@ -72,7 +72,9 @@ export interface WatchlistItem {
 export interface User {
   id: string;
   username: string;
+  name?: string;
   email: string;
+  plan?: string;
   favorites: string[]; // List of anime IDs (legacy/fallback)
   watchlist?: WatchlistItem[];
   ratings?: Record<string, number>; // user rating per animeId

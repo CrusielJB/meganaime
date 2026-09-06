@@ -105,7 +105,7 @@ export const MangaDetail: React.FC<MangaDetailProps> = ({
             {/* Giant Netflix-style Immersive Banner */}
             <div className="relative min-h-[440px] sm:min-h-[480px] md:h-[480px] w-full flex-shrink-0 flex flex-col justify-between p-6 md:p-10 pt-[max(1.5rem,calc(env(safe-area-inset-top)+1rem))]">
               <img
-                src={getProxyImageUrl(details.coverUrl, details.title, true, "MANGA")}
+                src={getProxyImageUrl(details.coverUrl, details.title, true)}
                 alt={details.title}
                 className="absolute inset-0 h-full w-full object-cover object-center filter brightness-[0.35] blur-[1px]"
                 referrerPolicy="no-referrer"
