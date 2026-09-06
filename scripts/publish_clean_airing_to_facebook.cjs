@@ -9,8 +9,8 @@ if (!pageId || !pageToken) {
   process.exit(1);
 }
 
-// STRICT REQUIREMENT: megaanime.net is down, strictly use the live Firebase web app domain
-const BASE_URL = "https://megaanime-1c250.web.app";
+// Production domain: https://mega-anime.com
+const BASE_URL = "https://mega-anime.com";
 
 // STRICT REQUIREMENT: Clean URLs, no scraper names (no tioanime, monoschinos, etc.)
 const airingEpisodesToPublish = [

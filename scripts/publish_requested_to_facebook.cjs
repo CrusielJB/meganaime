@@ -9,7 +9,7 @@ if (!pageId || !pageToken) {
   process.exit(1);
 }
 
-const BASE_URL = "https://megaanime-1c250.web.app";
+const BASE_URL = "https://mega-anime.com";
 
 const animesToPublish = [
   {

@@ -49,7 +49,7 @@
           window.open = function(url, target, features) {
             if (!url) return null;
             var strUrl = String(url).toLowerCase();
-            var allowed = ["megaanime.net", "firebaseapp.com", "web.app", "localhost", "127.0.0.1"];
+            var allowed = ["mega-anime.com", "megaanime.net", "firebaseapp.com", "web.app", "localhost", "127.0.0.1"];
             var isAllowed = allowed.some(function(domain) { return strUrl.indexOf(domain) !== -1; });
             if (!isAllowed && (strUrl.indexOf("http://") === 0 || strUrl.indexOf("https://") === 0 || strUrl.indexOf("//") === 0)) {
               console.warn("[Ad-Shield] Blocked popup window to external ad URL:", url);
@@ -69,9 +69,14 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Favicon & Site Icons (Google Search, Browser Tabs, iOS/Android PWA) -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Google Search specifically requires multiples of 48px square (48x48, 96x96, 144x144, 192x192) -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
@@ -81,23 +86,23 @@
     <meta name="description" content="Ver anime online gratis en HD con audio latino y subtítulos en español. Disfruta del catálogo más completo de animes, estrenos 2026, películas y mangas en megaAnime." />
     <meta name="keywords" content="megaanime, mega anime, meganaime, ver anime gratis, anime online, anime sub español, anime latino, estrenos anime 2026, ver animes hd" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <link rel="canonical" href="https://megaanime-1c250.web.app/" />
+    <link rel="canonical" href="https://mega-anime.com/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://megaanime-1c250.web.app/" />
+    <meta property="og:url" content="https://mega-anime.com/" />
     <meta property="og:title" content="megaAnime - Ver Anime Online Gratis en HD Sub Español y Latino" />
     <meta property="og:description" content="Disfruta del catálogo más completo de animes en HD, estrenos 2026, películas y mangas totalmente gratis en megaAnime." />
-    <meta property="og:image" content="https://megaanime-1c250.web.app/icon-512.png" />
+    <meta property="og:image" content="https://mega-anime.com/icon-512.png" />
     <meta property="og:site_name" content="megaAnime" />
     <meta property="og:locale" content="es_ES" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://megaanime-1c250.web.app/" />
+    <meta name="twitter:url" content="https://mega-anime.com/" />
     <meta name="twitter:title" content="megaAnime - Ver Anime Online Gratis en HD" />
     <meta name="twitter:description" content="Plataforma de streaming de anime en alta calidad con estrenos diarios sub español y latino." />
-    <meta name="twitter:image" content="https://megaanime-1c250.web.app/icon-512.png" />
+    <meta name="twitter:image" content="https://mega-anime.com/icon-512.png" />
 
     <!-- Schema.org Structured Data (JSON-LD) for Google Rich Snippets -->
     <script type="application/ld+json">
@@ -106,25 +111,25 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "@id": "https://megaanime-1c250.web.app/#website",
-          "url": "https://megaanime-1c250.web.app/",
+          "@id": "https://mega-anime.com/#website",
+          "url": "https://mega-anime.com/",
           "name": "megaAnime",
           "description": "Ver Anime Online Gratis en HD Sub Español y Latino",
           "inLanguage": "es",
           "potentialAction": {
             "@type": "SearchAction",
-            "target": "https://megaanime-1c250.web.app/?s={search_term_string}",
+            "target": "https://mega-anime.com/?s={search_term_string}",
             "query-input": "required name=search_term_string"
           }
         },
         {
           "@type": "Organization",
-          "@id": "https://megaanime-1c250.web.app/#organization",
+          "@id": "https://mega-anime.com/#organization",
           "name": "megaAnime",
-          "url": "https://megaanime-1c250.web.app/",
+          "url": "https://mega-anime.com/",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://megaanime-1c250.web.app/icon-512.png"
+            "url": "https://mega-anime.com/icon-512.png"
           },
           "sameAs": [
             "https://www.facebook.com/1375353446122077"

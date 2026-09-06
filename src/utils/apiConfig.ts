@@ -25,7 +25,7 @@ export function isNativePlatform(): boolean {
   );
 }
 
-export const PRODUCTION_API_URL = "https://megaanime-1c250.web.app";
+export const PRODUCTION_API_URL = "https://mega-anime.com";
 
 export function getApiUrl(path: string): string {
   if (!path) return path;

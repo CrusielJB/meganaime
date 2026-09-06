@@ -8,6 +8,8 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     iosScheme: 'https',
     allowNavigation: [
+      'mega-anime.com',
+      '*.mega-anime.com',
       'megaanime-1c250.web.app',
       'megaanime.net',
       '*.megaanime.net',

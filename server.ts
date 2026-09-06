@@ -423,7 +423,7 @@ export async function createExpressApp() {
 
   app.get("/robots.txt", (req, res) => {
     res.header("Content-Type", "text/plain");
-    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://megaanime-1c250.web.app/sitemap.xml\n`);
+    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\n\nSitemap: https://mega-anime.com/sitemap.xml\n`);
   });
 
   // ── 0. OTP Email Verification Endpoints for Registration ──
@@ -624,7 +624,7 @@ export async function createExpressApp() {
     import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
     const host = window.location.hostname;
-    const authDomain = (host && host !== "localhost" && !host.includes("127.0.0.1")) ? host : "megaanime-1c250.web.app";
+    const authDomain = (host && host !== "localhost" && !host.includes("127.0.0.1")) ? host : "mega-anime.com";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCiOUFkE_JabN1ho29lZoxssj33TXHUZlg",
@@ -3224,7 +3224,7 @@ export async function createExpressApp() {
       let urlsXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://megaanime-1c250.web.app/</loc>
+    <loc>https://mega-anime.com/</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -3234,7 +3234,7 @@ export async function createExpressApp() {
         const cleanId = encodeURIComponent(anime.id);
         urlsXml += `
   <url>
-    <loc>https://megaanime-1c250.web.app/anime/${cleanId}</loc>
+    <loc>https://mega-anime.com/anime/${cleanId}</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -3276,11 +3276,11 @@ export async function createExpressApp() {
         if (found) {
           const ogTitle = `${found.title} - Ver Online en HD | megaAnime`;
           const ogDesc = found.synopsis ? found.synopsis.slice(0, 200) + "..." : `Disfruta de ${found.title} en HD en megaAnime.`;
-          let ogImage = found.coverUrl || "https://megaanime-1c250.web.app/icon-512.png";
+          let ogImage = found.coverUrl || "https://mega-anime.com/icon-512.png";
           if (ogImage.includes("tioanime.com")) {
-            ogImage = `https://megaanime-1c250.web.app/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+            ogImage = `https://mega-anime.com/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
           }
-          const ogUrl = `https://megaanime-1c250.web.app/ver/${encodeURIComponent(cleanSlug)}`;
+          const ogUrl = `https://mega-anime.com/ver/${encodeURIComponent(cleanSlug)}`;
 
           html = html.replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`);
           html = html.replace(/<meta property="og:title" content=".*?"\s*\/?>/i, `<meta property="og:title" content="${ogTitle}" />`);

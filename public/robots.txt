@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /admin
 
-Sitemap: https://megaanime.net/sitemap.xml
+Sitemap: https://mega-anime.com/sitemap.xml

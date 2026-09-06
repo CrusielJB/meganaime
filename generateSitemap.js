@@ -19,7 +19,7 @@ const todayStr = new Date().toISOString().split('T')[0];
 let urlsXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://megaanime-1c250.web.app/</loc>
+    <loc>https://mega-anime.com/</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -30,7 +30,7 @@ catalog.forEach(anime => {
   const cleanId = encodeURIComponent(anime.id);
   urlsXml += `
   <url>
-    <loc>https://megaanime-1c250.web.app/anime/${cleanId}</loc>
+    <loc>https://mega-anime.com/anime/${cleanId}</loc>
     <lastmod>${todayStr}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -63,11 +63,11 @@ if (fs.existsSync(baseHtmlPath)) {
 
     const ogTitle = `${anime.title} - Ver Online en HD | megaAnime`;
     const ogDesc = anime.synopsis ? anime.synopsis.slice(0, 200) + "..." : `Disfruta de ${anime.title} en calidad Full HD 1080p sin anuncios en megaAnime.`;
-    let ogImage = anime.coverUrl || "https://megaanime-1c250.web.app/icon-512.png";
+    let ogImage = anime.coverUrl || "https://mega-anime.com/icon-512.png";
     if (ogImage.includes("tioanime.com")) {
-      ogImage = `https://megaanime-1c250.web.app/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
+      ogImage = `https://mega-anime.com/api/image-proxy?url=${encodeURIComponent(ogImage)}`;
     }
-    const ogUrl = `https://megaanime-1c250.web.app/ver/${cleanSlug}`;
+    const ogUrl = `https://mega-anime.com/ver/${cleanSlug}`;
 
     let pageHtml = baseHtml
       .replace(/<title>.*?<\/title>/i, `<title>${ogTitle}</title>`)
