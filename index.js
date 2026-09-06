@@ -4,6 +4,6 @@ import functions from "firebase-functions";
 import expressApp from "./dist/server.cjs";
 
 export const api = functions
-  .runWith({ memory: "512MB", timeoutSeconds: 60 })
+  .runWith({ memory: "512MB", timeoutSeconds: 120 })
   .https
   .onRequest(expressApp.app || expressApp);
