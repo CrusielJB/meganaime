@@ -1138,16 +1138,16 @@ export async function createExpressApp() {
         }
       }
 
-      // If strict Drive episode exists and is a valid video (> 20MB), add it as our primary ad-free 1080p player
+      // If strict Drive episode exists and is a valid video (> 20MB), add it as our primary player
       const driveSize = parseFloat(driveEp?.sizeMB || "0");
       if (driveEp && (driveEp.fileId || driveEp.streamUrl) && (isNaN(driveSize) || driveSize >= 20)) {
         const fileId = driveEp.fileId || (driveEp.streamUrl ? driveEp.streamUrl.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] : null);
         if (fileId) {
-          // Dedicated MegaAnime HD Drive server: use our own endpoint so the native player handles it
-          combinedServers = [{
-            name: "⚡ MegaAnime HD (Sin Anuncios)",
-            url: `/api/gdrive-stream?fileId=${fileId}`
-          }];
+          // Add Google Drive preview iframe at top priority, keeping alternative servers below
+          combinedServers.unshift({
+            name: "⚡ Google Drive (HD)",
+            url: `https://drive.google.com/file/d/${fileId}/preview`
+          });
         }
       }
 

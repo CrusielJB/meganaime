@@ -454,17 +454,8 @@ export default function VideoPlayer({
            n.includes("megaanime") || n.includes("sin anuncios") || n.includes("exclusivo");
   });
 
-  // If Drive server exists: keep ONLY the Drive server, discard all external servers
-  // This guarantees: auto-play from our server, no ads, no server selector shown
-  const serversBeforeSort = hasDriveServer
-    ? filteredServers.filter(s => {
-        const u = (s.url || "").toLowerCase();
-        const n = (s.name || "").toLowerCase();
-        return u.includes("drive.google.com") || u.includes("drive.usercontent.google.com") || u.includes("gdrive-stream") || u.includes("google.com/file") ||
-               n.includes("megaanime") || n.includes("sin anuncios") || n.includes("exclusivo") ||
-               n.includes("reproducción local");
-      })
-    : filteredServers;
+  // Drive server is prioritized first, with external servers available as backups
+  const serversBeforeSort = filteredServers;
 
   // Sort: Drive/MegaAnime always first, then best external servers
   const servers = [...serversBeforeSort].sort((a, b) => {
@@ -605,7 +596,7 @@ export default function VideoPlayer({
                       (activeServer.name || "").toLowerCase().includes("sin anuncios");
 
       if (isDrive) {
-        // Extract fileId from any URL format we send from the server
+        // Extract fileId from any URL format
         const fileMatch =
           (activeServer.url || "").match(/[?&]fileId=([a-zA-Z0-9_-]+)/) ||
           (activeServer.url || "").match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
@@ -613,11 +604,10 @@ export default function VideoPlayer({
           (activeServer.url || "").match(/[?&]id=([a-zA-Z0-9_-]+)/);
 
         if (fileMatch) {
-          const fileId = fileMatch[1];
-          // Stream directly from Google's high-speed CDN in custom player (0 CF bandwidth, ultra fast)
-          const directDriveUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&authuser=0&confirm=t`;
-          setResolvedStreamUrl(directDriveUrl);
-          setUseResolvedPlayer(true);  // ← tu reproductor nativo, no iframe de Google
+          const previewUrl = `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
+          setResolvedStreamUrl(previewUrl);
+          setUseResolvedPlayer(false);
+          setVideoError(null);
           setResolvedIsHls(false);
           setIsResolving(false);
           return;
@@ -976,16 +966,11 @@ export default function VideoPlayer({
       const fileId = fileMatch ? fileMatch[1] : null;
 
       if (fileId) {
-        // If direct Google CDN had an error, fallback to /api/gdrive-stream proxy
-        if (!resolvedStreamUrl.includes("/api/gdrive-stream")) {
-          console.warn("[Drive Fallback] Direct Google CDN failed, switching to /api/gdrive-stream proxy");
-          setResolvedStreamUrl(getApiUrl(`/api/gdrive-stream?fileId=${fileId}`));
-          setUseResolvedPlayer(true);
-          return;
-        }
-        console.warn("[Drive Fallback] Stream error on GDrive file. Maintaining native player.");
-        setUseResolvedPlayer(true);
-        setVideoError("Error al conectar con el servidor de video. Reintentando...");
+        const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        setResolvedStreamUrl(previewUrl);
+        setUseResolvedPlayer(false);
+        setVideoError(null);
+        setIsAutoAdvancing(false);
         return;
       }
 
@@ -1409,7 +1394,6 @@ export default function VideoPlayer({
                     // @ts-ignore
                     mozallowfullscreen="true"
                     allow="autoplay *; fullscreen *; encrypted-media *; picture-in-picture *; clipboard-write *; accelerometer *; gyroscope *"
-                    referrerPolicy="no-referrer"
                     title={activeServer.name}
                   />
 
